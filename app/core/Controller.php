@@ -29,7 +29,7 @@ class Controller {
             <title>' . ($data['title'] ?? DEFAULT_TITLE) . '</title>
 
             <!-- Load CSS -->
-            ' . Functions::loadCSS('/css') . '
+            ' . Helper::getfiles(path:'css',type:'css') . '
         </head>
         <body>
             <div class="container mt-4">
@@ -37,7 +37,7 @@ class Controller {
             </div>
 
             <!-- Load JS -->
-            ' . Functions::loadJS('/js') . '
+            ' . Helper::getfiles(path:'js',type:'js')  . '
         </body>
         </html>';
     }
