@@ -1,0 +1,98 @@
+/* Dark Theme Styles */
+.dark-theme {
+    --bs-body-bg: #121212;
+    --bs-body-color: #e0e0e0;
+    --bs-card-bg: #1e1e1e;
+    --bs-card-border-color: #333;
+    --bs-secondary-bg: #2d2d2d;
+    --bs-tertiary-bg: #333;
+    --bs-border-color: #444;
+    --bs-emphasis-color: #fff;
+    --bs-emphasis-color-rgb: 255, 255, 255;
+    --bs-secondary-color: #adb5bd;
+    --bs-secondary-color-rgb: 173, 181, 189;
+    --bs-tertiary-color: #888;
+    --bs-tertiary-color-rgb: 136, 136, 136;
+}
+
+.dark-theme .card {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-card-border-color);
+}
+
+.dark-theme .table {
+    color: var(--bs-body-color);
+}
+
+.dark-theme .form-control,
+.dark-theme .form-select {
+    background-color: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+.dark-theme .form-control:disabled,
+.dark-theme .form-select:disabled {
+    background-color: var(--bs-tertiary-bg);
+}
+
+.dark-theme .form-check-input {
+    background-color: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+}
+
+.dark-theme .list-group-item {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+.dark-theme .list-group-item.active {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.dark-theme .list-group-item-action:hover {
+    background-color: var(--bs-tertiary-bg);
+}
+
+/* Adjust modal for dark theme */
+.dark-theme .modal-content {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color);
+}
+
+.dark-theme .modal-header,
+.dark-theme .modal-footer {
+    border-color: var(--bs-border-color);
+}
+
+/* Dropdown menu dark theme */
+.dark-theme .dropdown-menu {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color);
+}
+
+.dark-theme .dropdown-item {
+    color: var(--bs-body-color);
+}
+
+.dark-theme .dropdown-item:hover,
+.dark-theme .dropdown-item:focus {
+    background-color: var(--bs-tertiary-bg);
+}
+
+.dark-theme .dropdown-divider {
+    border-color: var(--bs-border-color);
+}
+
+/* Custom font size adjustments */
+html {
+    font-size: 16px; /* Default size */
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
+} 

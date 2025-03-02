@@ -117,6 +117,56 @@ class EasySQL {
         }
     }
 
+    // Begin a transaction
+    public function beginTransaction() {
+        try {
+            // Check if we're already in a transaction
+            if ($this->connection->inTransaction()) {
+                error_log("Warning: Attempted to begin a transaction while already in one.");
+                return false;
+            }
+            return $this->connection->beginTransaction();
+        } catch (PDOException $e) {
+            error_log('Begin Transaction Error: ' . $e->getMessage());
+            throw new Exception('Begin Transaction Error: ' . $e->getMessage());
+        }
+    }
+    
+    // Commit a transaction
+    public function commitTransaction() {
+        try {
+            // Check if we're in a transaction
+            if (!$this->connection->inTransaction()) {
+                error_log("Warning: Attempted to commit when no transaction is active.");
+                return false;
+            }
+            return $this->connection->commit();
+        } catch (PDOException $e) {
+            error_log('Commit Transaction Error: ' . $e->getMessage());
+            throw new Exception('Commit Transaction Error: ' . $e->getMessage());
+        }
+    }
+    
+    // Rollback a transaction
+    public function rollbackTransaction() {
+        try {
+            // Check if we're in a transaction
+            if (!$this->connection->inTransaction()) {
+                error_log("Warning: Attempted to rollback when no transaction is active.");
+                return false;
+            }
+            return $this->connection->rollBack();
+        } catch (PDOException $e) {
+            error_log('Rollback Transaction Error: ' . $e->getMessage());
+            throw new Exception('Rollback Transaction Error: ' . $e->getMessage());
+        }
+    }
+    
+    // Check if we're in a transaction
+    public function inTransaction() {
+        return $this->connection->inTransaction();
+    }
+
     // Close the connection
     public function disconnect() {
         $this->connection = null;

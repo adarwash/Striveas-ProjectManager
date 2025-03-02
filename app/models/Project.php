@@ -170,4 +170,85 @@ class Project {
         
         return $budgetUsage;
     }
+    
+    /**
+     * Get all projects with their tasks
+     */
+    public function getProjectsWithTasks($userId = null) {
+        // First get the projects
+        $query = "SELECT p.*, u.username as created_by, d.name as department_name, d.budget as department_budget
+                  FROM projects p
+                  LEFT JOIN users u ON p.user_id = u.id
+                  LEFT JOIN departments d ON p.department_id = d.id";
+        
+        $params = [];
+        
+        if($userId) {
+            $query .= " WHERE p.user_id = ?";
+            $params = [$userId];
+        }
+        
+        $query .= " ORDER BY p.end_date ASC, p.start_date ASC";
+        
+        $results = $this->db->select($query, $params);
+        
+        // Convert arrays to objects
+        $projects = [];
+        if (!empty($results)) {
+            foreach ($results as $result) {
+                $project = (object)$result;
+                
+                // Get tasks for this project
+                $query = "SELECT t.*, u.username as created_by_name, u2.username as assigned_to_name
+                         FROM tasks t
+                         LEFT JOIN users u ON t.created_by = u.id
+                         LEFT JOIN users u2 ON t.assigned_to = u2.id
+                         WHERE t.project_id = ?
+                         ORDER BY t.due_date ASC, t.created_at ASC";
+                
+                $taskResults = $this->db->select($query, [$project->id]);
+                
+                // Convert task arrays to objects
+                $tasks = [];
+                if (!empty($taskResults)) {
+                    foreach ($taskResults as $taskResult) {
+                        $tasks[] = (object)$taskResult;
+                    }
+                }
+                
+                // Add tasks to project
+                $project->tasks = $tasks;
+                
+                $projects[] = $project;
+            }
+        }
+        
+        return $projects;
+    }
+    
+    // Get projects count by user
+    public function getProjectsCountByUser($userId) {
+        $query = "SELECT 
+                  COUNT(*) as total,
+                  SUM(CASE WHEN status = 'Planning' THEN 1 ELSE 0 END) as planning,
+                  SUM(CASE WHEN status = 'In Progress' THEN 1 ELSE 0 END) as in_progress,
+                  SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
+                  SUM(CASE WHEN status = 'On Hold' THEN 1 ELSE 0 END) as on_hold
+                  FROM projects
+                  WHERE user_id = ?";
+        
+        $results = $this->db->select($query, [$userId]);
+        
+        if (empty($results)) {
+            return [
+                'total' => 0,
+                'planning' => 0,
+                'in_progress' => 0,
+                'completed' => 0,
+                'on_hold' => 0
+            ];
+        }
+        
+        return $results[0];
+    }
 } 

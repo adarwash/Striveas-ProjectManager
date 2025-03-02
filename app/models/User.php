@@ -90,6 +90,416 @@ class User {
             return [];
         }
     }
+    
+    /**
+     * Update user profile with extended information
+     *
+     * @param array $data The data to update
+     * @return bool True if update successful, false otherwise
+     */
+    public function updateUserProfile(array $data): bool {
+        try {
+            $query = "UPDATE Users SET 
+                      full_name = ?, 
+                      email = ?, 
+                      position = ?, 
+                      bio = ? 
+                      WHERE id = ?";
+            $params = [
+                $data['full_name'], 
+                $data['email'], 
+                $data['position'] ?? null, 
+                $data['bio'] ?? null, 
+                $data['user_id']
+            ];
+            
+            $this->db->update($query, $params);
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdateUserProfile Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check if the provided password matches the user's current password
+     *
+     * @param int $userId The user ID
+     * @param string $password The password to check
+     * @return bool True if password matches, false otherwise
+     */
+    public function checkPassword(int $userId, string $password): bool {
+        try {
+            $query = "SELECT password FROM Users WHERE id = ?";
+            $result = $this->db->select($query, [$userId]);
+            
+            if (empty($result)) {
+                return false;
+            }
+            
+            // In a real application, you would use password_verify() here
+            return $result[0]['password'] === $password;
+        } catch (Exception $e) {
+            error_log('CheckPassword Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update user's password
+     *
+     * @param int $userId The user ID
+     * @param string $newPassword The new password
+     * @return bool True if update successful, false otherwise
+     */
+    public function updatePassword(int $userId, string $newPassword): bool {
+        try {
+            // In a real application, you would use password_hash() here
+            $query = "UPDATE Users SET password = ? WHERE id = ?";
+            $params = [$newPassword, $userId];
+            
+            $this->db->update($query, $params);
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdatePassword Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update user's notification settings
+     *
+     * @param array $data The notification settings data
+     * @return bool True if update successful, false otherwise
+     */
+    public function updateNotificationSettings(array $data): bool {
+        try {
+            // Check if user_settings table entry exists for this user
+            $checkQuery = "SELECT COUNT(*) as count FROM UserSettings WHERE user_id = ?";
+            $result = $this->db->select($checkQuery, [$data['user_id']]);
+            
+            if ($result[0]['count'] > 0) {
+                // Update existing settings
+                $query = "UPDATE UserSettings SET 
+                         email_notifications = ?, 
+                         task_reminders = ?, 
+                         project_updates = ? 
+                         WHERE user_id = ?";
+                $params = [
+                    $data['email_notifications'], 
+                    $data['task_reminders'], 
+                    $data['project_updates'], 
+                    $data['user_id']
+                ];
+                
+                $this->db->update($query, $params);
+            } else {
+                // Insert new settings
+                $query = "INSERT INTO UserSettings 
+                         (user_id, email_notifications, task_reminders, project_updates) 
+                         VALUES (?, ?, ?, ?)";
+                $params = [
+                    $data['user_id'], 
+                    $data['email_notifications'], 
+                    $data['task_reminders'], 
+                    $data['project_updates']
+                ];
+                
+                $this->db->insert($query, $params);
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdateNotificationSettings Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get user's notification settings
+     *
+     * @param int $userId The user ID
+     * @return array The notification settings
+     */
+    public function getNotificationSettings(int $userId): array {
+        try {
+            $query = "SELECT * FROM UserSettings WHERE user_id = ?";
+            $result = $this->db->select($query, [$userId]);
+            
+            if (empty($result)) {
+                // Return default settings if none exist
+                return [
+                    'email_notifications' => 1,
+                    'task_reminders' => 1,
+                    'project_updates' => 1
+                ];
+            }
+            
+            return $result[0];
+        } catch (Exception $e) {
+            error_log('GetNotificationSettings Error: ' . $e->getMessage());
+            // Return default settings on error
+            return [
+                'email_notifications' => 1,
+                'task_reminders' => 1,
+                'project_updates' => 1
+            ];
+        }
+    }
+    
+    /**
+     * Create the UserSettings table if it doesn't exist
+     * 
+     * @return bool True if successful, false otherwise
+     */
+    public function createUserSettingsTable(): bool {
+        try {
+            // Get the SQL to create the UserSettings table
+            $sql = file_get_contents('../app/sql/create_user_settings_table.sql');
+            
+            if (!$sql) {
+                error_log('Could not read create_user_settings_table.sql file');
+                return false;
+            }
+            
+            // Use query() instead of execute()
+            $this->db->query($sql);
+            return true;
+        } catch (Exception $e) {
+            error_log('CreateUserSettingsTable Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update user's profile picture
+     *
+     * @param int $userId The user ID
+     * @param string $filename The filename of the profile picture
+     * @return bool True if update successful, false otherwise
+     */
+    public function updateProfilePicture(int $userId, string $filename): bool {
+        try {
+            $query = "UPDATE Users SET profile_picture = ? WHERE id = ?";
+            $params = [$filename, $userId];
+            
+            $this->db->update($query, $params);
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdateProfilePicture Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get user's recent activity
+     *
+     * @param int $userId The user ID
+     * @param int $limit The maximum number of activities to return (default 10)
+     * @return array Array of recent activities
+     */
+    public function getUserRecentActivity(int $userId, int $limit = 10): array {
+        try {
+            // This is for MS SQL Server
+            $query = "
+                SELECT TOP $limit * FROM (
+                    SELECT 'project' as type, p.title, p.created_at as activity_date, 'created' as action
+                    FROM Projects p 
+                    WHERE p.user_id = ?
+                    
+                    UNION ALL
+                    
+                    SELECT 'task' as type, t.title, t.created_at as activity_date, 'created' as action
+                    FROM Tasks t 
+                    WHERE t.created_by = ?
+                    
+                    UNION ALL
+                    
+                    SELECT 'task' as type, t.title, t.updated_at as activity_date, 'updated' as action
+                    FROM Tasks t 
+                    WHERE t.created_by = ? AND t.updated_at != t.created_at
+                ) AS combined
+                ORDER BY activity_date DESC";
+                
+            $params = [$userId, $userId, $userId];
+            $result = $this->db->select($query, $params);
+            
+            return $result ?: [];
+        } catch (Exception $e) {
+            error_log('GetUserRecentActivity Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get user's skills
+     *
+     * @param int $userId The user ID
+     * @return array Array of user skills
+     */
+    public function getUserSkills(int $userId): array {
+        try {
+            $query = "SELECT s.* FROM Skills s
+                     INNER JOIN UserSkills us ON s.id = us.skill_id
+                     WHERE us.user_id = ?
+                     ORDER BY s.name";
+            $result = $this->db->select($query, [$userId]);
+            
+            return $result ?: [];
+        } catch (Exception $e) {
+            error_log('GetUserSkills Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Update user skills
+     * 
+     * @param int $userId User ID
+     * @param array $skills Array of skill IDs
+     * @return bool True if update successful, false otherwise
+     */
+    public function updateUserSkills(int $userId, array $skills): bool {
+        try {
+            // Begin transaction
+            $this->db->beginTransaction();
+            
+            // Delete all existing user skills
+            $deleteQuery = "DELETE FROM UserSkills WHERE user_id = ?";
+            $this->db->update($deleteQuery, [$userId]);
+            
+            // Insert new skills
+            if (!empty($skills)) {
+                foreach ($skills as $skillId) {
+                    $insertQuery = "INSERT INTO UserSkills (user_id, skill_id) VALUES (?, ?)";
+                    $this->db->insert($insertQuery, [$userId, $skillId]);
+                }
+            }
+            
+            // Commit transaction
+            $this->db->commitTransaction();
+            
+            return true;
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            if ($this->db->inTransaction()) {
+                $this->db->rollbackTransaction();
+            }
+            error_log('UpdateUserSkills Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get all available skills
+     *
+     * @return array Array of all skills
+     */
+    public function getAllSkills(): array {
+        try {
+            $query = "SELECT * FROM Skills ORDER BY name";
+            $result = $this->db->select($query);
+            
+            return $result ?: [];
+        } catch (Exception $e) {
+            error_log('GetAllSkills Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Create the Skills and UserSkills tables if they don't exist
+     * 
+     * @return bool True if successful, false otherwise
+     */
+    public function createSkillsTables(): bool {
+        try {
+            // Create Skills table
+            $skillsTableSql = "
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Skills]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[Skills] (
+                    [id] INT IDENTITY(1,1) PRIMARY KEY,
+                    [name] NVARCHAR(100) NOT NULL,
+                    [description] NVARCHAR(255) NULL,
+                    [category] NVARCHAR(50) NULL,
+                    [created_at] DATETIME DEFAULT GETDATE()
+                )
+            END";
+            
+            $this->db->query($skillsTableSql);
+            
+            // Create UserSkills table
+            $userSkillsTableSql = "
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UserSkills]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[UserSkills] (
+                    [id] INT IDENTITY(1,1) PRIMARY KEY,
+                    [user_id] INT NOT NULL,
+                    [skill_id] INT NOT NULL,
+                    [proficiency_level] INT DEFAULT 1,
+                    [created_at] DATETIME DEFAULT GETDATE(),
+                    CONSTRAINT [FK_UserSkills_Users] FOREIGN KEY ([user_id]) REFERENCES [Users]([id]) ON DELETE CASCADE,
+                    CONSTRAINT [FK_UserSkills_Skills] FOREIGN KEY ([skill_id]) REFERENCES [Skills]([id]) ON DELETE CASCADE
+                )
+            END";
+            
+            $this->db->query($userSkillsTableSql);
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('CreateSkillsTables Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Initialize example skills
+     * 
+     * @return bool True if successful, false otherwise
+     */
+    public function initializeExampleSkills(): bool {
+        try {
+            // Get the SQL to add example skills
+            $sql = file_get_contents('../app/sql/add_example_skills.sql');
+            
+            if (!$sql) {
+                error_log('Could not read add_example_skills.sql file');
+                return false;
+            }
+            
+            // Use query() to execute the SQL
+            $this->db->query($sql);
+            return true;
+        } catch (Exception $e) {
+            error_log('InitializeExampleSkills Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update Users table with profile-related columns
+     * 
+     * @return bool True if successful, false otherwise
+     */
+    public function updateUsersTable(): bool {
+        try {
+            // Get the SQL to update the Users table
+            $sql = file_get_contents('../app/sql/update_users_table.sql');
+            
+            if (!$sql) {
+                error_log('Could not read update_users_table.sql file');
+                return false;
+            }
+            
+            // Use query() to execute the SQL
+            $this->db->query($sql);
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdateUsersTable Error: ' . $e->getMessage());
+            return false;
+        }
+    }
 }
 
 ?> 

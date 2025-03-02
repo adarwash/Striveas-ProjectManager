@@ -14,6 +14,57 @@
  *  7) Additional minor checks, validations, and improvements to code clarity.
  */
 
+/**
+ * Check if the current user is logged in
+ * @return bool True if user is logged in, false otherwise
+ */
+function isLoggedIn() {
+    // Start session if not already started
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    return isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true;
+}
+
+/**
+ * Check if the current URL path matches the given path
+ * @param string $path The path to check against
+ * @return bool True if the URL matches the path, false otherwise
+ */
+function urlIs($path) {
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    $requestUri = strtok($requestUri, '?');
+    
+    // Check for exact match
+    if ($path === $requestUri) {
+        return true;
+    }
+    
+    // Check for wildcard match (e.g., '/projects*')
+    if (substr($path, -1) === '*') {
+        $basePath = rtrim(substr($path, 0, -1), '/');
+        return strpos($requestUri, $basePath) === 0;
+    }
+    
+    return false;
+}
+
+/**
+ * Redirect to a URL
+ * @param string $url The URL to redirect to
+ * @return void
+ */
+function redirect($url) {
+    if (!headers_sent()) {
+        header('Location: ' . $url);
+        exit;
+    }
+    echo '<script type="text/javascript">window.location.href="' . $url . '";</script>';
+    echo '<noscript><meta http-equiv="refresh" content="0;url=' . $url . '" /></noscript>';
+    exit;
+}
+
 class Helper
 {
     /**

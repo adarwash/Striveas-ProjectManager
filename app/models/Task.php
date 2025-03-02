@@ -171,4 +171,63 @@ class Task {
         
         return $activityItems;
     }
+
+    /**
+     * Get all tasks with project details
+     */
+    public function getAllTasksWithProjects($userId = null) {
+        $query = "SELECT t.*, p.title as project_title, p.id as project_id, u.username as created_by
+                  FROM tasks t
+                  LEFT JOIN projects p ON t.project_id = p.id
+                  LEFT JOIN users u ON t.created_by = u.id";
+        
+        $params = [];
+        
+        if($userId) {
+            $query .= " WHERE t.created_by = ? OR t.assigned_to = (SELECT username FROM users WHERE id = ?)";
+            $params = [$userId, $userId];
+        }
+        
+        $query .= " ORDER BY t.due_date ASC, t.created_at DESC";
+        
+        $results = $this->db->select($query, $params);
+        
+        // Convert arrays to objects
+        $tasks = [];
+        if (!empty($results)) {
+            foreach ($results as $result) {
+                $tasks[] = (object)$result;
+            }
+        }
+        
+        return $tasks;
+    }
+
+    // Get tasks statistics by user
+    public function getTasksStatsByUser($userId) {
+        $query = "SELECT 
+                  COUNT(*) as total,
+                  SUM(CASE WHEN status = 'Not Started' THEN 1 ELSE 0 END) as not_started,
+                  SUM(CASE WHEN status = 'In Progress' THEN 1 ELSE 0 END) as in_progress,
+                  SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
+                  SUM(CASE WHEN status = 'Blocked' THEN 1 ELSE 0 END) as blocked,
+                  SUM(CASE WHEN due_date < GETDATE() AND status != 'Completed' THEN 1 ELSE 0 END) as overdue
+                  FROM tasks
+                  WHERE created_by = ? OR assigned_to = ?";
+        
+        $results = $this->db->select($query, [$userId, $userId]);
+        
+        if (empty($results)) {
+            return [
+                'total' => 0,
+                'not_started' => 0,
+                'in_progress' => 0,
+                'completed' => 0,
+                'blocked' => 0,
+                'overdue' => 0
+            ];
+        }
+        
+        return $results[0];
+    }
 } 
