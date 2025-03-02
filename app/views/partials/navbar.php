@@ -36,6 +36,9 @@ $username = $_SESSION['username'] ?? '';
                 <li class="nav-item">
                     <a class="nav-link <?= isActive('tasks') ?>" href="/tasks">Tasks</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= isActive('notes') ?>" href="/notes"><i class="bi bi-journal-text me-1"></i>Notes</a>
+                </li>
                 <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                 <li class="nav-item">
                     <a class="nav-link <?= isActive('admin') ?>" href="/admin">Admin</a>

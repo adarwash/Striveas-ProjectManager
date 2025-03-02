@@ -169,7 +169,7 @@
         gantt.attachEvent("onTaskClick", function(id){
             const task = gantt.getTask(id);
             if (id.toString().startsWith("p")) {
-                window.location.href = "/projects/show/" + id.substring(1);
+                window.location.href = "/projects/viewProject/" + id.substring(1);
             } else if (id.toString().startsWith("t")) {
                 window.location.href = "/tasks/show/" + id.substring(1);
             }

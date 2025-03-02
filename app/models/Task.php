@@ -3,8 +3,17 @@ class Task {
     private $db;
     
     public function __construct() {
-        // Initialize database connection
-        $this->db = new EasySQL(DB1);
+        $this->db = new Database;
+        
+        // Create tasks table if not exists
+        $sql = file_get_contents('../app/sql/create_tasks_table.sql');
+        $this->db->query($sql);
+        $this->db->execute();
+        
+        // Create task assignments table if not exists
+        $sql = file_get_contents('../app/sql/create_task_assignments_table.sql');
+        $this->db->query($sql);
+        $this->db->execute();
     }
     
     // Get all tasks
@@ -229,5 +238,14 @@ class Task {
         }
         
         return $results[0];
+    }
+
+    public function getAssignedUsers($taskId)
+    {
+        $this->db->query('SELECT u.* FROM users u 
+                          JOIN task_assignments ta ON u.id = ta.user_id 
+                          WHERE ta.task_id = :task_id');
+        $this->db->bind(':task_id', $taskId);
+        return $this->db->resultSet();
     }
 } 

@@ -4,4 +4,5 @@
     require_once 'core/Functions.php';
     require_once 'core/BootstrapElements.php';
     require_once 'core/EasySQL.php';
+    require_once 'helpers/flash_helper.php';
 ?>

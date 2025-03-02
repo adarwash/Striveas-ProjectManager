@@ -3,6 +3,7 @@ class Tasks extends Controller {
     private $taskModel;
     private $projectModel;
     private $userModel;
+    private $noteModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -19,6 +20,7 @@ class Tasks extends Controller {
         $this->taskModel = $this->model('Task');
         $this->projectModel = $this->model('Project');
         $this->userModel = $this->model('User');
+        $this->noteModel = $this->model('Note');
     }
     
     // List all tasks (can be filtered by project)
@@ -116,10 +118,10 @@ class Tasks extends Controller {
                 $this->taskModel->create($data);
                 
                 // Set flash message
-                // Placeholder: flash('task_message', 'Task created successfully');
+                flash('task_message', 'Task created successfully');
                 
                 // Redirect to the project details page
-                header('Location: /projects/show/' . $data['project_id']);
+                header('Location: /projects/viewProject/' . $data['project_id']);
                 exit;
             } else {
                 // Get all projects for dropdown
@@ -147,26 +149,28 @@ class Tasks extends Controller {
     
     // Show a single task
     public function show($id) {
-        // Get task by ID
-        // Placeholder: $task = $this->taskModel->getTaskById($id);
-        $task = (object)[
-            'id' => $id,
-            'project_id' => 1,
-            'project_title' => 'Sample Project',
-            'title' => 'Sample Task',
-            'description' => 'This is a sample task description.',
-            'status' => 'In Progress',
-            'priority' => 'High',
-            'due_date' => date('Y-m-d', strtotime('+7 days')),
-            'assigned_to' => 'John Doe',
-            'created_by' => 'Admin',
-            'created_at' => date('Y-m-d H:i:s')
+        $task = $this->taskModel->getTaskById($id);
+        
+        if (!$task) {
+            flash('task_error', 'Task not found', 'alert-danger');
+            redirect('tasks');
+        }
+        
+        // Get project details
+        $project = $this->projectModel->getProjectById($task['project_id']);
+        
+        // Get notes for this task
+        $notes = $this->noteModel->getNotesByReference('task', $id);
+        
+        $data = [
+            'task' => $task,
+            'project' => $project,
+            'notes' => $notes,
+            'type' => 'task',
+            'reference_id' => $id
         ];
         
-        $this->view('tasks/show', [
-            'title' => $task->title,
-            'task' => $task
-        ]);
+        $this->view('tasks/view', $data);
     }
     
     // Show form to edit task

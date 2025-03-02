@@ -53,7 +53,7 @@
                         <h6>Project</h6>
                         <?php if (isset($task->project_id) && isset($task->project_title)): ?>
                             <p class="mb-0">
-                                <a href="/projects/show/<?= $task->project_id ?>" class="text-decoration-none">
+                                <a href="/projects/viewProject/<?= $task->project_id ?>" class="text-decoration-none">
                                     <?= htmlspecialchars($task->project_title) ?>
                                 </a>
                             </p>
@@ -196,7 +196,7 @@
                 
                 <?php if (isset($task->project_id) && isset($task->project_title)): ?>
                 <div class="d-grid mt-4">
-                    <a href="/projects/show/<?= $task->project_id ?>" class="btn btn-outline-primary">
+                    <a href="/projects/viewProject/<?= $task->project_id ?>" class="btn btn-outline-primary">
                         <i class="bi bi-kanban"></i> View Project
                     </a>
                 </div>

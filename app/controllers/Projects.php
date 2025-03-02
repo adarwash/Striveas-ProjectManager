@@ -1,6 +1,8 @@
 <?php
 class Projects extends Controller {
     private $projectModel;
+    private $taskModel;
+    private $noteModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -15,6 +17,8 @@ class Projects extends Controller {
         
         // Load the project model
         $this->projectModel = $this->model('Project');
+        $this->taskModel = $this->model('Task');
+        $this->noteModel = $this->model('Note');
     }
     
     // List all projects
@@ -111,7 +115,7 @@ class Projects extends Controller {
                 $this->projectModel->create($data);
                 
                 // Set flash message
-                // Placeholder: flash('project_message', 'Project created successfully');
+                flash('project_message', 'Project created successfully');
                 
                 // Redirect to projects index
                 header('Location: /projects');
@@ -131,24 +135,80 @@ class Projects extends Controller {
     }
     
     // Show a single project
-    public function show($id) {
-        // Get project by ID
-        $project = $this->projectModel->getProjectById($id);
-        
-        if (!$project) {
-            // If project not found, redirect to projects index
-            header('Location: /projects');
-            exit;
+    public function viewProject($id = null)
+    {
+        if (!$this->isLoggedIn()) {
+            redirect('/users/login');
         }
+
+        if ($id === null) {
+            redirect('/projects');
+        }
+
+        $projectModel = $this->model('Project');
+        $taskModel = $this->model('Task');
+        $userModel = $this->model('User');
+
+        // Get project details
+        $project = $projectModel->getProjectById($id);
+        if (!$project) {
+            flash('project_message', 'Project not found', 'alert alert-danger');
+            redirect('/projects');
+        }
+
+        // Get all tasks for this project
+        $tasks = $taskModel->getTasksByProject($id);
         
-        // Get tasks associated with this project
-        $tasks = $this->projectModel->getProjectTasks($id);
-        
-        $this->view('projects/show', [
-            'title' => $project->title,
+        // Calculate project progress
+        $completed = 0;
+        $total = count($tasks);
+        foreach ($tasks as $task) {
+            if ($task->status === 'Completed') {
+                $completed++;
+            }
+        }
+        $progress = $total > 0 ? ($completed / $total) * 100 : 0;
+
+        // Organize tasks by status
+        $todo_tasks = [];
+        $in_progress_tasks = [];
+        $completed_tasks = [];
+
+        foreach ($tasks as $task) {
+            // Get assigned users for each task
+            $task->assigned_users = $taskModel->getAssignedUsers($task->id);
+            
+            switch ($task->status) {
+                case 'Pending':
+                    $todo_tasks[] = $task;
+                    break;
+                case 'In Progress':
+                    $in_progress_tasks[] = $task;
+                    break;
+                case 'Completed':
+                    $completed_tasks[] = $task;
+                    break;
+            }
+        }
+
+        // Get team members
+        $team_members = $projectModel->getProjectMembers($id);
+
+        // Get available users for adding to project
+        $available_users = $userModel->getAvailableUsersForProject($id);
+
+        $data = [
             'project' => $project,
-            'tasks' => $tasks
-        ]);
+            'tasks' => $tasks,
+            'todo_tasks' => $todo_tasks,
+            'in_progress_tasks' => $in_progress_tasks,
+            'completed_tasks' => $completed_tasks,
+            'team_members' => $team_members,
+            'available_users' => $available_users,
+            'progress' => $progress
+        ];
+
+        $this->view('projects/view', $data);
     }
     
     // Show form to edit project
@@ -242,10 +302,10 @@ class Projects extends Controller {
                 $this->projectModel->update($data);
                 
                 // Set flash message
-                // Placeholder: flash('project_message', 'Project updated successfully');
+                flash('project_message', 'Project updated successfully');
                 
                 // Redirect to project details
-                header('Location: /projects/show/' . $id);
+                header('Location: /projects/viewProject/' . $id);
                 exit;
             } else {
                 // Load view with errors
@@ -268,7 +328,7 @@ class Projects extends Controller {
             $this->projectModel->delete($id);
             
             // Set flash message
-            // Placeholder: flash('project_message', 'Project deleted successfully');
+            flash('project_message', 'Project deleted successfully');
             
             // Redirect to projects index
             header('Location: /projects');

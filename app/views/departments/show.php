@@ -165,7 +165,7 @@
                                 <?php foreach ($projects as $project): ?>
                                     <tr>
                                         <td>
-                                            <a href="/projects/show/<?= $project->id ?>" class="text-decoration-none">
+                                            <a href="/projects/viewProject/<?= $project->id ?>" class="text-decoration-none">
                                                 <?= htmlspecialchars($project->title) ?>
                                             </a>
                                         </td>
@@ -184,7 +184,7 @@
                                         <td><?= date('M j, Y', strtotime($project->end_date)) ?></td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <a href="/projects/show/<?= $project->id ?>" class="btn btn-outline-primary">View</a>
+                                                <a href="/projects/viewProject/<?= $project->id ?>" class="btn btn-outline-primary">View</a>
                                                 <a href="/projects/edit/<?= $project->id ?>" class="btn btn-outline-secondary">Edit</a>
                                             </div>
                                         </td>

@@ -4,7 +4,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
-                <li class="breadcrumb-item"><a href="/projects/show/<?= $project->id ?>">Project Details</a></li>
+                <li class="breadcrumb-item"><a href="/projects/viewProject/<?= $project->id ?>">Project Details</a></li>
                 <li class="breadcrumb-item active" aria-current="page">Edit</li>
             </ol>
         </nav>
@@ -107,7 +107,7 @@
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="/projects/show/<?= $project->id ?>" class="btn btn-light me-md-2">Cancel</a>
+                        <a href="/projects/viewProject/<?= $project->id ?>" class="btn btn-light me-md-2">Cancel</a>
                         <button type="submit" class="btn btn-primary">Update Project</button>
                     </div>
                 </form>

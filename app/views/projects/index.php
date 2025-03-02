@@ -32,7 +32,7 @@
                         <?php foreach ($projects as $project) : ?>
                             <tr>
                                 <td>
-                                    <a href="/projects/show/<?= $project->id ?>" class="fw-bold text-decoration-none">
+                                    <a href="/projects/viewProject/<?= $project->id ?>" class="fw-bold text-decoration-none">
                                         <?= htmlspecialchars($project->title) ?>
                                     </a>
                                 </td>
@@ -72,7 +72,7 @@
                                 <td><?= htmlspecialchars($project->created_by) ?></td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="/projects/show/<?= $project->id ?>" class="btn btn-sm btn-outline-primary">
+                                        <a href="/projects/viewProject/<?= $project->id ?>" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         <a href="/projects/edit/<?= $project->id ?>" class="btn btn-sm btn-outline-secondary">

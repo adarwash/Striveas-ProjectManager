@@ -5,7 +5,7 @@
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
                 <?php if (isset($project_id)): ?>
-                <li class="breadcrumb-item"><a href="/projects/show/<?= $project_id ?>">Project Details</a></li>
+                <li class="breadcrumb-item"><a href="/projects/viewProject/<?= $project_id ?>">Project Details</a></li>
                 <?php endif; ?>
                 <li class="breadcrumb-item active" aria-current="page">Create Task</li>
             </ol>
@@ -106,7 +106,7 @@
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                         <?php if (isset($project_id)): ?>
-                            <a href="/projects/show/<?= $project_id ?>" class="btn btn-light me-md-2">Cancel</a>
+                            <a href="/projects/viewProject/<?= $project_id ?>" class="btn btn-light me-md-2">Cancel</a>
                         <?php else: ?>
                             <a href="/tasks" class="btn btn-light me-md-2">Cancel</a>
                         <?php endif; ?>

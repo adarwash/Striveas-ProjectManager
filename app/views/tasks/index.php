@@ -101,7 +101,7 @@
                                     </td>
                                     <td>
                                         <?php if (isset($task->project_id) && isset($task->project_title)): ?>
-                                            <a href="/projects/show/<?= $task->project_id ?>" class="text-decoration-none">
+                                            <a href="/projects/viewProject/<?= $task->project_id ?>" class="text-decoration-none">
                                                 <?= htmlspecialchars($task->project_title) ?>
                                             </a>
                                         <?php else: ?>
