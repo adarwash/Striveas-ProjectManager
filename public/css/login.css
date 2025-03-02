@@ -1,0 +1,121 @@
+/* Login Page Styles */
+:root {
+    --primary-color: #6C63FF;
+    --secondary-color: #f8f9fa;
+    --accent-color: #4C46B5;
+    --text-color: #495057;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+body.login-page {
+    background-color: var(--secondary-color);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-container {
+    max-width: 400px;
+    width: 100%;
+    padding: 0;
+    box-shadow: 0 10px 25px var(--shadow-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.login-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 25px;
+    text-align: center;
+    position: relative;
+}
+
+.login-header h3 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.login-body {
+    padding: 30px;
+    background: white;
+}
+
+.login-form .form-control {
+    border-radius: 8px;
+    padding: 12px 15px;
+    height: auto;
+    margin-bottom: 15px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.login-form .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(108, 99, 255, 0.25);
+}
+
+.login-form .btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 600;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.login-form .btn-primary:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.login-footer {
+    text-align: center;
+    padding: 15px 30px;
+    background: white;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.login-icon {
+    font-size: 72px;
+    display: block;
+    margin: 0 auto 15px;
+    color: white;
+}
+
+.form-floating > label {
+    padding: 12px 15px;
+}
+
+.login-remember-me {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.login-remember-me .form-check-input {
+    margin-right: 10px;
+}
+
+.alert {
+    border-radius: 8px;
+    padding: 12px 15px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+}
+
+.input-group {
+    position: relative;
+} 

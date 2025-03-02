@@ -783,4 +783,112 @@ HTML;
 </div>
 HTML;
     }
+
+    /**
+     * Generates a modern login form with optional remember me checkbox and error display.
+     *
+     * @param string $action         Form action URL
+     * @param string $method         Form method (default: post)
+     * @param string $error          Optional error message to display
+     * @param bool   $rememberMe     Whether to include remember me checkbox
+     * @param string $submitText     Text for the submit button
+     * @param string $forgotPassLink Optional link for forgot password
+     * @return string
+     */
+    public static function loginForm(
+        string $action = '', 
+        string $method = 'post',
+        string $error = '',
+        bool $rememberMe = true,
+        string $submitText = 'Sign In',
+        string $forgotPassLink = ''
+    ): string {
+        $errorAlert = '';
+        if (!empty($error)) {
+            $errorAlert = <<<HTML
+            <div class="alert alert-danger mb-3" role="alert">
+                {$error}
+            </div>
+            HTML;
+        }
+        
+        $rememberMeHtml = '';
+        if ($rememberMe) {
+            $rememberMeHtml = <<<HTML
+            <div class="login-remember-me">
+                <input class="form-check-input" type="checkbox" id="rememberMe" name="remember">
+                <label class="form-check-label" for="rememberMe">Remember me</label>
+            </div>
+            HTML;
+        }
+        
+        $forgotPasswordHtml = '';
+        if (!empty($forgotPassLink)) {
+            $forgotPasswordHtml = <<<HTML
+            <div class="text-end mb-3">
+                <a href="{$forgotPassLink}" class="text-decoration-none">Forgot Password?</a>
+            </div>
+            HTML;
+        }
+        
+        return <<<HTML
+        <form action="{$action}" method="{$method}" class="login-form">
+            {$errorAlert}
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                <label for="username">Username</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                <label for="password">Password</label>
+            </div>
+            {$rememberMeHtml}
+            {$forgotPasswordHtml}
+            <button type="submit" class="btn btn-primary">{$submitText}</button>
+        </form>
+        HTML;
+    }
+
+    /**
+     * Generates a complete login page container with header, body, and footer.
+     *
+     * @param string $title          Title for the login box
+     * @param string $content        Content HTML for the login box (typically the login form)
+     * @param string $footerText     Optional footer text
+     * @param string $icon           Optional icon class (Bootstrap or FontAwesome)
+     * @return string
+     */
+    public static function loginContainer(
+        string $title = 'Login',
+        string $content = '',
+        string $footerText = '',
+        string $icon = 'bi bi-person-circle'
+    ): string {
+        $iconHtml = '';
+        if (!empty($icon)) {
+            $iconHtml = "<i class=\"{$icon} login-icon\"></i>";
+        }
+        
+        $footerHtml = '';
+        if (!empty($footerText)) {
+            $footerHtml = <<<HTML
+            <div class="login-footer">
+                {$footerText}
+            </div>
+            HTML;
+        }
+        
+        return <<<HTML
+        <div class="login-container">
+            <div class="login-header">
+                {$iconHtml}
+                <h3>{$title}</h3>
+            </div>
+            <div class="login-body">
+                {$content}
+            </div>
+            {$footerHtml}
+        </div>
+        HTML;
+    }
 }
