@@ -1,6 +1,12 @@
-<div class="row">
-    <div class="col-md-12 mb-4">
-        <h1>Create New Project</h1>
+<?php
+// Set title for the page
+$title = 'Create Project - ProjectTracker';
+?>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Create New Project</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
@@ -11,8 +17,11 @@
 </div>
 
 <div class="row">
-    <div class="col-md-8 mx-auto">
-        <div class="card border-0 shadow-sm">
+    <div class="col-lg-8 col-md-12 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Project Details</h5>
+            </div>
             <div class="card-body">
                 <form action="/projects/store" method="post">
                     <div class="mb-3">
@@ -60,15 +69,16 @@
                                     id="department_id" name="department_id" required>
                                 <option value="">Select Department</option>
                                 <?php
-                                // Load Department model to get all departments
-                                $departmentModel = new Department();
-                                $departments = $departmentModel->getAllDepartments();
-                                
-                                foreach ($departments as $department): ?>
-                                    <option value="<?= $department->id ?>" <?= (isset($data['department_id']) && $data['department_id'] == $department->id) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($department->name) ?> - Budget: $<?= number_format($department->budget, 2) ?>
-                                    </option>
-                                <?php endforeach; ?>
+                                // Use departments data passed from controller
+                                if (isset($departments) && !empty($departments)):
+                                    foreach ($departments as $department): ?>
+                                        <option value="<?= $department->id ?>" <?= (isset($data['department_id']) && $data['department_id'] == $department->id) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($department->name) ?> - Budget: $<?= number_format($department->budget, 2) ?>
+                                        </option>
+                                <?php 
+                                    endforeach;
+                                endif; 
+                                ?>
                             </select>
                             <div class="invalid-feedback">
                                 <?= $data['department_id_err'] ?? '' ?>
@@ -103,9 +113,13 @@
                         </div>
                     </div>
                     
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="/projects" class="btn btn-light me-md-2">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Create Project</button>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="/projects" class="btn btn-light me-md-2">
+                            <i class="bi bi-x-circle me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i> Create Project
+                        </button>
                     </div>
                 </form>
             </div>

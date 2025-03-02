@@ -3,6 +3,7 @@ class Projects extends Controller {
     private $projectModel;
     private $taskModel;
     private $noteModel;
+    private $departmentModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -19,6 +20,7 @@ class Projects extends Controller {
         $this->projectModel = $this->model('Project');
         $this->taskModel = $this->model('Task');
         $this->noteModel = $this->model('Note');
+        $this->departmentModel = $this->model('Department');
     }
     
     // List all projects
@@ -34,8 +36,12 @@ class Projects extends Controller {
     
     // Show the form to create a new project
     public function create() {
+        // Get all departments for the dropdown
+        $departments = $this->departmentModel->getAllDepartments();
+        
         $this->view('projects/create', [
-            'title' => 'Create Project'
+            'title' => 'Create Project',
+            'departments' => $departments
         ]);
     }
     
@@ -124,7 +130,8 @@ class Projects extends Controller {
                 // Load view with errors
                 $this->view('projects/create', [
                     'title' => 'Create Project',
-                    'data' => $data
+                    'data' => $data,
+                    'departments' => $this->departmentModel->getAllDepartments()
                 ]);
             }
         } else {
@@ -135,79 +142,28 @@ class Projects extends Controller {
     }
     
     // Show a single project
-    public function viewProject($id = null)
-    {
-        if (!$this->isLoggedIn()) {
-            redirect('/users/login');
-        }
-
-        if ($id === null) {
-            redirect('/projects');
-        }
-
-        $projectModel = $this->model('Project');
-        $taskModel = $this->model('Task');
-        $userModel = $this->model('User');
-
-        // Get project details
-        $project = $projectModel->getProjectById($id);
-        if (!$project) {
-            flash('project_message', 'Project not found', 'alert alert-danger');
-            redirect('/projects');
-        }
-
-        // Get all tasks for this project
-        $tasks = $taskModel->getTasksByProject($id);
+    public function viewProject($id) {
+        $project = $this->projectModel->getProjectById($id);
         
-        // Calculate project progress
-        $completed = 0;
-        $total = count($tasks);
-        foreach ($tasks as $task) {
-            if ($task->status === 'Completed') {
-                $completed++;
-            }
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect('projects');
         }
-        $progress = $total > 0 ? ($completed / $total) * 100 : 0;
-
-        // Organize tasks by status
-        $todo_tasks = [];
-        $in_progress_tasks = [];
-        $completed_tasks = [];
-
-        foreach ($tasks as $task) {
-            // Get assigned users for each task
-            $task->assigned_users = $taskModel->getAssignedUsers($task->id);
-            
-            switch ($task->status) {
-                case 'Pending':
-                    $todo_tasks[] = $task;
-                    break;
-                case 'In Progress':
-                    $in_progress_tasks[] = $task;
-                    break;
-                case 'Completed':
-                    $completed_tasks[] = $task;
-                    break;
-            }
-        }
-
-        // Get team members
-        $team_members = $projectModel->getProjectMembers($id);
-
-        // Get available users for adding to project
-        $available_users = $userModel->getAvailableUsersForProject($id);
-
+        
+        // Get tasks for this project
+        $tasks = $this->taskModel->getTasksByProject($id);
+        
+        // Get notes for this project
+        $notes = $this->noteModel->getNotesByReference('project', $id);
+        
         $data = [
             'project' => $project,
             'tasks' => $tasks,
-            'todo_tasks' => $todo_tasks,
-            'in_progress_tasks' => $in_progress_tasks,
-            'completed_tasks' => $completed_tasks,
-            'team_members' => $team_members,
-            'available_users' => $available_users,
-            'progress' => $progress
+            'notes' => $notes,
+            'type' => 'project',
+            'reference_id' => $id
         ];
-
+        
         $this->view('projects/view', $data);
     }
     
@@ -222,9 +178,13 @@ class Projects extends Controller {
             exit;
         }
         
+        // Get all departments for the dropdown
+        $departments = $this->departmentModel->getAllDepartments();
+        
         $this->view('projects/edit', [
             'title' => 'Edit Project',
-            'project' => $project
+            'project' => $project,
+            'departments' => $departments
         ]);
     }
     
@@ -311,7 +271,8 @@ class Projects extends Controller {
                 // Load view with errors
                 $this->view('projects/edit', [
                     'title' => 'Edit Project',
-                    'project' => (object)$data
+                    'project' => (object)$data,
+                    'departments' => $this->departmentModel->getAllDepartments()
                 ]);
             }
         } else {

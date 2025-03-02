@@ -500,16 +500,6 @@ class User {
             return false;
         }
     }
-
-    public function getAvailableUsersForProject($projectId)
-    {
-        $this->db->query('SELECT * FROM users u 
-                          WHERE u.id NOT IN 
-                          (SELECT user_id FROM project_members 
-                           WHERE project_id = :project_id)');
-        $this->db->bind(':project_id', $projectId);
-        return $this->db->resultSet();
-    }
 }
 
 ?> 

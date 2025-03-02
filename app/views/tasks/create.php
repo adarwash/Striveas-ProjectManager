@@ -1,6 +1,12 @@
-<div class="row">
-    <div class="col-md-12 mb-4">
-        <h1>Create New Task</h1>
+<?php
+// Set title for the page
+$title = 'Create Task - ProjectTracker';
+?>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Create New Task</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
@@ -14,8 +20,11 @@
 </div>
 
 <div class="row">
-    <div class="col-md-8 mx-auto">
-        <div class="card border-0 shadow-sm">
+    <div class="col-lg-8 col-md-12 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Task Details</h5>
+            </div>
             <div class="card-body">
                 <form action="/tasks/store" method="post">
                     <div class="mb-3">

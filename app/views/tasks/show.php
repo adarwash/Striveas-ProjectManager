@@ -1,20 +1,29 @@
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h1><?= htmlspecialchars($task->title) ?></h1>
+<?php
+// Set title for the page
+$title = htmlspecialchars($task->title) . ' - ProjectTracker';
+?>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><?= htmlspecialchars($task->title) ?></h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/tasks">Tasks</a></li>
+                <li class="breadcrumb-item"><a href="/projects/viewProject/<?= $task->project_id ?>">Project</a></li>
                 <li class="breadcrumb-item active" aria-current="page"><?= htmlspecialchars($task->title) ?></li>
             </ol>
         </nav>
     </div>
-    <div class="col-md-4 text-md-end d-flex justify-content-md-end align-items-center">
-        <a href="/tasks/edit/<?= $task->id ?>" class="btn btn-outline-secondary me-2">
-            <i class="bi bi-pencil"></i> Edit
-        </a>
-        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
-            <i class="bi bi-trash"></i> Delete
-        </button>
+    <div>
+        <div class="btn-group">
+            <a href="/tasks/edit/<?= $task->id ?>" class="btn btn-light">
+                <i class="bi bi-pencil me-1"></i> Edit
+            </a>
+            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
+                <i class="bi bi-trash me-1"></i> Delete
+            </button>
+        </div>
     </div>
 </div>
 

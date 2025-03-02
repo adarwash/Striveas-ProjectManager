@@ -36,41 +36,19 @@ class Controller {
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         $_SESSION['current_method'] = $backtrace[1]['function'] ?? 'index';
 
-        // Start output buffering for navbar
-        ob_start();
-
-        // Include navbar if not on login page and user is logged in
-        if (!$isLoginPage && isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in']) {
-            // Check if navbar partial exists
-            if (file_exists('../app/views/partials/navbar.php')) {
-                require_once '../app/views/partials/navbar.php';
-            }
+        // Set the current page for sidebar highlighting
+        $_SESSION['page'] = strtolower(str_replace('Controller', '', $reflection->getShortName()));
+        if ($_SESSION['current_method'] !== 'index') {
+            $_SESSION['page'] .= '_' . $_SESSION['current_method'];
         }
 
-        // Capture the navbar content
-        $navbar = ob_get_clean();
-
-        // Output the layout with navbar and content injected
-        echo '<!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>' . ($data['title'] ?? DEFAULT_TITLE) . '</title>
-
-            <!-- Load CSS -->
-            ' . Helper::getfiles(path:'css',type:'css') . '
-        </head>
-        <body' . ($isLoginPage ? ' class="login-page"' : '') . '>
-            ' . $navbar . '
-            <div class="container' . ($isLoginPage ? '-fluid p-0' : ' mt-4') . '">
-                ' . $content . '
-            </div>
-
-            <!-- Load JS -->
-            ' . Helper::getfiles(path:'js',type:'js')  . '
-        </body>
-        </html>';
+        // Load the default layout with the content
+        if (!$isLoginPage && isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in']) {
+            require_once '../app/views/layouts/default.php';
+        } else {
+            // For login page or when not logged in, just output the content
+            echo $content;
+        }
     }
 }
 ?>

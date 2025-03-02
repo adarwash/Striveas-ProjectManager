@@ -3,17 +3,8 @@ class Project {
     private $db;
     
     public function __construct() {
-        $this->db = new Database;
-        
-        // Create projects table if not exists
-        $sql = file_get_contents('../app/sql/create_projects_table.sql');
-        $this->db->query($sql);
-        $this->db->execute();
-        
-        // Create project members table if not exists
-        $sql = file_get_contents('../app/sql/create_project_members_table.sql');
-        $this->db->query($sql);
-        $this->db->execute();
+        // Initialize database connection
+        $this->db = new EasySQL(DB1);
     }
     
     // Get all projects
@@ -259,14 +250,5 @@ class Project {
         }
         
         return $results[0];
-    }
-
-    public function getProjectMembers($projectId)
-    {
-        $this->db->query('SELECT u.* FROM users u 
-                          JOIN project_members pm ON u.id = pm.user_id 
-                          WHERE pm.project_id = :project_id');
-        $this->db->bind(':project_id', $projectId);
-        return $this->db->resultSet();
     }
 } 
