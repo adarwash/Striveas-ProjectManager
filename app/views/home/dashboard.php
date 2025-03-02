@@ -78,6 +78,63 @@
 </div>
 
 <div class="row">
+    <!-- Budget Usage by Department -->
+    <div class="col-md-12 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Department Budget Usage</h5>
+            </div>
+            <div class="card-body">
+                <?php if (empty($budget_usage)): ?>
+                    <p class="text-center text-muted">No budget data available.</p>
+                <?php else: ?>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Department</span>
+                                <span>Usage</span>
+                            </div>
+                            <?php foreach ($budget_usage as $budget): ?>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span><?= htmlspecialchars($budget->name) ?></span>
+                                        <span>
+                                            $<?= number_format($budget->used_budget ?? 0, 2) ?> / 
+                                            $<?= number_format($budget->total_budget ?? 0, 2) ?> 
+                                            (<?= number_format(min($budget->percentage ?? 0, 100), 1) ?>%)
+                                        </span>
+                                    </div>
+                                    <?php 
+                                    // Determine appropriate color based on percentage
+                                    $progressClass = 'bg-success';
+                                    $percentage = $budget->percentage ?? 0;
+                                    if ($percentage > 70) {
+                                        $progressClass = 'bg-warning';
+                                    }
+                                    if ($percentage > 90) {
+                                        $progressClass = 'bg-danger';
+                                    }
+                                    ?>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar <?= $progressClass ?>" role="progressbar" 
+                                             style="width: <?= min($percentage, 100) ?>%" 
+                                             aria-valuenow="<?= $percentage ?>" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                            <div class="text-end mt-3">
+                                <a href="/departments" class="btn btn-sm btn-primary">View Departments</a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
     <!-- Recent Activity -->
     <div class="col-md-12 mb-4">
         <div class="card border-0 shadow-sm">

@@ -29,37 +29,77 @@
                 <div class="row mt-4">
                     <div class="col-md-6">
                         <h5>Details</h5>
-                        <table class="table table-sm">
-                            <tr>
-                                <th style="width: 130px">Status:</th>
-                                <td>
-                                    <?php 
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p class="mb-1 text-muted">Status</p>
+                                <div class="mb-3">
+                                    <?php
                                     $statusClass = 'bg-secondary';
-                                    if ($project->status === 'Active') $statusClass = 'bg-primary';
-                                    if ($project->status === 'Completed') $statusClass = 'bg-success';
-                                    if ($project->status === 'On Hold') $statusClass = 'bg-warning text-dark';
+                                    if ($project->status === 'Active') $statusClass = 'bg-success';
+                                    if ($project->status === 'On Hold') $statusClass = 'bg-warning';
+                                    if ($project->status === 'Completed') $statusClass = 'bg-info';
                                     if ($project->status === 'Cancelled') $statusClass = 'bg-danger';
                                     ?>
-                                    <span class="badge <?= $statusClass ?>">
-                                        <?= htmlspecialchars($project->status) ?>
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Start Date:</th>
-                                <td><?= date('F j, Y', strtotime($project->start_date)) ?></td>
-                            </tr>
-                            <tr>
-                                <th>End Date:</th>
-                                <td>
-                                    <?= $project->end_date ? date('F j, Y', strtotime($project->end_date)) : 'Not specified' ?>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Created By:</th>
-                                <td><?= htmlspecialchars($project->created_by ?? 'Unknown') ?></td>
-                            </tr>
-                        </table>
+                                    <span class="badge <?= $statusClass ?>"><?= $project->status ?></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-1 text-muted">Start Date</p>
+                                <p class="mb-3"><?= date('M j, Y', strtotime($project->start_date)) ?></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-1 text-muted">End Date</p>
+                                <p class="mb-3"><?= date('M j, Y', strtotime($project->end_date)) ?></p>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p class="mb-1 text-muted">Department</p>
+                                <p class="mb-3">
+                                    <?= isset($project->department_name) ? htmlspecialchars($project->department_name) : 'Not Assigned' ?>
+                                </p>
+                            </div>
+                            <div class="col-md-8">
+                                <p class="mb-1 text-muted">Budget</p>
+                                <p class="mb-1">
+                                    <strong>$<?= number_format($project->budget ?? 0, 2) ?></strong> 
+                                    of $<?= number_format($project->department_budget ?? 0, 2) ?>
+                                </p>
+                                
+                                <?php 
+                                // Calculate budget percentage used
+                                $budgetPercentage = 0;
+                                if (($project->department_budget ?? 0) > 0) {
+                                    $budgetPercentage = (($project->budget ?? 0) / ($project->department_budget ?? 0)) * 100;
+                                }
+                                
+                                // Determine appropriate color based on percentage
+                                $progressClass = 'bg-success';
+                                if ($budgetPercentage > 70) {
+                                    $progressClass = 'bg-warning';
+                                }
+                                if ($budgetPercentage > 90) {
+                                    $progressClass = 'bg-danger';
+                                }
+                                ?>
+                                
+                                <div class="progress mb-3" style="height: 10px;">
+                                    <div class="progress-bar <?= $progressClass ?>" role="progressbar" 
+                                         style="width: <?= min($budgetPercentage, 100) ?>%" 
+                                         aria-valuenow="<?= $budgetPercentage ?>" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="text-muted"><?= number_format($budgetPercentage, 1) ?>% of department budget</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p class="mb-1 text-muted">Created By</p>
+                                <p class="mb-3"><?= $project->created_by ?></p>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="col-md-6">

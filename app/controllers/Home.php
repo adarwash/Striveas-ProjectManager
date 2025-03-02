@@ -29,6 +29,9 @@
                 // Get recent activity
                 $recentActivity = $this->taskModel->getRecentActivity();
                 
+                // Get budget usage by department
+                $budgetUsage = $this->projectModel->getDepartmentBudgetUsage();
+                
                 // Get user's assigned tasks (if user_id is set)
                 // $userTasks = $userId ? $this->taskModel->getTasksByUser($userId) : [];
                 
@@ -37,7 +40,8 @@
                     'username' => $username,
                     'project_stats' => $projectStats,
                     'task_stats' => $taskStats,
-                    'recent_activity' => $recentActivity
+                    'recent_activity' => $recentActivity,
+                    'budget_usage' => $budgetUsage
                 ]);
             } else {
                 // User is not logged in, show welcome page

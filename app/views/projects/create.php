@@ -53,6 +53,42 @@
                         </div>
                     </div>
                     
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="department_id" class="form-label">Department</label>
+                            <select class="form-select <?= isset($data['department_id_err']) ? 'is-invalid' : '' ?>" 
+                                    id="department_id" name="department_id" required>
+                                <option value="">Select Department</option>
+                                <?php
+                                // Load Department model to get all departments
+                                $departmentModel = new Department();
+                                $departments = $departmentModel->getAllDepartments();
+                                
+                                foreach ($departments as $department): ?>
+                                    <option value="<?= $department->id ?>" <?= (isset($data['department_id']) && $data['department_id'] == $department->id) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($department->name) ?> - Budget: $<?= number_format($department->budget, 2) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="invalid-feedback">
+                                <?= $data['department_id_err'] ?? '' ?>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="budget" class="form-label">Project Budget</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control <?= isset($data['budget_err']) ? 'is-invalid' : '' ?>" 
+                                       id="budget" name="budget" value="<?= $data['budget'] ?? '0.00' ?>" required>
+                                <div class="invalid-feedback">
+                                    <?= $data['budget_err'] ?? '' ?>
+                                </div>
+                            </div>
+                            <small class="text-muted">Enter the estimated budget for this project</small>
+                        </div>
+                    </div>
+                    
                     <div class="mb-4">
                         <label for="status" class="form-label">Status</label>
                         <select class="form-select <?= isset($data['status_err']) ? 'is-invalid' : '' ?>" 
