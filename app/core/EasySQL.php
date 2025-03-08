@@ -56,7 +56,8 @@ class EasySQL {
         try {
             $this->validateSQL($statement); // Validate the SQL statement
             $stmt = $this->executeStatement($statement, $parameters);
-            return $stmt->fetchAll();
+            $results = $stmt->fetchAll();
+            return $results;
         } catch (PDOException $e) {
             throw new Exception('Select Error: ' . $e->getMessage());
         }

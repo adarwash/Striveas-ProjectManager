@@ -190,6 +190,40 @@ class Profile extends Controller {
     }
     
     /**
+     * Remove user's profile picture
+     *
+     * @return void
+     */
+    public function removePicture() {
+        $userId = $_SESSION['user_id'];
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Get current profile picture filename
+            $user = $this->userModel->getUserById($userId);
+            $currentPicture = $user['profile_picture'] ?? null;
+            
+            // Update database to remove profile picture reference
+            if ($this->userModel->updateProfilePicture($userId, null)) {
+                // If database update successful, try to remove the file
+                if ($currentPicture) {
+                    $filePath = '../public/uploads/profile_pictures/' . $currentPicture;
+                    if (file_exists($filePath)) {
+                        @unlink($filePath); // Try to delete file (suppressing errors with @)
+                    }
+                }
+                
+                $_SESSION['profile_success'] = 'Profile picture removed successfully';
+            } else {
+                $_SESSION['profile_error'] = 'Failed to remove profile picture';
+            }
+            
+            redirect('profile');
+        } else {
+            redirect('profile');
+        }
+    }
+    
+    /**
      * Display and update user's skills
      *
      * @return void

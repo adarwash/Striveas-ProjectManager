@@ -43,6 +43,9 @@
                         <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#changeProfilePicModal">
                             <i class="bi bi-camera"></i> Change Picture
                         </button>
+                        <a href="/settings" class="btn btn-outline-primary">
+                            <i class="bi bi-gear"></i> Settings
+                        </a>
                     </div>
                 </div>
             </div>
@@ -251,7 +254,7 @@
     </div>
 </div>
 
-<!-- Change Profile Picture Modal -->
+<!-- Profile Picture Change Modal -->
 <div class="modal fade" id="changeProfilePicModal" tabindex="-1" aria-labelledby="changeProfilePicModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -259,41 +262,53 @@
                 <h5 class="modal-title" id="changeProfilePicModalLabel">Change Profile Picture</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="/profile/picture" method="POST" enctype="multipart/form-data">
-                <div class="modal-body">
+            <div class="modal-body">
+                <form action="/profile/picture" method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <label for="profile_picture" class="form-label">Select Image</label>
-                        <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/jpeg,image/png,image/gif" required>
-                        <div class="form-text">Max file size: 2MB. Allowed formats: JPG, PNG, GIF</div>
+                        <label for="profile_picture" class="form-label">Select New Image</label>
+                        <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/jpeg, image/png, image/gif" required>
+                        <div class="form-text">Max file size: 2MB. Allowed formats: JPG, PNG, GIF.</div>
                     </div>
                     
-                    <div id="image-preview" class="text-center mt-3" style="display: none;">
-                        <img src="" alt="Preview" class="img-fluid rounded" style="max-height: 200px;">
+                    <div class="mb-3">
+                        <label class="form-label">Preview</label>
+                        <div class="text-center">
+                            <img id="image-preview" src="#" alt="Preview" class="img-fluid rounded-circle d-none" style="max-width: 200px; max-height: 200px; object-fit: cover;">
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Upload</button>
-                </div>
-            </form>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Save New Picture</button>
+                    </div>
+                </form>
+                
+                <?php if (!empty($user['profile_picture'])): ?>
+                <hr class="my-3">
+                <form action="/profile/removePicture" method="POST" class="mt-3">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i> Remove Current Picture
+                        </button>
+                    </div>
+                    <div class="form-text text-center mt-2">This will reset your profile to the default avatar.</div>
+                </form>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- Script for image preview -->
 <script>
-// Image preview
 document.getElementById('profile_picture').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
-        const preview = document.getElementById('image-preview');
-        const previewImg = preview.querySelector('img');
-        
-        reader.onload = function(e) {
-            previewImg.src = e.target.result;
-            preview.style.display = 'block';
-        }
-        
+        reader.onload = function(event) {
+            const imgPreview = document.getElementById('image-preview');
+            imgPreview.src = event.target.result;
+            imgPreview.classList.remove('d-none');
+        };
         reader.readAsDataURL(file);
     }
 });

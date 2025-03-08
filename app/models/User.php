@@ -75,13 +75,17 @@ class User {
     }
     
     /**
-     * Get all users for assignments
-     *
-     * @return array Array of users with id, username, and full_name
+     * Get all users
+     * 
+     * @return array Array of user objects with needed fields for admin
      */
     public function getAllUsers(): array {
         try {
-            $query = "SELECT id, username, full_name FROM Users WHERE is_active = 1 ORDER BY username";
+            $query = "SELECT id, username as name, email, full_name, 
+                     role, created_at, last_login 
+                     FROM Users 
+                     WHERE is_active = 1 
+                     ORDER BY created_at DESC";
             $result = $this->db->select($query);
             
             return $result ?: [];
@@ -267,26 +271,6 @@ class User {
             return true;
         } catch (Exception $e) {
             error_log('CreateUserSettingsTable Error: ' . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Update user's profile picture
-     *
-     * @param int $userId The user ID
-     * @param string $filename The filename of the profile picture
-     * @return bool True if update successful, false otherwise
-     */
-    public function updateProfilePicture(int $userId, string $filename): bool {
-        try {
-            $query = "UPDATE Users SET profile_picture = ? WHERE id = ?";
-            $params = [$filename, $userId];
-            
-            $this->db->update($query, $params);
-            return true;
-        } catch (Exception $e) {
-            error_log('UpdateProfilePicture Error: ' . $e->getMessage());
             return false;
         }
     }
@@ -484,19 +468,100 @@ class User {
      */
     public function updateUsersTable(): bool {
         try {
-            // Get the SQL to update the Users table
-            $sql = file_get_contents('../app/sql/update_users_table.sql');
+            // First check if we have an SQL file for updating the users table
+            $sqlFile = '../app/sql/update_users_table.sql';
             
-            if (!$sql) {
-                error_log('Could not read update_users_table.sql file');
-                return false;
+            if (file_exists($sqlFile) && ($sql = file_get_contents($sqlFile))) {
+                // If we have the SQL file, execute it
+                $this->db->query($sql);
             }
             
-            // Use query() to execute the SQL
+            // Also ensure profile_picture column exists in the users table (MS SQL Server syntax)
+            $sql = "IF NOT EXISTS (
+                    SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'users' 
+                    AND COLUMN_NAME = 'profile_picture'
+                )
+                BEGIN
+                    ALTER TABLE users ADD profile_picture VARCHAR(255) NULL
+                END";
+            
             $this->db->query($sql);
             return true;
         } catch (Exception $e) {
             error_log('UpdateUsersTable Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update user's profile picture
+     * 
+     * @param int $userId User ID
+     * @param string $filename New profile picture filename
+     * @return bool True if successful, false otherwise
+     */
+    public function updateProfilePicture($userId, $filename) {
+        try {
+            $sql = "UPDATE users SET profile_picture = ? WHERE id = ?";
+            return $this->db->update($sql, [$filename, $userId]);
+            
+        } catch (Exception $e) {
+            error_log('UpdateProfilePicture Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get default profile picture URL
+     * 
+     * @param string $name User's name for initials
+     * @return string URL for default profile picture
+     */
+    public function getDefaultProfilePicture($name) {
+        // Use UI Avatars to generate a default profile picture based on initials
+        return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=random&size=256';
+    }
+
+    // Get total number of users
+    public function getTotalUsers() {
+        try {
+            $result = $this->db->select("SELECT COUNT(*) as total FROM users");
+            return $result[0]['total'] ?? 0;
+        } catch (Exception $e) {
+            error_log('GetTotalUsers Error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // Get recent users for admin dashboard
+    public function getRecentUsers($limit = 5) {
+        try {
+            return $this->db->select("SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC LIMIT ?", [$limit]);
+        } catch (Exception $e) {
+            error_log('GetRecentUsers Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    // Update user role
+    public function updateUserRole($userId, $role) {
+        try {
+            $sql = "UPDATE users SET role = ? WHERE id = ?";
+            return $this->db->update($sql, [$role, $userId]);
+        } catch (Exception $e) {
+            error_log('UpdateUserRole Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Delete user
+    public function deleteUser($userId) {
+        try {
+            $sql = "DELETE FROM users WHERE id = ?";
+            return $this->db->remove($sql, [$userId]);
+        } catch (Exception $e) {
+            error_log('DeleteUser Error: ' . $e->getMessage());
             return false;
         }
     }

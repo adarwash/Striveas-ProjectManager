@@ -38,9 +38,6 @@ class Auth extends Controller {
             'loginContainer' => $loginContainer
         ];
         
-        // Add custom body class for login page styling
-        echo '<script>document.body.classList.add("login-page");</script>';
-        
         // Render the view
         $this->view('auth/login', $data);
     }
@@ -67,9 +64,12 @@ class Auth extends Controller {
                     session_start();
                 }
                 
-                // Set user session data
+                // Store user data in session
                 $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
+                $_SESSION['user_name'] = $user['full_name'] ?? $user['username'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['profile_picture'] = $user['profile_picture'] ?? null;
                 $_SESSION['is_logged_in'] = true;
                 
                 // If remember me is checked, set a cookie

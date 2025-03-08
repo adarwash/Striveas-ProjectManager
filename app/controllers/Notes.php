@@ -118,6 +118,20 @@ class Notes extends Controller {
      * Edit a note
      */
     public function edit($id) {
+        // Check if user is authorized to edit this note
+        $note = $this->noteModel->getNoteById($id);
+        
+        if (!$note) {
+            flash('note_error', 'Note not found', 'alert alert-danger');
+            redirect('notes');
+        }
+        
+        // Check if user owns this note
+        if ($note['created_by'] != $_SESSION['user_id']) {
+            flash('note_error', 'You are not authorized to edit this note', 'alert alert-danger');
+            redirect('notes');
+        }
+        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize POST data
             $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
@@ -149,28 +163,53 @@ class Notes extends Controller {
                     redirect('notes');
                 } else {
                     flash('note_error', 'Something went wrong. Please try again.');
-                    $this->view('notes/edit', $data);
                 }
-            } else {
-                // Load view with errors
-                $this->view('notes/edit', $data);
             }
-        } else {
-            // Get note
-            $note = $this->noteModel->getNoteById($id);
             
-            // Check for note ownership
-            if ($note && $note['created_by'] === $_SESSION['user_id']) {
-                $data = [
-                    'title' => 'Edit Note',
-                    'note' => $note
-                ];
-                
-                $this->view('notes/edit', $data);
-            } else {
-                flash('note_error', 'You are not authorized to edit this note');
-                redirect('notes');
+            // Load view with errors
+            $this->view('notes/edit', [
+                'title' => 'Edit Note',
+                'note' => $note,
+                'title_err' => $data['title_err'],
+                'content_err' => $data['content_err']
+            ]);
+        } else {
+            // Get related projects and tasks for display
+            $this->projectModel = $this->model('Project');
+            $this->taskModel = $this->model('Task');
+            
+            $projects = [];
+            $tasks = [];
+            
+            // Get project info if the note is for a project
+            if ($note['type'] === 'project') {
+                $project = $this->projectModel->getProjectById($note['reference_id']);
+                if ($project) {
+                    $projects[$project->id] = [
+                        'id' => $project->id,
+                        'title' => $project->title
+                    ];
+                }
+            } else if ($note['type'] === 'task') {
+                // Get task info if the note is for a task
+                $task = $this->taskModel->getTaskById($note['reference_id']);
+                if ($task) {
+                    $tasks[$task->id] = [
+                        'id' => $task->id,
+                        'title' => $task->title
+                    ];
+                }
             }
+            
+            // Load view with note data
+            $this->view('notes/edit', [
+                'title' => 'Edit Note',
+                'note' => $note,
+                'projects' => $projects,
+                'tasks' => $tasks,
+                'title_err' => '',
+                'content_err' => ''
+            ]);
         }
     }
     

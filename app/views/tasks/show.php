@@ -18,10 +18,13 @@ $title = htmlspecialchars($task->title) . ' - ProjectTracker';
     <div>
         <div class="btn-group">
             <a href="/tasks/edit/<?= $task->id ?>" class="btn btn-light">
-                <i class="bi bi-pencil me-1"></i> Edit
+                <i class="bi bi-pencil"></i> Edit Task
             </a>
-            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
-                <i class="bi bi-trash me-1"></i> Delete
+            <a href="/tasks/manageAssignments/<?= $task->id ?>" class="btn btn-light">
+                <i class="bi bi-people"></i> Manage Assignments
+            </a>
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
+                <i class="bi bi-trash"></i> Delete
             </button>
         </div>
     </div>
@@ -55,7 +58,7 @@ $title = htmlspecialchars($task->title) . ' - ProjectTracker';
                 </div>
                 
                 <h6>Description</h6>
-                <p class="card-text mb-4"><?= nl2br(htmlspecialchars($task->description)) ?></p>
+                <p class="card-text"><?= nl2br(htmlspecialchars($task->description)) ?></p>
                 
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -103,6 +106,36 @@ $title = htmlspecialchars($task->title) . ' - ProjectTracker';
                             <?= !empty($task->created_by) ? htmlspecialchars($task->created_by) : '<span class="text-muted">Unknown</span>' ?>
                         </p>
                     </div>
+                </div>
+                
+                <!-- Assigned Users Section -->
+                <div class="col-12 mt-4">
+                    <h6>Assigned Users</h6>
+                    
+                    <?php if (empty($assigned_users)) : ?>
+                        <p class="text-muted">No users assigned to this task. <a href="/tasks/manageAssignments/<?= $task->id ?>">Assign users</a></p>
+                    <?php else : ?>
+                        <div class="row">
+                            <?php foreach ($assigned_users as $user) : ?>
+                                <div class="col-md-6 mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar me-2 bg-<?= strtolower(substr($user->name, 0, 1)) ?>">
+                                            <?= strtoupper(substr($user->name, 0, 1)) ?>
+                                        </div>
+                                        <div>
+                                            <div class="fs-6"><?= htmlspecialchars($user->name) ?></div>
+                                            <small class="text-muted"><?= htmlspecialchars($user->email) ?></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="mt-2">
+                            <a href="/tasks/manageAssignments/<?= $task->id ?>" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-people"></i> Manage Assignments
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 
                 <?php if ($task->status !== 'Completed'): ?>

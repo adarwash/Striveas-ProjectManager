@@ -15,7 +15,7 @@ class Controller {
         ob_start();
 
         // Load the view file
-        require_once '../app/views/' . $view . '.php';
+        require_once VIEWSPATH . '/' . $view . '.php';
 
         // Capture the view content
         $content = ob_get_clean();
@@ -42,13 +42,43 @@ class Controller {
             $_SESSION['page'] .= '_' . $_SESSION['current_method'];
         }
 
-        // Load the default layout with the content
-        if (!$isLoginPage && isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in']) {
-            require_once '../app/views/layouts/default.php';
+        // Load the appropriate layout with the content
+        if ($isLoginPage) {
+            // Use the login layout for the login page
+            require_once VIEWSPATH . '/layouts/login.php';
+        } else if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in']) {
+            // Use the default layout for authenticated pages
+            require_once VIEWSPATH . '/layouts/default.php';
         } else {
-            // For login page or when not logged in, just output the content
+            // For other unauthenticated pages, just output the content
             echo $content;
         }
+    }
+
+    /**
+     * Load a partial view without a layout
+     * 
+     * @param string $view The view file to load
+     * @param array $data Data to pass to the view
+     * @return void
+     */
+    public function partial($view, $data = []) {
+        extract($data);
+        require_once VIEWSPATH . '/' . $view . '.php';
+    }
+
+    /**
+     * Get a partial view as a string
+     * 
+     * @param string $view The view file to load
+     * @param array $data Data to pass to the view
+     * @return string The rendered view as a string
+     */
+    public function getPartial($view, $data = []) {
+        extract($data);
+        ob_start();
+        require_once VIEWSPATH . '/' . $view . '.php';
+        return ob_get_clean();
     }
 }
 ?>

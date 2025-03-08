@@ -4,6 +4,7 @@ class Projects extends Controller {
     private $taskModel;
     private $noteModel;
     private $departmentModel;
+    private $userModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -21,6 +22,10 @@ class Projects extends Controller {
         $this->taskModel = $this->model('Task');
         $this->noteModel = $this->model('Note');
         $this->departmentModel = $this->model('Department');
+        $this->userModel = $this->model('User');
+        
+        // Create project_users table if it doesn't exist
+        $this->projectModel->createProjectUsersTable();
     }
     
     // List all projects
@@ -147,24 +152,25 @@ class Projects extends Controller {
         
         if (!$project) {
             flash('project_error', 'Project not found', 'alert-danger');
-            redirect('projects');
+            redirect(URLROOT . '/projects');
         }
         
-        // Get tasks for this project
+        // Get all tasks for this project
         $tasks = $this->taskModel->getTasksByProject($id);
         
-        // Get notes for this project
+        // Get all notes for this project
         $notes = $this->noteModel->getNotesByReference('project', $id);
         
-        $data = [
+        // Get all users assigned to this project
+        $assignedUsers = $this->projectModel->getProjectUsers($id);
+        
+        $this->view('projects/view', [
+            'title' => $project->title,
             'project' => $project,
             'tasks' => $tasks,
             'notes' => $notes,
-            'type' => 'project',
-            'reference_id' => $id
-        ];
-        
-        $this->view('projects/view', $data);
+            'assigned_users' => $assignedUsers
+        ]);
     }
     
     // Show form to edit project
@@ -299,5 +305,129 @@ class Projects extends Controller {
             header('Location: /projects');
             exit;
         }
+    }
+    
+    /**
+     * Show form to manage team members for a project
+     * 
+     * @param int $id Project ID
+     * @return void
+     */
+    public function manageTeam($id) {
+        $project = $this->projectModel->getProjectById($id);
+        
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect(URLROOT . '/projects');
+        }
+        
+        // Get all available users
+        $allUsers = $this->userModel->getAllUsers();
+        
+        // Get users already assigned to this project
+        $assignedUsers = $this->projectModel->getProjectUsers($id);
+        
+        // Create a map of assigned user IDs for easy lookup
+        $assignedUserIds = [];
+        foreach ($assignedUsers as $user) {
+            $assignedUserIds[$user->user_id] = $user->role;
+        }
+        
+        $this->view('projects/team', [
+            'title' => 'Manage Team - ' . $project->title,
+            'project' => $project,
+            'all_users' => $allUsers,
+            'assigned_users' => $assignedUsers,
+            'assigned_user_ids' => $assignedUserIds
+        ]);
+    }
+    
+    /**
+     * Process form to assign users to a project
+     * 
+     * @param int $id Project ID
+     * @return void
+     */
+    public function assignUsers($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect(URLROOT . '/projects/manageTeam/' . $id);
+        }
+        
+        $project = $this->projectModel->getProjectById($id);
+        
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect(URLROOT . '/projects');
+        }
+        
+        // Sanitize POST data
+        $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+        
+        // Get the selected user IDs and roles
+        $userIds = isset($_POST['user_ids']) ? $_POST['user_ids'] : [];
+        $roles = isset($_POST['roles']) ? $_POST['roles'] : [];
+        
+        // Check if we have valid data
+        if (empty($userIds)) {
+            flash('project_error', 'No users selected', 'alert-danger');
+            redirect(URLROOT . '/projects/manageTeam/' . $id);
+        }
+        
+        // Start transaction
+        $success = true;
+        
+        // First, remove all existing assignments
+        $currentlyAssigned = $this->projectModel->getProjectUsers($id);
+        $currentlyAssignedIds = array_map(function($user) {
+            return $user->user_id;
+        }, $currentlyAssigned);
+        
+        // Find users to remove (those who were assigned but not in the new selection)
+        $usersToRemove = array_diff($currentlyAssignedIds, $userIds);
+        foreach ($usersToRemove as $userId) {
+            $success = $success && $this->projectModel->removeUserFromProject($id, $userId);
+        }
+        
+        // Now assign or update roles for selected users
+        foreach ($userIds as $i => $userId) {
+            $role = isset($roles[$i]) ? $roles[$i] : 'Member';
+            $success = $success && $this->projectModel->assignUsersToProject($id, [$userId], $role);
+        }
+        
+        if ($success) {
+            flash('project_message', 'Team members updated successfully');
+        } else {
+            flash('project_error', 'Error updating team members', 'alert-danger');
+        }
+        
+        redirect(URLROOT . '/projects/manageTeam/' . $id);
+    }
+    
+    /**
+     * Remove a user from a project
+     * 
+     * @param int $projectId Project ID
+     * @param int $userId User ID
+     * @return void
+     */
+    public function removeUser($projectId, $userId) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect(URLROOT . '/projects/manageTeam/' . $projectId);
+        }
+        
+        $project = $this->projectModel->getProjectById($projectId);
+        
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect(URLROOT . '/projects');
+        }
+        
+        if ($this->projectModel->removeUserFromProject($projectId, $userId)) {
+            flash('project_message', 'Team member removed successfully');
+        } else {
+            flash('project_error', 'Error removing team member', 'alert-danger');
+        }
+        
+        redirect(URLROOT . '/projects/manageTeam/' . $projectId);
     }
 } 

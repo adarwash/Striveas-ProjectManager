@@ -40,28 +40,102 @@ class Department {
     
     // Create new department
     public function create($data) {
-        $query = "INSERT INTO departments (name, description, budget, created_at) 
-                 VALUES (?, ?, ?, GETDATE())";
-        
-        return $this->db->insert($query, [
-            $data['name'],
-            $data['description'],
-            $data['budget']
-        ]);
+        try {
+            // Check if currency column exists before using it
+            require_once APPROOT . '/app/helpers/db_helper.php';
+            $hasCurrency = column_exists($this->db, 'departments', 'currency');
+            
+            if ($hasCurrency) {
+                $query = "INSERT INTO departments (name, description, budget, currency, created_at) 
+                         VALUES (?, ?, ?, ?, GETDATE())";
+                
+                return $this->db->insert($query, [
+                    $data['name'],
+                    $data['description'],
+                    $data['budget'],
+                    $data['currency'] ?? 'USD'
+                ]);
+            } else {
+                // Fallback for when currency column doesn't exist
+                $query = "INSERT INTO departments (name, description, budget, created_at) 
+                         VALUES (?, ?, ?, GETDATE())";
+                
+                return $this->db->insert($query, [
+                    $data['name'],
+                    $data['description'],
+                    $data['budget']
+                ]);
+            }
+        } catch (Exception $e) {
+            error_log('Error creating department: ' . $e->getMessage());
+            
+            // Try again without currency if that's the issue
+            if (strpos($e->getMessage(), 'currency') !== false) {
+                $query = "INSERT INTO departments (name, description, budget, created_at) 
+                         VALUES (?, ?, ?, GETDATE())";
+                
+                return $this->db->insert($query, [
+                    $data['name'],
+                    $data['description'],
+                    $data['budget']
+                ]);
+            }
+            
+            return false;
+        }
     }
     
     // Update department
     public function update($data) {
-        $query = "UPDATE departments 
-                 SET name = ?, description = ?, budget = ?, updated_at = GETDATE()
-                 WHERE id = ?";
-        
-        return $this->db->update($query, [
-            $data['name'],
-            $data['description'],
-            $data['budget'],
-            $data['id']
-        ]);
+        try {
+            // Check if currency column exists before using it
+            require_once APPROOT . '/app/helpers/db_helper.php';
+            $hasCurrency = column_exists($this->db, 'departments', 'currency');
+            
+            if ($hasCurrency) {
+                $query = "UPDATE departments 
+                         SET name = ?, description = ?, budget = ?, currency = ?, updated_at = GETDATE()
+                         WHERE id = ?";
+                
+                return $this->db->update($query, [
+                    $data['name'],
+                    $data['description'],
+                    $data['budget'],
+                    $data['currency'] ?? 'USD',
+                    $data['id']
+                ]);
+            } else {
+                // Fallback for when currency column doesn't exist
+                $query = "UPDATE departments 
+                         SET name = ?, description = ?, budget = ?, updated_at = GETDATE()
+                         WHERE id = ?";
+                
+                return $this->db->update($query, [
+                    $data['name'],
+                    $data['description'],
+                    $data['budget'],
+                    $data['id']
+                ]);
+            }
+        } catch (Exception $e) {
+            error_log('Error updating department: ' . $e->getMessage());
+            
+            // Try again without currency if that's the issue
+            if (strpos($e->getMessage(), 'currency') !== false) {
+                $query = "UPDATE departments 
+                         SET name = ?, description = ?, budget = ?, updated_at = GETDATE()
+                         WHERE id = ?";
+                
+                return $this->db->update($query, [
+                    $data['name'],
+                    $data['description'],
+                    $data['budget'],
+                    $data['id']
+                ]);
+            }
+            
+            return false;
+        }
     }
     
     // Delete department
@@ -104,6 +178,32 @@ class Department {
         }
         
         return $projects;
+    }
+    
+    // Get currency symbols
+    public function getCurrencySymbols() {
+        return [
+            'USD' => '$',
+            'GBP' => '£',
+            'EUR' => '€'
+        ];
+    }
+    
+    // Get currency name
+    public function getCurrencyName($code) {
+        $currencies = [
+            'USD' => 'US Dollar',
+            'GBP' => 'British Pound',
+            'EUR' => 'Euro'
+        ];
+        
+        return $currencies[$code] ?? $code;
+    }
+    
+    // Get currency symbol
+    public function getCurrencySymbol($code) {
+        $symbols = $this->getCurrencySymbols();
+        return $symbols[$code] ?? $code;
     }
 }
 ?> 

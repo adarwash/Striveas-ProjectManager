@@ -9,9 +9,9 @@ $title = 'Create Task - ProjectTracker';
         <h1 class="page-title">Create New Task</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
+                <li class="breadcrumb-item"><a href="<?= URLROOT ?>/projects">Projects</a></li>
                 <?php if (isset($project_id)): ?>
-                <li class="breadcrumb-item"><a href="/projects/viewProject/<?= $project_id ?>">Project Details</a></li>
+                <li class="breadcrumb-item"><a href="<?= URLROOT ?>/projects/viewProject/<?= $project_id ?>">Project Details</a></li>
                 <?php endif; ?>
                 <li class="breadcrumb-item active" aria-current="page">Create Task</li>
             </ol>
@@ -26,7 +26,7 @@ $title = 'Create Task - ProjectTracker';
                 <h5 class="mb-0">Task Details</h5>
             </div>
             <div class="card-body">
-                <form action="/tasks/store" method="post">
+                <form action="<?= URLROOT ?>/tasks/store" method="post">
                     <div class="mb-3">
                         <label for="project_id" class="form-label">Project</label>
                         <select class="form-select <?= isset($data['project_id_err']) ? 'is-invalid' : '' ?>" 
@@ -105,21 +105,25 @@ $title = 'Create Task - ProjectTracker';
                             <select class="form-select" id="assigned_to" name="assigned_to">
                                 <option value="">Unassigned</option>
                                 <?php foreach ($users as $user): ?>
-                                    <option value="<?= $user->id ?>" <?= (isset($data['assigned_to']) && $data['assigned_to'] == $user->id) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($user->username) ?>
+                                    <option value="<?= $user['id'] ?>" <?= (isset($data['assigned_to']) && $data['assigned_to'] == $user['id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($user['username']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
                     
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <?php if (isset($project_id)): ?>
-                            <a href="/projects/viewProject/<?= $project_id ?>" class="btn btn-light me-md-2">Cancel</a>
-                        <?php else: ?>
-                            <a href="/tasks" class="btn btn-light me-md-2">Cancel</a>
-                        <?php endif; ?>
-                        <button type="submit" class="btn btn-primary">Create Task</button>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-buttons mt-4">
+                                <button type="submit" class="btn btn-primary">Create Task</button>
+                                <?php if (isset($project_id)): ?>
+                                    <a href="<?= URLROOT ?>/projects/viewProject/<?= $project_id ?>" class="btn btn-light">Cancel</a>
+                                <?php else: ?>
+                                    <a href="<?= URLROOT ?>/tasks" class="btn btn-light">Cancel</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>

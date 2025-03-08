@@ -9,6 +9,15 @@
         </nav>
     </div>
     <div class="col-md-4 text-md-end d-flex justify-content-md-end align-items-center">
+        <!-- Currency Selector -->
+        <div class="form-inline me-2">
+            <select id="currencySelector" class="form-control form-control-sm">
+                <option value="USD" <?= $currencyCode == 'USD' ? 'selected' : '' ?>>USD ($)</option>
+                <option value="EUR" <?= $currencyCode == 'EUR' ? 'selected' : '' ?>>EUR (€)</option>
+                <option value="GBP" <?= $currencyCode == 'GBP' ? 'selected' : '' ?>>GBP (£)</option>
+            </select>
+        </div>
+        
         <a href="/departments/edit/<?= $department->id ?>" class="btn btn-outline-secondary me-2">
             <i class="bi bi-pencil"></i> Edit
         </a>
@@ -30,68 +39,87 @@
                     <div class="col-md-12">
                         <h5>Budget Information</h5>
                         
-                        <?php 
-                        // Calculate budget percentage used
-                        $budgetPercentage = 0;
-                        // Ensure used_budget is not null
-                        $department->used_budget = $department->used_budget ?? 0;
+                        <?php
+                        // Define currency symbols
+                        $currencySymbols = [
+                            'USD' => '$',
+                            'GBP' => '£',
+                            'EUR' => '€'
+                        ];
+
+                        // Get currency code (with fallback if column doesn't exist yet)
+                        $currencyCode = property_exists($department, 'currency') ? $department->currency : 'USD';
+                        $currencySymbol = isset($currencySymbols[$currencyCode]) ? $currencySymbols[$currencyCode] : '$';
                         
-                        if ($department->budget > 0) {
-                            $budgetPercentage = ($department->used_budget / $department->budget) * 100;
-                        }
+                        // Calculate budget information
+                        $budget = $department->budget;
+                        $usedBudget = $department->used_budget ?? 0;
+                        $remainingBudget = $budget - $usedBudget;
+                        $percentageUsed = ($budget > 0) ? ($usedBudget / $budget) * 100 : 0;
                         
-                        // Calculate remaining budget
-                        $remainingBudget = $department->budget - $department->used_budget;
-                        
-                        // Determine appropriate color based on percentage
-                        $progressClass = 'bg-success';
-                        if ($budgetPercentage > 70) {
-                            $progressClass = 'bg-warning';
-                        }
-                        if ($budgetPercentage > 90) {
-                            $progressClass = 'bg-danger';
+                        // Determine progress bar color
+                        $progressColor = 'bg-success';
+                        if ($percentageUsed > 90 || $remainingBudget < 0) {
+                            $progressColor = 'bg-danger';
+                        } elseif ($percentageUsed > 70) {
+                            $progressColor = 'bg-warning';
                         }
                         ?>
                         
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <p class="mb-1 text-muted">Total Budget</p>
-                                <h4 class="text-primary">$<?= number_format($department->budget, 2) ?></h4>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">Total Budget</h6>
+                                        <p class="display-6 mb-0 budget-amount" data-value="<?= $budget ?>" data-currency="<?= $currencyCode ?>"><?= $currencySymbol ?><?= number_format($budget, 2) ?></p>
+                                        <small class="text-muted">Original currency: <?= $currencyCode ?></small>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <p class="mb-1 text-muted">Allocated to Projects</p>
-                                <h4 class="<?= $budgetPercentage > 100 ? 'text-danger' : 'text-success' ?>">
-                                    $<?= number_format($department->used_budget, 2) ?>
-                                </h4>
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">Allocated</h6>
+                                        <p class="display-6 mb-0 budget-amount" data-value="<?= $usedBudget ?>" data-currency="<?= $currencyCode ?>"><?= $currencySymbol ?><?= number_format($usedBudget, 2) ?></p>
+                                        <small class="text-muted"><?= number_format($percentageUsed, 1) ?>% of budget used</small>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <p class="mb-1 text-muted">Remaining</p>
-                                <h4 class="<?= $remainingBudget < 0 ? 'text-danger' : 'text-info' ?>">
-                                    $<?= number_format($remainingBudget, 2) ?>
-                                </h4>
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">Remaining</h6>
+                                        <p class="display-6 mb-0 budget-amount <?= $remainingBudget < 0 ? 'text-danger' : '' ?>" 
+                                           data-value="<?= $remainingBudget ?>" 
+                                           data-currency="<?= $currencyCode ?>">
+                                            <?= $currencySymbol ?><?= number_format($remainingBudget, 2) ?>
+                                        </p>
+                                        <small class="text-muted"><?= number_format(100 - $percentageUsed, 1) ?>% of budget remaining</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
                         <p class="mb-1">Budget Utilization</p>
                         <div class="progress mb-2" style="height: 20px;">
-                            <div class="progress-bar <?= $progressClass ?>" role="progressbar" 
-                                 style="width: <?= min($budgetPercentage, 100) ?>%;" 
-                                 aria-valuenow="<?= $budgetPercentage ?>" aria-valuemin="0" aria-valuemax="100">
-                                <?= number_format($budgetPercentage, 1) ?>%
+                            <div class="progress-bar <?= $progressColor ?>" role="progressbar" 
+                                 style="width: <?= min($percentageUsed, 100) ?>%;" 
+                                 aria-valuenow="<?= $percentageUsed ?>" aria-valuemin="0" aria-valuemax="100">
+                                <?= number_format($percentageUsed, 1) ?>%
                             </div>
                         </div>
                         
-                        <?php if ($budgetPercentage > 90): ?>
+                        <?php if ($percentageUsed > 90): ?>
                             <div class="alert alert-warning mt-3 small">
                                 <i class="bi bi-exclamation-triangle-fill"></i> 
                                 Budget is nearly exhausted! Consider allocating additional funds.
                             </div>
                         <?php endif; ?>
                         
-                        <?php if ($budgetPercentage > 100): ?>
+                        <?php if ($percentageUsed > 100): ?>
                             <div class="alert alert-danger mt-3 small">
                                 <i class="bi bi-exclamation-circle-fill"></i> 
-                                Budget exceeded! Projects are allocated $<?= number_format($department->used_budget - $department->budget, 2) ?> more than the available budget.
+                                Budget exceeded! Projects are allocated $<?= number_format($usedBudget - $department->budget, 2) ?> more than the available budget.
                             </div>
                         <?php endif; ?>
                     </div>
@@ -229,4 +257,79 @@
             </div>
         </div>
     </div>
-</div> 
+</div>
+
+<!-- Currency Conversion JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Define conversion rates (simplified for example)
+    const conversionRates = {
+        'USD': { 'USD': 1, 'EUR': 0.85, 'GBP': 0.75 },
+        'EUR': { 'USD': 1.18, 'EUR': 1, 'GBP': 0.88 },
+        'GBP': { 'USD': 1.33, 'EUR': 1.14, 'GBP': 1 }
+    };
+    
+    // Currency symbols
+    const currencySymbols = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£'
+    };
+    
+    // Get currency selector element
+    const currencySelector = document.getElementById('currencySelector');
+    
+    // Function to convert amount from one currency to another
+    function convertCurrency(amount, fromCurrency, toCurrency) {
+        return amount * conversionRates[fromCurrency][toCurrency];
+    }
+    
+    // Function to update displayed amounts based on selected currency
+    function updateDisplayedAmounts(selectedCurrency) {
+        // Update budget amounts
+        document.querySelectorAll('.budget-amount').forEach(function(element) {
+            const value = parseFloat(element.getAttribute('data-value'));
+            const currency = element.getAttribute('data-currency');
+            
+            // Convert from original currency to selected currency
+            const convertedValue = convertCurrency(value, currency, selectedCurrency);
+            
+            if (convertedValue < 0) {
+                element.classList.add('text-danger');
+            } else {
+                element.classList.remove('text-danger');
+            }
+            
+            element.textContent = currencySymbols[selectedCurrency] + numberFormat(convertedValue, 2);
+        });
+        
+        // Also update project budget values if they exist
+        const projectBudgetCells = document.querySelectorAll('td:nth-child(3)');
+        projectBudgetCells.forEach(function(cell) {
+            // Skip header cells
+            if (cell.closest('thead')) return;
+            
+            const originalText = cell.textContent.trim();
+            // Extract numeric value and assume default currency is department's currency
+            const value = parseFloat(originalText.replace(/[^0-9.-]+/g, ''));
+            if (!isNaN(value)) {
+                const deptCurrency = "<?= $currencyCode ?>";
+                const convertedValue = convertCurrency(value, deptCurrency, selectedCurrency);
+                cell.textContent = currencySymbols[selectedCurrency] + numberFormat(convertedValue, 2);
+            }
+        });
+    }
+    
+    // Helper function to format numbers with commas
+    function numberFormat(number, decimals) {
+        return number.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    
+    // Add event listener to currency selector
+    if (currencySelector) {
+        currencySelector.addEventListener('change', function() {
+            updateDisplayedAmounts(this.value);
+        });
+    }
+});
+</script> 

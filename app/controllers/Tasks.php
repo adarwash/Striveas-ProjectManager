@@ -21,31 +21,55 @@ class Tasks extends Controller {
         $this->projectModel = $this->model('Project');
         $this->userModel = $this->model('User');
         $this->noteModel = $this->model('Note');
+        
+        // Create task_users table if it doesn't exist
+        $this->taskModel->createTaskUsersTable();
     }
     
     // List all tasks (can be filtered by project)
     public function index() {
-        // Get project_id from query string if provided
-        $projectId = isset($_GET['project_id']) ? $_GET['project_id'] : null;
+        // Get filter parameters from query string
+        $projectId = isset($_GET['project_id']) ? trim($_GET['project_id']) : null;
+        $status = isset($_GET['status']) ? trim($_GET['status']) : null;
+        $priority = isset($_GET['priority']) ? trim($_GET['priority']) : null;
         
+        // Build filters array
+        $filters = [];
         if ($projectId) {
-            // Get tasks for specific project
-            $tasks = $this->taskModel->getTasksByProject($projectId);
+            $filters['project_id'] = $projectId;
+        }
+        if ($status) {
+            $filters['status'] = $status;
+        }
+        if ($priority) {
+            $filters['priority'] = $priority;
+        }
+        
+        // Get tasks based on filters
+        if (!empty($filters)) {
+            $tasks = $this->taskModel->getTasksByFilters($filters);
             
-            // Get project details
-            $project = $this->projectModel->getProjectById($projectId);
-            
-            $title = 'Tasks for ' . $project->title;
+            // Build title based on filters
+            $title = 'Filtered Tasks';
+            if ($projectId) {
+                $project = $this->projectModel->getProjectById($projectId);
+                if ($project) {
+                    $title = 'Tasks for ' . $project->title;
+                }
+            }
         } else {
-            // Get all tasks
+            // Get all tasks if no filters
             $tasks = $this->taskModel->getAllTasks();
             $title = 'All Tasks';
         }
         
+        // Get all projects for the project filter dropdown
+        $projects = $this->projectModel->getAllProjects();
+        
         $this->view('tasks/index', [
             'title' => $title,
             'tasks' => $tasks,
-            'project_id' => $projectId
+            'projects' => $projects
         ]);
     }
     
@@ -157,40 +181,40 @@ class Tasks extends Controller {
         }
         
         // Get project details
-        $project = $this->projectModel->getProjectById($task['project_id']);
+        $project = $this->projectModel->getProjectById($task->project_id);
         
         // Get notes for this task
         $notes = $this->noteModel->getNotesByReference('task', $id);
+        
+        // Get users assigned to this task
+        $assignedUsers = $this->taskModel->getTaskUsers($id);
         
         $data = [
             'task' => $task,
             'project' => $project,
             'notes' => $notes,
             'type' => 'task',
-            'reference_id' => $id
+            'reference_id' => $id,
+            'assigned_users' => $assignedUsers
         ];
         
-        $this->view('tasks/view', $data);
+        $this->view('tasks/show', $data);
     }
     
     // Show form to edit task
     public function edit($id) {
         // Get task by ID
-        // Placeholder: $task = $this->taskModel->getTaskById($id);
-        $task = (object)[
-            'id' => $id,
-            'project_id' => 1,
-            'title' => 'Sample Task',
-            'description' => 'This is a sample task description.',
-            'status' => 'In Progress',
-            'priority' => 'High',
-            'due_date' => date('Y-m-d', strtotime('+7 days')),
-            'assigned_to' => 1
-        ];
+        $this->taskModel = $this->model('Task');
+        $task = $this->taskModel->getTaskById($id);
+        
+        if (!$task) {
+            flash('task_error', 'Task not found', 'alert alert-danger');
+            redirect('tasks');
+        }
         
         // Get all projects for dropdown
-        // Placeholder: $projects = $this->projectModel->getAllProjects();
-        $projects = [];
+        $this->projectModel = $this->model('Project');
+        $projects = $this->projectModel->getAllProjects();
         
         // Get all users for assignments
         // Placeholder: $users = $this->userModel->getAllUsers();
@@ -307,5 +331,125 @@ class Tasks extends Controller {
             header('Location: /tasks');
             exit;
         }
+    }
+    
+    /**
+     * Show form to manage task assignments
+     * 
+     * @param int $id Task ID
+     * @return void
+     */
+    public function manageAssignments($id) {
+        $task = $this->taskModel->getTaskById($id);
+        
+        if (!$task) {
+            flash('task_error', 'Task not found', 'alert-danger');
+            redirect('tasks');
+        }
+        
+        // Get the project to find users that can be assigned
+        $project = $this->projectModel->getProjectById($task->project_id);
+        
+        // Get users already assigned to this task
+        $assignedUsers = $this->taskModel->getTaskUsers($id);
+        
+        // Get users assigned to the project
+        $projectUsers = $this->projectModel->getProjectUsers($project->id);
+        
+        // Create a map of assigned user IDs for easy lookup
+        $assignedUserIds = [];
+        foreach ($assignedUsers as $user) {
+            $assignedUserIds[] = $user->user_id;
+        }
+        
+        $this->view('tasks/assignments', [
+            'title' => 'Manage Assignments - ' . $task->title,
+            'task' => $task,
+            'project' => $project,
+            'project_users' => $projectUsers,
+            'assigned_users' => $assignedUsers,
+            'assigned_user_ids' => $assignedUserIds
+        ]);
+    }
+    
+    /**
+     * Process form to assign users to a task
+     * 
+     * @param int $id Task ID
+     * @return void
+     */
+    public function assignUsers($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('tasks/manageAssignments/' . $id);
+        }
+        
+        $task = $this->taskModel->getTaskById($id);
+        
+        if (!$task) {
+            flash('task_error', 'Task not found', 'alert-danger');
+            redirect('tasks');
+        }
+        
+        // Sanitize POST data
+        $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+        
+        // Get the selected user IDs
+        $userIds = isset($_POST['user_ids']) ? $_POST['user_ids'] : [];
+        
+        // Start transaction
+        $success = true;
+        
+        // First, remove all existing assignments
+        $currentlyAssigned = $this->taskModel->getTaskUsers($id);
+        $currentlyAssignedIds = array_map(function($user) {
+            return $user->user_id;
+        }, $currentlyAssigned);
+        
+        // Find users to remove (those who were assigned but not in the new selection)
+        $usersToRemove = array_diff($currentlyAssignedIds, $userIds);
+        foreach ($usersToRemove as $userId) {
+            $success = $success && $this->taskModel->removeUserFromTask($id, $userId);
+        }
+        
+        // Now assign selected users
+        foreach ($userIds as $userId) {
+            $success = $success && $this->taskModel->assignUserToTask($id, $userId);
+        }
+        
+        if ($success) {
+            flash('task_message', 'Task assignments updated successfully');
+        } else {
+            flash('task_error', 'Error updating task assignments', 'alert-danger');
+        }
+        
+        redirect('tasks/manageAssignments/' . $id);
+    }
+    
+    /**
+     * Remove a user from a task
+     * 
+     * @param int $taskId Task ID
+     * @param int $userId User ID
+     * @return void
+     */
+    public function removeUser($taskId, $userId) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('tasks/manageAssignments/' . $taskId);
+        }
+        
+        $task = $this->taskModel->getTaskById($taskId);
+        
+        if (!$task) {
+            flash('task_error', 'Task not found', 'alert-danger');
+            redirect('tasks');
+        }
+        
+        if ($this->taskModel->removeUserFromTask($taskId, $userId)) {
+            flash('task_message', 'User removed from task successfully');
+        } else {
+            flash('task_error', 'Error removing user from task', 'alert-danger');
+        }
+        
+        redirect('tasks/manageAssignments/' . $taskId);
     }
 } 

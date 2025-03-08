@@ -14,8 +14,42 @@ class Dashboard extends Controller {
     }
     
     public function index() {
-        // Redirect to Home
-        redirect('/home');
+        // Get user ID from session
+        $userId = $_SESSION['user_id'];
+        
+        // Get projects
+        $projects = $this->projectModel->getAllProjects();
+        
+        // Get tasks
+        $tasks = $this->taskModel->getAllTasks();
+        
+        // Get tasks assigned to the current user
+        $assignedTasks = $this->taskModel->getTasksByUserId($userId);
+        
+        // Get departments
+        $departments = $this->departmentModel->getAllDepartments();
+        
+        // Get project counts by status
+        $projectCounts = $this->projectModel->getProjectCountsByStatus();
+        
+        // Get task counts by status
+        $taskCounts = $this->taskModel->getTaskCountsByStatus();
+        
+        // Get projects assigned to the current user
+        $userProjects = $this->projectModel->getProjectsCountByUser($userId);
+        
+        $data = [
+            'title' => 'Dashboard',
+            'projects' => $projects,
+            'tasks' => $tasks,
+            'assigned_tasks' => $assignedTasks,
+            'departments' => $departments,
+            'project_counts' => $projectCounts,
+            'task_counts' => $taskCounts,
+            'user_projects' => $userProjects
+        ];
+        
+        $this->view('dashboard/index', $data);
     }
     
     public function calendar() {

@@ -4,14 +4,14 @@
         <h1><?= htmlspecialchars($project->title) ?></h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
+                <li class="breadcrumb-item"><a href="<?= URLROOT ?>/projects">Projects</a></li>
                 <li class="breadcrumb-item active" aria-current="page"><?= htmlspecialchars($project->title) ?></li>
             </ol>
         </nav>
     </div>
     <div class="col-md-4 text-md-end">
         <div class="btn-group">
-            <a href="/tasks/create?project_id=<?= $project->id ?>" class="btn btn-success">
+            <a href="<?= URLROOT ?>/tasks/create?project_id=<?= $project->id ?>" class="btn btn-success">
                 <i class="bi bi-plus-lg"></i> New Task
             </a>
             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -19,8 +19,13 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li>
-                    <a class="dropdown-item" href="/projects/edit/<?= $project->id ?>">
+                    <a class="dropdown-item" href="<?= URLROOT ?>/projects/edit/<?= $project->id ?>">
                         <i class="bi bi-pencil"></i> Edit Project
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="<?= URLROOT ?>/projects/manageTeam/<?= $project->id ?>">
+                        <i class="bi bi-people"></i> Manage Team
                     </a>
                 </li>
                 <li>
@@ -131,6 +136,43 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Team Members Card -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">Team Members</h5>
+                            <a href="<?= URLROOT ?>/projects/manageTeam/<?= $project->id ?>" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-people"></i> Manage Team
+                            </a>
+                        </div>
+                        
+                        <?php if (empty($assigned_users)) : ?>
+                            <p class="text-muted">No team members assigned to this project.</p>
+                        <?php else : ?>
+                            <div class="row">
+                                <?php foreach ($assigned_users as $user) : ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-3 bg-<?= strtolower(substr($user->name, 0, 1)) ?>">
+                                                <?= strtoupper(substr($user->name, 0, 1)) ?>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0"><?= htmlspecialchars($user->name) ?></h6>
+                                                <small class="text-muted"><?= htmlspecialchars($user->email) ?></small>
+                                                <div>
+                                                    <span class="badge <?= $user->role == 'Manager' ? 'bg-primary' : 'bg-secondary' ?>">
+                                                        <?= htmlspecialchars($user->role) ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
             
             <div class="col-md-4">
@@ -168,7 +210,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Tasks</h5>
-                <a href="/tasks/create?project_id=<?= $project->id ?>" class="btn btn-sm btn-success">
+                <a href="<?= URLROOT ?>/tasks/create?project_id=<?= $project->id ?>" class="btn btn-sm btn-success">
                     <i class="bi bi-plus-lg"></i> New Task
                 </a>
             </div>
@@ -194,9 +236,11 @@
                                 <?php foreach ($tasks as $task): ?>
                                     <tr>
                                         <td>
-                                            <a href="/tasks/show/<?= $task->id ?>" class="text-decoration-none">
-                                                <?= htmlspecialchars($task->title) ?>
-                                            </a>
+                                            <div class="task-title">
+                                                <a href="<?= URLROOT ?>/tasks/show/<?= $task->id ?>" class="text-decoration-none">
+                                                    <?= htmlspecialchars($task->title) ?>
+                                                </a>
+                                            </div>
                                         </td>
                                         <td>
                                             <?php
@@ -222,9 +266,9 @@
                                         <td><?= htmlspecialchars($task->assigned_to ?? 'Unassigned') ?></td>
                                         <td><?= !empty($task->due_date) ? date('M j, Y', strtotime($task->due_date)) : '—' ?></td>
                                         <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="/tasks/show/<?= $task->id ?>" class="btn btn-outline-primary">View</a>
-                                                <a href="/tasks/edit/<?= $task->id ?>" class="btn btn-outline-secondary">Edit</a>
+                                            <div class="btn-group">
+                                                <a href="<?= URLROOT ?>/tasks/show/<?= $task->id ?>" class="btn btn-outline-primary">View</a>
+                                                <a href="<?= URLROOT ?>/tasks/edit/<?= $task->id ?>" class="btn btn-outline-secondary">Edit</a>
                                             </div>
                                         </td>
                                     </tr>

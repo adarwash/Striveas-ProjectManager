@@ -37,7 +37,13 @@
                     <div class="mb-4">
                         <label for="budget" class="form-label">Department Budget</label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <select class="form-select" id="currency" name="currency" style="max-width: 6rem;">
+                                <?php foreach ($department->currencies as $code => $symbol): ?>
+                                    <option value="<?= $code ?>" <?= ($department->currency ?? 'USD') == $code ? 'selected' : '' ?>>
+                                        <?= $symbol ?> <?= $code ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                             <input type="text" class="form-control <?= isset($department->budget_err) ? 'is-invalid' : '' ?>" 
                                    id="budget" name="budget" value="<?= number_format($department->budget, 2) ?>" required>
                             <div class="invalid-feedback">
@@ -46,7 +52,7 @@
                         </div>
                         <?php if (isset($department->used_budget) && $department->used_budget > 0): ?>
                             <div class="mt-2">
-                                <small class="text-muted">Current allocation: $<?= number_format($department->used_budget ?? 0, 2) ?> 
+                                <small class="text-muted">Current allocation: <?= $department->currencies[$department->currency ?? 'USD'] ?><?= number_format($department->used_budget ?? 0, 2) ?> 
                                     (<?= number_format((($department->used_budget ?? 0) / $department->budget) * 100, 1) ?>% used)</small>
                                 
                                 <?php 

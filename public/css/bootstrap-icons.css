@@ -25,4 +25,71 @@
 .bi-lock::before { content: "\f47b"; }
 .bi-unlock::before { content: "\f600"; }
 .bi-eye::before { content: "\f341"; }
-.bi-eye-slash::before { content: "\f340"; } 
+.bi-eye-slash::before { content: "\f340"; }
+
+/* User Avatars for Team Members */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+/* Background colors for avatars based on first letter */
+.bg-a, .bg-f, .bg-k, .bg-p, .bg-u, .bg-z { background-color: #4e73df; }
+.bg-b, .bg-g, .bg-l, .bg-q, .bg-v { background-color: #1cc88a; }
+.bg-c, .bg-h, .bg-m, .bg-r, .bg-w { background-color: #36b9cc; }
+.bg-d, .bg-i, .bg-n, .bg-s, .bg-x { background-color: #f6c23e; }
+.bg-e, .bg-j, .bg-o, .bg-t, .bg-y { background-color: #e74a3b; }
+
+/* Sidebar Team Member Styling */
+.team-member {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.team-member:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.team-member-avatar {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 12px;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+.team-member-info {
+    overflow: hidden;
+}
+
+.team-member-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-member-title {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+} 

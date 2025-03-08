@@ -14,6 +14,12 @@ class Departments extends Controller {
             exit;
         }
         
+        // Load db helper for currency functionality
+        require_once APPROOT . '/app/helpers/db_helper.php';
+        
+        // Check and add currency column if needed
+        add_currency_column();
+        
         // Load models
         $this->departmentModel = $this->model('Department');
         $this->projectModel = $this->model('Project');
@@ -50,10 +56,27 @@ class Departments extends Controller {
         ]);
     }
     
-    // Show create form
+    // Display create form
     public function create() {
+        // Get available currencies
+        $currencies = $this->departmentModel->getCurrencySymbols();
+        
+        // Default values
+        $data = [
+            'name' => '',
+            'description' => '',
+            'budget' => '',
+            'currency' => 'USD',
+            'currencies' => $currencies,
+            'name_err' => '',
+            'description_err' => '',
+            'budget_err' => ''
+        ];
+        
+        // Load view
         $this->view('departments/create', [
-            'title' => 'Create Department'
+            'title' => 'Create Department',
+            'data' => $data
         ]);
     }
     
@@ -64,11 +87,16 @@ class Departments extends Controller {
             // Sanitize POST data
             $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
             
+            // Get available currencies
+            $currencies = $this->departmentModel->getCurrencySymbols();
+            
             // Initialize data array
             $data = [
                 'name' => trim($_POST['name']),
                 'description' => trim($_POST['description']),
-                'budget' => floatval(str_replace(['$', ','], '', $_POST['budget'])),
+                'budget' => floatval(str_replace(['$', '£', '€', ','], '', $_POST['budget'])),
+                'currency' => $_POST['currency'] ?? 'USD',
+                'currencies' => $currencies,
                 'name_err' => '',
                 'description_err' => '',
                 'budget_err' => ''
@@ -87,6 +115,11 @@ class Departments extends Controller {
             // Validate budget
             if (empty($data['budget']) || $data['budget'] <= 0) {
                 $data['budget_err'] = 'Please enter a valid budget amount';
+            }
+            
+            // Validate currency
+            if (!array_key_exists($data['currency'], $currencies)) {
+                $data['currency'] = 'USD'; // Default to USD if invalid
             }
             
             // Check if there are no errors
@@ -108,21 +141,7 @@ class Departments extends Controller {
                 ]);
             }
         } else {
-            // Default values
-            $data = [
-                'name' => '',
-                'description' => '',
-                'budget' => '',
-                'name_err' => '',
-                'description_err' => '',
-                'budget_err' => ''
-            ];
-            
-            // Load view
-            $this->view('departments/create', [
-                'title' => 'Create Department',
-                'data' => $data
-            ]);
+            $this->create();
         }
     }
     
@@ -135,6 +154,12 @@ class Departments extends Controller {
             header('Location: /departments');
             exit;
         }
+        
+        // Get available currencies
+        $currencies = $this->departmentModel->getCurrencySymbols();
+        
+        // Add currencies to department object
+        $department->currencies = $currencies;
         
         $this->view('departments/edit', [
             'title' => 'Edit Department',
@@ -149,12 +174,17 @@ class Departments extends Controller {
             // Sanitize POST data
             $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
             
+            // Get available currencies
+            $currencies = $this->departmentModel->getCurrencySymbols();
+            
             // Initialize data array
             $data = [
                 'id' => $id,
                 'name' => trim($_POST['name']),
                 'description' => trim($_POST['description']),
-                'budget' => floatval(str_replace(['$', ','], '', $_POST['budget'])),
+                'budget' => floatval(str_replace(['$', '£', '€', ','], '', $_POST['budget'])),
+                'currency' => $_POST['currency'] ?? 'USD',
+                'currencies' => $currencies,
                 'name_err' => '',
                 'description_err' => '',
                 'budget_err' => ''
@@ -173,6 +203,11 @@ class Departments extends Controller {
             // Validate budget
             if (empty($data['budget']) || $data['budget'] <= 0) {
                 $data['budget_err'] = 'Please enter a valid budget amount';
+            }
+            
+            // Validate currency
+            if (!array_key_exists($data['currency'], $currencies)) {
+                $data['currency'] = 'USD'; // Default to USD if invalid
             }
             
             // Check if there are no errors
