@@ -74,17 +74,20 @@ class Admin extends Controller {
     // Add a new user
     public function add_user() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            // Sanitize POST data - using a modern approach instead of the deprecated FILTER_SANITIZE_STRING
+            $sanitizedPost = [];
+            foreach ($_POST as $key => $value) {
+                $sanitizedPost[$key] = trim(htmlspecialchars($value, ENT_QUOTES, 'UTF-8'));
+            }
             
             // Hash password
-            $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+            $password = password_hash($sanitizedPost['password'], PASSWORD_DEFAULT);
             
             $data = [
-                'name' => trim($_POST['name']),
-                'email' => trim($_POST['email']),
+                'name' => $sanitizedPost['name'],
+                'email' => $sanitizedPost['email'],
                 'password' => $password,
-                'role' => trim($_POST['role'])
+                'role' => $sanitizedPost['role']
             ];
             
             // Add user
@@ -103,19 +106,22 @@ class Admin extends Controller {
     // Update a user
     public function update_user() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            // Sanitize POST data using a modern approach instead of the deprecated FILTER_SANITIZE_STRING
+            $sanitizedPost = [];
+            foreach ($_POST as $key => $value) {
+                $sanitizedPost[$key] = trim(htmlspecialchars($value, ENT_QUOTES, 'UTF-8'));
+            }
             
             $data = [
-                'id' => $_POST['id'],
-                'name' => trim($_POST['name']),
-                'email' => trim($_POST['email']),
-                'role' => trim($_POST['role'])
+                'id' => $sanitizedPost['id'],
+                'name' => $sanitizedPost['name'],
+                'email' => $sanitizedPost['email'],
+                'role' => $sanitizedPost['role']
             ];
             
             // Check if password is being updated
-            if (!empty($_POST['password'])) {
-                $data['password'] = password_hash($_POST['password'], PASSWORD_DEFAULT);
+            if (!empty($sanitizedPost['password'])) {
+                $data['password'] = password_hash($sanitizedPost['password'], PASSWORD_DEFAULT);
                 $result = $this->userModel->updateUserWithPassword($data);
             } else {
                 $result = $this->userModel->updateUser($data);
@@ -287,15 +293,34 @@ class Admin extends Controller {
                 flash('settings_error', 'Error updating system settings', 'alert alert-danger');
             }
             
+            // Check if currency settings are being updated
+            if (isset($_POST['currency_code'])) {
+                $currency = [
+                    'currency_code' => sanitize_input($_POST['currency_code'] ?? 'USD'),
+                    'currency_symbol' => sanitize_input($_POST['currency_symbol'] ?? '$'),
+                    'currency_position' => sanitize_input($_POST['currency_position'] ?? 'before'),
+                    'currency_thousands_separator' => sanitize_input($_POST['thousands_separator'] ?? ','),
+                    'currency_decimal_separator' => sanitize_input($_POST['decimal_separator'] ?? '.'),
+                    'currency_decimals' => (int)($_POST['decimals'] ?? 2)
+                ];
+                
+                // Save currency settings
+                $this->settingsModel->set('currency', $currency);
+            }
+            
             redirect('admin/settings');
         }
         
         // Get current settings
         $systemSettings = $this->settingsModel->getSystemSettings();
         
+        // Get currency settings
+        $currency = $this->settingsModel->getCurrency();
+        
         $data = [
             'title' => 'System Settings',
-            'systemSettings' => $systemSettings
+            'systemSettings' => $systemSettings,
+            'currency' => $currency
         ];
         
         $this->view('admin/settings', $data);

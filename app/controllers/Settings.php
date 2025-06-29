@@ -1,51 +1,123 @@
 <?php
 
 class Settings extends Controller {
-    private $userModel;
+    private $setting;
+    private $user;
     
     /**
      * Constructor - initializes any needed models
      */
     public function __construct() {
+        $this->setting = $this->model('Setting');
+        $this->user = $this->model('User');
+        
         // Check if user is logged in
         if (!isLoggedIn()) {
-            redirect('auth');
+            redirect('/auth/login');
         }
         
-        $this->userModel = $this->model('User');
+        // Check if user is admin
+        if (!isAdmin()) {
+            redirect('/dashboard');
+        }
         
         // Create UserSettings table if it doesn't exist
-        $this->userModel->createUserSettingsTable();
+        $this->user->createUserSettingsTable();
     }
     
     /**
-     * Display the main settings page
-     *
-     * @return void
+     * Redirect to admin settings
      */
     public function index() {
-        $userId = $_SESSION['user_id'];
-        $user = $this->userModel->getUserById($userId);
-        $notificationSettings = $this->userModel->getNotificationSettings($userId);
-        
-        $data = [
-            'title' => 'Account Settings',
-            'user' => $user,
-            'notification_settings' => $notificationSettings
-        ];
-        
-        // Check for any success or error messages in the session
-        if (isset($_SESSION['settings_success'])) {
-            $data['success_message'] = $_SESSION['settings_success'];
-            unset($_SESSION['settings_success']);
+        redirect('/admin/settings');
+    }
+    
+    /**
+     * Redirect currency page to admin settings
+     */
+    public function currency() {
+        redirect('/admin/settings');
+    }
+    
+    /**
+     * Handle any other method calls by redirecting to admin settings
+     */
+    public function __call($method, $args) {
+        redirect('/admin/settings');
+    }
+    
+    /**
+     * Handle settings form submission
+     */
+    public function update() {
+        // Validate request
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/settings');
         }
         
-        if (isset($_SESSION['settings_error'])) {
-            $data['error_message'] = $_SESSION['settings_error'];
-            unset($_SESSION['settings_error']);
+        try {
+            // Update currency settings
+            $currency = [
+                'code' => sanitize_input($_POST['currency_code'] ?? 'USD'),
+                'symbol' => sanitize_input($_POST['currency_symbol'] ?? '$'),
+                'position' => sanitize_input($_POST['currency_position'] ?? 'before'),
+                'thousands_separator' => sanitize_input($_POST['thousands_separator'] ?? ','),
+                'decimal_separator' => sanitize_input($_POST['decimal_separator'] ?? '.'),
+                'decimals' => (int)($_POST['decimals'] ?? 2)
+            ];
+            
+            // Save currency settings
+            $result = $this->setting->set('currency', $currency);
+            
+            if ($result) {
+                $_SESSION['success'] = "Settings updated successfully";
+            } else {
+                $_SESSION['error'] = "Failed to update settings";
+            }
+            
+            redirect('/settings');
+        } catch (Exception $e) {
+            error_log('Settings Update Error: ' . $e->getMessage());
+            $_SESSION['error'] = "An error occurred. Please try again.";
+            redirect('/settings');
+        }
+    }
+    
+    /**
+     * Update currency settings
+     */
+    public function updateCurrency() {
+        // Validate request
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/settings/currency');
         }
         
-        $this->view('settings/index', $data);
+        try {
+            // Update currency settings
+            $currency = [
+                'code' => sanitize_input($_POST['currency_code'] ?? 'USD'),
+                'symbol' => sanitize_input($_POST['currency_symbol'] ?? '$'),
+                'position' => sanitize_input($_POST['currency_position'] ?? 'before'),
+                'thousands_separator' => sanitize_input($_POST['thousands_separator'] ?? ','),
+                'decimal_separator' => sanitize_input($_POST['decimal_separator'] ?? '.'),
+                'decimals' => (int)($_POST['decimals'] ?? 2)
+            ];
+            
+            // Save currency settings
+            $result = $this->setting->set('currency', $currency);
+            
+            if ($result) {
+                $_SESSION['success'] = "Currency settings updated successfully";
+            } else {
+                $_SESSION['error'] = "Failed to update currency settings";
+            }
+            
+            redirect('/settings/currency');
+        } catch (Exception $e) {
+            error_log('Currency Settings Update Error: ' . $e->getMessage());
+            $_SESSION['error'] = "An error occurred. Please try again.";
+            redirect('/settings/currency');
+        }
     }
     
     /**
@@ -83,7 +155,7 @@ class Settings extends Controller {
             // Make sure no errors
             if (empty($data['email_err']) && empty($data['full_name_err'])) {
                 // Update user
-                if ($this->userModel->updateUserProfile($data)) {
+                if ($this->user->updateUserProfile($data)) {
                     $_SESSION['settings_success'] = 'Profile updated successfully';
                     redirect('settings');
                 } else {
@@ -124,7 +196,7 @@ class Settings extends Controller {
             // Validate current password
             if (empty($data['current_password'])) {
                 $data['current_password_err'] = 'Please enter current password';
-            } else if (!$this->userModel->checkPassword($userId, $data['current_password'])) {
+            } else if (!$this->user->checkPassword($userId, $data['current_password'])) {
                 $data['current_password_err'] = 'Current password is incorrect';
             }
             
@@ -145,7 +217,7 @@ class Settings extends Controller {
             // Make sure no errors
             if (empty($data['current_password_err']) && empty($data['new_password_err']) && empty($data['confirm_password_err'])) {
                 // Update password
-                if ($this->userModel->updatePassword($userId, $data['new_password'])) {
+                if ($this->user->updatePassword($userId, $data['new_password'])) {
                     $_SESSION['settings_success'] = 'Password updated successfully';
                     redirect('settings');
                 } else {
@@ -181,7 +253,7 @@ class Settings extends Controller {
             ];
             
             // Update notification settings
-            if ($this->userModel->updateNotificationSettings($data)) {
+            if ($this->user->updateNotificationSettings($data)) {
                 $_SESSION['settings_success'] = 'Notification settings updated successfully';
                 redirect('settings');
             } else {

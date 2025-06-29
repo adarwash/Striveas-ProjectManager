@@ -72,8 +72,8 @@ $title = 'Create Project - ProjectTracker';
                                 // Use departments data passed from controller
                                 if (isset($departments) && !empty($departments)):
                                     foreach ($departments as $department): ?>
-                                        <option value="<?= $department->id ?>" <?= (isset($data['department_id']) && $data['department_id'] == $department->id) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($department->name) ?> - Budget: $<?= number_format($department->budget, 2) ?>
+                                        <option value="<?= $department->id ?>" data-budget="<?= $department->budget ?>">
+                                            <?= htmlspecialchars($department->name) ?> - Budget: <?= $currency['symbol'] ?><?= number_format($department->budget, 2) ?>
                                         </option>
                                 <?php 
                                     endforeach;
@@ -88,7 +88,7 @@ $title = 'Create Project - ProjectTracker';
                         <div class="col-md-6 mb-3">
                             <label for="budget" class="form-label">Project Budget</label>
                             <div class="input-group">
-                                <span class="input-group-text">$</span>
+                                <span class="input-group-text"><?= $currency['symbol'] ?></span>
                                 <input type="text" class="form-control <?= isset($data['budget_err']) ? 'is-invalid' : '' ?>" 
                                        id="budget" name="budget" value="<?= $data['budget'] ?? '0.00' ?>" required>
                                 <div class="invalid-feedback">
@@ -110,6 +110,35 @@ $title = 'Create Project - ProjectTracker';
                         </select>
                         <div class="invalid-feedback">
                             <?= $data['status_err'] ?? '' ?>
+                        </div>
+                    </div>
+                    
+                    <!-- Site Selection -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Link to Site (Optional)</h5>
+                        <div class="mb-3">
+                            <label for="site_id" class="form-label">Select Site</label>
+                            <select class="form-select" id="site_id" name="site_id">
+                                <option value="">None - Link site later</option>
+                                <?php
+                                // Use sites data passed from controller
+                                if (isset($sites) && !empty($sites)):
+                                    foreach ($sites as $site): ?>
+                                        <option value="<?= $site['id'] ?>" <?= (isset($selected_site_id) && $selected_site_id == $site['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($site['name']) ?> (<?= htmlspecialchars($site['location']) ?>)
+                                        </option>
+                                <?php 
+                                    endforeach;
+                                endif; 
+                                ?>
+                            </select>
+                            <small class="text-muted">You can link more sites after creating the project</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="site_notes" class="form-label">Site Link Notes (Optional)</label>
+                            <textarea class="form-control" id="site_notes" name="site_notes" rows="2" 
+                                      placeholder="Add notes about why this project is linked to this site"></textarea>
                         </div>
                     </div>
                     

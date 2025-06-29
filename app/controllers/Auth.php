@@ -83,8 +83,8 @@ class Auth extends Controller {
                     // associated with the user, but for simplicity we're not doing that here
                 }
                 
-                // Redirect to the dashboard or home page
-                header('Location: /home');
+                // Redirect to the dashboard page
+                header('Location: /dashboard');
                 exit;
             } else {
                 // Authentication failed, redirect back to login with error

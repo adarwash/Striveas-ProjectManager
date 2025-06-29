@@ -54,11 +54,14 @@ class App {
         
         // Check if controller exists
         if (!empty($url) && is_array($url)) {
-            $controllerFile = '../app/controllers/' . ucfirst($url[0]) . '.php';
-            
-            if (file_exists($controllerFile)) {
-                $this->controller = ucfirst($url[0]);
-                unset($url[0]);
+            // Only use the first URL segment as a controller if it's not numeric
+            if (!is_numeric($url[0])) {
+                $controllerFile = '../app/controllers/' . ucfirst($url[0]) . '.php';
+                
+                if (file_exists($controllerFile)) {
+                    $this->controller = ucfirst($url[0]);
+                    unset($url[0]);
+                }
             }
         }
         

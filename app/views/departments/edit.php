@@ -55,6 +55,11 @@
                                 <small class="text-muted">Current allocation: <?= $department->currencies[$department->currency ?? 'USD'] ?><?= number_format($department->used_budget ?? 0, 2) ?> 
                                     (<?= number_format((($department->used_budget ?? 0) / $department->budget) * 100, 1) ?>% used)</small>
                                 
+                                <?php if ($department->currency !== $currency['code']): ?>
+                                <br>
+                                <small class="text-muted">System currency: <?= $currency['symbol'] ?><?= number_format($department->used_budget ?? 0, 2) ?></small>
+                                <?php endif; ?>
+                                
                                 <?php 
                                 // Calculate budget percentage used
                                 $budgetPercentage = (($department->used_budget ?? 0) / $department->budget) * 100;

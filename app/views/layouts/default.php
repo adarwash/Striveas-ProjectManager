@@ -515,15 +515,20 @@
         });
         
         // Close alerts after 5 seconds
-        const flashMessages = document.querySelectorAll('.flash-message');
-        flashMessages.forEach(message => {
-            setTimeout(() => {
-                const closeButton = message.querySelector('.btn-close');
-                if (closeButton) {
-                    closeButton.click();
-                }
-            }, 5000);
-        });
+        if (typeof flashMessagesInitialized === 'undefined') {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                setTimeout(() => {
+                    const closeButton = message.querySelector('.btn-close');
+                    if (closeButton) {
+                        closeButton.click();
+                    }
+                }, 5000);
+            });
+            
+            // Mark as initialized to prevent duplicate execution
+            var flashMessagesInitialized = true;
+        }
     </script>
 </body>
 </html> 

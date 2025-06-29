@@ -164,21 +164,61 @@ document.addEventListener('DOMContentLoaded', function() {
             spinner.classList.remove('d-none');
             saveBtn.disabled = true;
             
+            // Get form data manually to ensure all fields are included
+            const formData = new FormData(this);
+            console.log('Form data being submitted:', {
+                title: formData.get('title'),
+                content: formData.get('content'),
+                type: formData.get('type'),
+                reference_id: formData.get('reference_id')
+            });
+            
+            const params = new URLSearchParams(formData);
+            
             fetch('/notes/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: new URLSearchParams(new FormData(this))
+                body: params
             })
-            .then(response => response.json())
-            .then(data => {
+            .then(response => {
+                console.log(`Response received: Status ${response.status}, Content-Type: ${response.headers.get('content-type')}`);
+                
+                // Always get the text first so we can log it for debugging
+                return response.text().then(text => {
+                    // Try to parse as JSON if we can
+                    let data;
+                    try {
+                        if (text && text.trim()) {
+                            data = JSON.parse(text);
+                            console.log('Parsed JSON response:', data);
+                            return { ok: response.ok, json: data, text };
+                        }
+                    } catch (e) {
+                        console.error('Error parsing JSON response:', e);
+                    }
+                    
+                    return { ok: response.ok, json: null, text };
+                });
+            })
+            .then(({ ok, json, text }) => {
+                if (!ok) {
+                    console.error('Server error response:', text);
+                    throw new Error(`Server responded with status: ${text}`);
+                }
+                
+                if (!json) {
+                    console.error('Non-JSON response or empty response:', text);
+                    throw new Error(`Expected JSON response but got: ${text.substring(0, 100)}`);
+                }
+                
                 // Hide spinner
                 spinner.classList.add('d-none');
                 saveBtn.disabled = false;
                 
-                if (data.success) {
+                if (json.success) {
                     // Refresh notes list
                     refreshNotesList();
                     
@@ -187,10 +227,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     bootstrap.Modal.getInstance(document.getElementById('addNoteModal')).hide();
                     
                     // Show success message
-                    showAlert('success', data.message || 'Note added successfully');
+                    showAlert('success', json.message || 'Note added successfully');
+                    
+                    // Log whether we got full note details or just confirmation
+                    if (json.note) {
+                        console.log('Note created with full details:', json.note);
+                    } else if (json.note_created) {
+                        console.log('Note created successfully, without full details');
+                    }
                 } else {
                     // Show error message
-                    showAlert('danger', data.message || 'Failed to add note');
+                    showAlert('danger', json.message || 'Failed to add note');
+                    
+                    // If there are specific validation errors, show them
+                    if (json.errors) {
+                        let errorMsg = '<ul class="mb-0">';
+                        for (const [field, error] of Object.entries(json.errors)) {
+                            errorMsg += `<li>${error}</li>`;
+                        }
+                        errorMsg += '</ul>';
+                        showAlert('danger', errorMsg);
+                    }
                 }
             })
             .catch(error => {
@@ -198,8 +255,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 spinner.classList.add('d-none');
                 saveBtn.disabled = false;
                 
+                // Add detailed debugging info
+                try {
+                    console.group('Debug - Note Submission Error');
                 console.error('Error:', error);
-                showAlert('danger', 'An error occurred. Please try again.');
+                    console.log('Error message:', error.message);
+                    
+                    // Log form values
+                    const formData = {
+                        title: document.getElementById('title')?.value || 'Not found',
+                        content: document.getElementById('content')?.value || 'Not found',
+                        type: document.querySelector('input[name="type"]')?.value || 'Not found',
+                        reference_id: document.querySelector('input[name="reference_id"]')?.value || 'Not found'
+                    };
+                    
+                    console.log('Form data:', formData);
+                    console.log('Form data serialized:', new URLSearchParams(new FormData(addNoteForm)).toString());
+                    console.groupEnd();
+                } catch (debugError) {
+                    console.error('Error during debugging:', debugError);
+                }
+                
+                // Create a more detailed error message
+                const errorMessage = document.createElement('div');
+                errorMessage.innerHTML = `
+                    <p class="mb-2">An error occurred while saving the note. Please try again.</p>
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> ${escapeHtml(error.toString())}
+                    </div>
+                    <details>
+                        <summary>Technical Details (for support)</summary>
+                        <div class="text-start">
+                            <strong>Form data:</strong><br>
+                            - Title: ${escapeHtml(document.getElementById('title')?.value || 'Not found')}<br>
+                            - Type: ${escapeHtml(document.querySelector('input[name="type"]')?.value || 'Not found')}<br>
+                            - Reference ID: ${escapeHtml(document.querySelector('input[name="reference_id"]')?.value || 'Not found')}
+                        </div>
+                    </details>
+                `;
+                
+                showAlert('danger', errorMessage.innerHTML);
             });
         });
     }
@@ -248,47 +343,43 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-});
-
-function sortNotes(order) {
-    const notesContainer = document.querySelector('.notes-container');
-    if (!notesContainer) return;
     
-    const notes = Array.from(notesContainer.querySelectorAll('.note-item'));
-    
-    // Remove current notes
-    notes.forEach(note => note.remove());
-    
-    // Sort notes
-    notes.sort((a, b) => {
-        const aDate = new Date(a.querySelector('.note-meta').textContent.split('clock')[1].trim());
-        const bDate = new Date(b.querySelector('.note-meta').textContent.split('clock')[1].trim());
+    // Function to show alert messages
+    function showAlert(type, message) {
+        const alertContainer = document.getElementById('notes-alert-container');
+        if (!alertContainer) return;
         
-        return order === 'newest' ? bDate - aDate : aDate - bDate;
-    });
-    
-    // Add sorted notes back
-    notes.forEach((note, index) => {
-        notesContainer.appendChild(note);
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
         
-        // Add hr after each note except the last one
-        if (index < notes.length - 1) {
-            const hr = document.createElement('hr');
-            hr.className = 'my-3';
-            notesContainer.appendChild(hr);
-        }
-    });
-}
-
+        alertContainer.innerHTML = '';
+        alertContainer.appendChild(alertDiv);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                bootstrap.Alert.getOrCreateInstance(alertDiv).close();
+            }
+        }, 5000);
+    }
+    
+    // Function to refresh notes list
 function refreshNotesList() {
-    fetch(`/notes/get/<?= $type ?>/<?= $reference_id ?>`)
+        const notesListContainer = document.getElementById('notesList');
+        if (!notesListContainer) return;
+        
+        const type = document.querySelector('input[name="type"]').value;
+        const referenceId = document.querySelector('input[name="reference_id"]').value;
+        
+        fetch(`/notes/get/${type}/${referenceId}`)
         .then(response => response.json())
         .then(notes => {
-            const notesList = document.getElementById('notesList');
-            if (!notesList) return;
-            
             if (notes.length === 0) {
-                notesList.innerHTML = `
+                    notesListContainer.innerHTML = `
                     <div class="text-center py-4">
                         <div class="mb-3">
                             <i class="bi bi-journal-album text-muted" style="font-size: 3rem;"></i>
@@ -296,8 +387,11 @@ function refreshNotesList() {
                         <p class="text-muted mb-0">No notes yet. Add your first note to track important information.</p>
                     </div>
                 `;
-            } else {
-                let html = `
+                    return;
+                }
+                
+                // Update the notes list with the new data
+                let notesHtml = `
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="input-group input-group-sm" style="max-width: 250px;">
                             <span class="input-group-text bg-light border-end-0">
@@ -310,17 +404,60 @@ function refreshNotesList() {
                             <button type="button" class="btn btn-outline-secondary" id="sort-oldest">Oldest</button>
                         </div>
                     </div>
-                    <div class="notes-container">
-                `;
+                <div class="notes-container">`;
                 
                 notes.forEach((note, index) => {
-                    html += generateNoteHTML(note, index, notes.length);
+                    const isLongContent = (note.content && note.content.split(' ').length > 30);
+                    
+                    notesHtml += `
+                    <div class="note-item mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="${note.id}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-1 note-title">${escapeHtml(note.title)}</h6>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light rounded-circle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="/notes/edit/${note.id}">
+                                            <i class="bi bi-pencil-square"></i> Edit
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item note-delete-btn" data-note-id="${note.id}">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="note-content mb-2 note-text" style="max-height: 100px; overflow: hidden; position: relative;">
+                            <div class="note-text-inner">
+                                ${escapeHtml(note.content).replace(/\n/g, '<br>')}
+                            </div>
+                            ${isLongContent ? 
+                                `<div class="note-fade-overlay"></div>
+                                <button class="btn btn-sm btn-link note-expand-btn p-0">Show more</button>` 
+                                : ''}
+                        </div>
+                        <div class="note-meta text-muted small d-flex justify-content-between">
+                            <div>
+                                <i class="bi bi-person"></i> ${escapeHtml(note.created_by_name)}
+                            </div>
+                            <div>
+                                <i class="bi bi-clock"></i> ${formatDate(note.created_at)}
+                            </div>
+                        </div>
+                    </div>
+                    ${index < notes.length - 1 ? '<hr class="my-3">' : ''}
+                    `;
                 });
                 
-                html += '</div>';
-                notesList.innerHTML = html;
+                notesHtml += '</div>';
                 
-                // Reinitialize event listeners
+                notesListContainer.innerHTML = notesHtml;
+                
+                // Reattach event listeners
                 document.querySelectorAll('.note-expand-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const noteText = this.closest('.note-text');
@@ -338,7 +475,10 @@ function refreshNotesList() {
                     });
                 });
                 
-                document.getElementById('notes-filter')?.addEventListener('input', function() {
+                // Setup note filtering for new elements
+                const notesFilter = document.getElementById('notes-filter');
+                if (notesFilter) {
+                    notesFilter.addEventListener('input', function() {
                     const searchTerm = this.value.toLowerCase();
                     document.querySelectorAll('.note-item').forEach(note => {
                         const title = note.querySelector('.note-title').textContent.toLowerCase();
@@ -346,7 +486,9 @@ function refreshNotesList() {
                         note.style.display = (title.includes(searchTerm) || content.includes(searchTerm)) ? '' : 'none';
                     });
                 });
+                }
                 
+                // Reattach sorting functionality
                 document.getElementById('sort-newest')?.addEventListener('click', function() {
                     this.classList.add('active');
                     document.getElementById('sort-oldest').classList.remove('active');
@@ -358,74 +500,58 @@ function refreshNotesList() {
                     document.getElementById('sort-newest').classList.remove('active');
                     sortNotes('oldest');
                 });
-            }
-            
-            // Update header count
-            const header = document.querySelector('#notes-section .card-header h5 .badge');
-            if (header) {
-                header.textContent = notes.length;
-            }
         })
         .catch(error => {
-            console.error('Error:', error);
-            showAlert('danger', 'Failed to refresh notes list');
-        });
-}
-
-function generateNoteHTML(note, index, totalNotes) {
-    const hasLongContent = (note.content && note.content.split(' ').length > 30);
-    const date = new Date(note.created_at);
-    const formattedDate = date.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
-    
-    let html = `
-        <div class="note-item mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="${note.id}">
-            <div class="d-flex justify-content-between align-items-start">
-                <h6 class="mb-1 note-title">${escapeHtml(note.title)}</h6>
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-light rounded-circle" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-three-dots-vertical"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <a class="dropdown-item" href="/notes/edit/${note.id}">
-                                <i class="bi bi-pencil-square"></i> Edit
-                            </a>
-                        </li>
-                        <li>
-                            <button type="button" class="dropdown-item note-delete-btn" data-note-id="${note.id}">
-                                <i class="bi bi-trash"></i> Delete
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <div class="note-content mb-2 note-text" style="max-height: 100px; overflow: hidden; position: relative;">
-                <div class="note-text-inner">
-                    ${escapeHtml(note.content).replace(/\n/g, '<br>')}
-                </div>
-                ${hasLongContent ? `
-                    <div class="note-fade-overlay"></div>
-                    <button class="btn btn-sm btn-link note-expand-btn p-0">Show more</button>
-                ` : ''}
-            </div>
-            <div class="note-meta text-muted small d-flex justify-content-between">
-                <div>
-                    <i class="bi bi-person"></i> ${escapeHtml(note.created_by_name)}
-                </div>
-                <div>
-                    <i class="bi bi-clock"></i> ${formattedDate}
-                </div>
-            </div>
-        </div>
-    `;
-    
-    if (index < totalNotes - 1) {
-        html += '<hr class="my-3">';
+                console.error('Error refreshing notes:', error);
+                showAlert('danger', 'Error loading notes. Please refresh the page.');
+            });
     }
     
-    return html;
-}
-
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Helper function to format dates
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    
+    // Function to sort notes
+    function sortNotes(order) {
+        const notesContainer = document.querySelector('.notes-container');
+        if (!notesContainer) return;
+        
+        const notes = Array.from(notesContainer.querySelectorAll('.note-item'));
+        const separators = Array.from(notesContainer.querySelectorAll('hr'));
+        
+        // Remove all notes and separators from container
+        notes.forEach(note => note.remove());
+        separators.forEach(sep => sep.remove());
+        
+        // Sort notes by date
+        notes.sort((a, b) => {
+            const dateA = new Date(a.querySelector('.note-meta').lastElementChild.textContent);
+            const dateB = new Date(b.querySelector('.note-meta').lastElementChild.textContent);
+            return order === 'newest' ? dateB - dateA : dateA - dateB;
+        });
+        
+        // Add sorted notes back with separators
+        notes.forEach((note, index) => {
+            notesContainer.appendChild(note);
+            if (index < notes.length - 1) {
+                const hr = document.createElement('hr');
+                hr.className = 'my-3';
+                notesContainer.appendChild(hr);
+            }
+        });
+    }
+    
+    // Function to delete a note
 function deleteNote(noteId) {
     fetch(`/notes/delete/${noteId}`, {
         method: 'POST',
@@ -436,45 +562,41 @@ function deleteNote(noteId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            refreshNotesList();
+                // Remove note from DOM
+                const noteElement = document.querySelector(`.note-item[data-note-id="${noteId}"]`);
+                const nextSeparator = noteElement.nextElementSibling;
+                
+                if (noteElement) {
+                    noteElement.remove();
+                    if (nextSeparator && nextSeparator.tagName === 'HR') {
+                        nextSeparator.remove();
+                    }
+                }
+                
+                // Show success message
             showAlert('success', data.message || 'Note deleted successfully');
+                
+                // If no notes left, show empty state
+                const remainingNotes = document.querySelectorAll('.note-item');
+                if (remainingNotes.length === 0) {
+                    document.getElementById('notesList').innerHTML = `
+                        <div class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="bi bi-journal-album text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                            <p class="text-muted mb-0">No notes yet. Add your first note to track important information.</p>
+                        </div>
+                    `;
+                }
         } else {
+                // Show error message
             showAlert('danger', data.message || 'Failed to delete note');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showAlert('danger', 'An error occurred while trying to delete the note');
-    });
-}
-
-function showAlert(type, message) {
-    const alertContainer = document.getElementById('notes-alert-container');
-    if (!alertContainer) return;
-    
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type} alert-dismissible fade show`;
-    alert.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    alertContainer.innerHTML = '';
-    alertContainer.appendChild(alert);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        const bsAlert = new bootstrap.Alert(alert);
-        bsAlert.close();
-    }, 5000);
-}
-
-function escapeHtml(unsafe) {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+            showAlert('danger', 'An error occurred. Please try again.');
+        });
+    }
+});
 </script> 

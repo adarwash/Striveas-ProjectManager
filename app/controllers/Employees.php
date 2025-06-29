@@ -69,12 +69,23 @@ class Employees extends Controller {
         // Get performance notes
         $notes = $this->employeeModel->getPerformanceNotes($userId);
         
+        // Get employee documents
+        $documents = $this->employeeModel->getEmployeeDocuments($userId);
+        
+        // Format file sizes
+        if (!empty($documents)) {
+            foreach ($documents as &$document) {
+                $document['formatted_size'] = $this->formatFileSize($document['file_size']);
+            }
+        }
+        
         $data = [
             'title' => 'Employee Profile',
             'employee' => $employee,
             'absences' => $absences,
             'projects' => $projects,
-            'notes' => $notes
+            'notes' => $notes,
+            'documents' => $documents
         ];
         
         $this->view('employees/view', $data);
@@ -384,6 +395,549 @@ class Employees extends Controller {
         ];
         
         $this->view('employees/add_note', $data);
+    }
+    
+    public function exportProfile($userId = null) {
+        // Validate input parameters
+        if(!isLoggedIn()) {
+            redirect('users/login');
+            return;
+        }
+
+        if(!$userId) {
+            redirect('employees');
+            return;
+        }
+
+        $employee = $this->employeeModel->getEmployeeById($userId);
+        
+        if(!$employee) {
+            setMessage('alert-danger', 'Employee not found');
+            redirect('employees');
+            return;
+        }
+
+        // Get a clean output filename without spaces or special characters
+        $fullName = isset($employee['full_name']) ? $employee['full_name'] : 'Unknown_Employee';
+        $safeFilename = preg_replace('/[^a-z0-9_-]/i', '_', $fullName);
+        $outputFilename = 'Employee_Profile_' . $safeFilename . '_' . date('Y-m-d') . '.pdf';
+        
+        // Use the system's temp directory which should be writable
+        $filePath = sys_get_temp_dir() . '/';
+        $fullFilePath = $filePath . $outputFilename;
+        
+        try {
+            // Get all employee-related data for the PDF
+            // Use available methods in the model
+            $notes = $this->employeeModel->getPerformanceNotes($userId);
+            $absences = $this->employeeModel->getAbsenceRecords($userId);
+            $ratingHistory = $this->employeeModel->getRatingHistory($userId);
+
+            // FPDF is not found in the expected location. Let's use a direct approach instead.
+            // We'll output structured HTML that can be printed as PDF from the browser.
+            
+            // Set headers to display as HTML
+            header('Content-Type: text/html; charset=utf-8');
+            
+            // Start building the HTML output
+            echo '<!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Employee Profile - ' . htmlspecialchars($fullName) . '</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 20px;
+                        line-height: 1.6;
+                    }
+                    h1, h2 {
+                        color: #333;
+                    }
+                    h1 {
+                        text-align: center;
+                        margin-bottom: 5px;
+                    }
+                    h2 {
+                        margin-top: 20px;
+                        border-bottom: 1px solid #ddd;
+                        padding-bottom: 5px;
+                    }
+                    .subtitle {
+                        text-align: center;
+                        color: #666;
+                        margin-top: 0;
+                        margin-bottom: 20px;
+                    }
+                    .info-row {
+                        display: flex;
+                        margin-bottom: 5px;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        width: 120px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 10px;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                        text-align: left;
+                    }
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 30px;
+                        font-size: 12px;
+                        color: #666;
+                    }
+                    @media print {
+                        body {
+                            margin: 0;
+                            padding: 15px;
+                        }
+                        button.print-button {
+                            display: none;
+                        }
+                    }
+                    .print-button {
+                        display: block;
+                        margin: 20px auto;
+                        padding: 10px 20px;
+                        background-color: #007bff;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    }
+                </style>
+            </head>
+            <body>
+                <button class="print-button" onclick="window.print()">Print PDF</button>
+                
+                <h1>EMPLOYEE PROFILE</h1>
+                <p class="subtitle">' . htmlspecialchars($fullName) . '</p>
+                
+                <h2>Employee Information</h2>';
+                
+            // Employee details
+            $details = [
+                'Employee ID' => isset($employee['employee_id']) ? $employee['employee_id'] : 'N/A',
+                'Position' => isset($employee['position']) ? $employee['position'] : 'N/A',
+                'Department' => isset($employee['department_name']) ? $employee['department_name'] : 'N/A',
+                'Email' => isset($employee['email']) ? $employee['email'] : 'N/A'
+            ];
+            
+            if (isset($employee['phone'])) {
+                $details['Phone'] = $employee['phone'];
+            }
+            
+            if (isset($employee['hire_date'])) {
+                $details['Hire Date'] = date('F j, Y', strtotime($employee['hire_date']));
+            }
+            
+            foreach ($details as $label => $value) {
+                echo '<div class="info-row">
+                    <div class="info-label">' . $label . ':</div>
+                    <div>' . htmlspecialchars($value) . '</div>
+                </div>';
+            }
+            
+            // Performance Section
+            echo '<h2>Performance Information</h2>';
+            
+            $rating = isset($employee['performance_rating']) ? number_format($employee['performance_rating'], 1) . ' / 5.0' : 'N/A';
+            echo '<div class="info-row">
+                <div class="info-label">Current Rating:</div>
+                <div>' . $rating . '</div>
+            </div>';
+            
+            // Display notes if available
+            if(is_array($notes) && !empty($notes)) {
+                echo '<h3>Performance Notes</h3>';
+                
+                echo '<table>
+                    <tr>
+                        <th>Date</th>
+                        <th>Note</th>
+                    </tr>';
+                
+                // Limit to 5 notes to save space
+                $displayedNotes = array_slice($notes, 0, 5);
+                
+                foreach($displayedNotes as $note) {
+                    if (!isset($note['created_at']) || !isset($note['note_text'])) {
+                        continue;
+                    }
+                    
+                    echo '<tr>
+                        <td>' . date('Y-m-d', strtotime($note['created_at'])) . '</td>
+                        <td>' . htmlspecialchars($note['note_text']) . '</td>
+                    </tr>';
+                }
+                
+                echo '</table>';
+                
+                // If there are more notes than shown
+                if (count($notes) > 5) {
+                    echo '<p>... and ' . (count($notes) - 5) . ' more note(s)</p>';
+                }
+            }
+            
+            // Absence Records Section
+            echo '<h2>Absence Records</h2>';
+            
+            if(is_array($absences) && !empty($absences)) {
+                echo '<table>
+                    <tr>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                    </tr>';
+                
+                // Limit to 5 absences for space
+                $displayedAbsences = array_slice($absences, 0, 5);
+                
+                foreach($displayedAbsences as $absence) {
+                    if(!isset($absence['start_date'])) continue;
+                    
+                    // Get status text
+                    $status = isset($absence['approved_by']) ? 'Approved' : 'Pending';
+                    
+                    echo '<tr>
+                        <td>' . date('Y-m-d', strtotime($absence['start_date'])) . '</td>
+                        <td>' . (isset($absence['end_date']) ? date('Y-m-d', strtotime($absence['end_date'])) : 'N/A') . '</td>
+                        <td>' . $status . '</td>
+                        <td>' . (isset($absence['reason']) ? htmlspecialchars($absence['reason']) : '') . '</td>
+                    </tr>';
+                }
+                
+                echo '</table>';
+                
+                // If there are more absences than shown
+                if (count($absences) > 5) {
+                    echo '<p>... and ' . (count($absences) - 5) . ' more absence record(s)</p>';
+                }
+            } else {
+                echo '<p>No absence records</p>';
+            }
+            
+            // Sites Section
+            echo '<h2>Assigned Sites</h2>';
+            
+            // Check if the method exists and get sites data
+            // This is a placeholder - you'll need to implement the actual method
+            $sites = method_exists($this->employeeModel, 'getEmployeeSites') ? 
+                $this->employeeModel->getEmployeeSites($userId) : [];
+            
+            if(is_array($sites) && !empty($sites)) {
+                echo '<table>
+                    <tr>
+                        <th>Site Name</th>
+                        <th>Location</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                    </tr>';
+                
+                foreach($sites as $site) {
+                    echo '<tr>
+                        <td>' . htmlspecialchars($site['site_name'] ?? 'N/A') . '</td>
+                        <td>' . htmlspecialchars($site['location'] ?? 'N/A') . '</td>
+                        <td>' . htmlspecialchars($site['role'] ?? 'N/A') . '</td>
+                        <td>' . htmlspecialchars($site['status'] ?? 'Active') . '</td>
+                    </tr>';
+                }
+                
+                echo '</table>';
+            } else {
+                echo '<p>No sites assigned</p>';
+                
+                // Checkbox for site assignment option
+                echo '<div style="margin-top: 15px; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9; border-radius: 4px;">';
+                echo '<h3 style="margin-top: 0;">Site Assignment Options</h3>';
+                echo '<ul style="list-style-type: none; padding-left: 0;">';
+                echo '<li><input type="checkbox" disabled> Assign to Main Office</li>';
+                echo '<li><input type="checkbox" disabled> Assign to Remote Location</li>';
+                echo '<li><input type="checkbox" disabled> Assign to Field Operations</li>';
+                echo '<li><input type="checkbox" disabled> Assign to Client Site</li>';
+                echo '</ul>';
+                echo '<p><i>Note: Site assignments must be made from the employee edit page.</i></p>';
+                echo '</div>';
+            }
+            
+            // Rating History Section
+            if(is_array($ratingHistory) && !empty($ratingHistory)) {
+                echo '<h2>Rating History</h2>';
+                
+                echo '<table>
+                    <tr>
+                        <th>Date</th>
+                        <th>Old Rating</th>
+                        <th>New Rating</th>
+                        <th>Changed By</th>
+                    </tr>';
+                
+                // Limit to most recent 5 ratings
+                $displayedRatings = array_slice($ratingHistory, 0, 5);
+                
+                foreach($displayedRatings as $record) {
+                    if (!isset($record['changed_at']) || !isset($record['new_rating'])) {
+                        continue;
+                    }
+                    
+                    echo '<tr>
+                        <td>' . date('M d, Y', strtotime($record['changed_at'])) . '</td>
+                        <td>' . (isset($record['old_rating']) ? $record['old_rating'] : 'N/A') . '</td>
+                        <td>' . $record['new_rating'] . '</td>
+                        <td>' . (isset($record['changed_by_name']) ? htmlspecialchars($record['changed_by_name']) : 'Unknown') . '</td>
+                    </tr>';
+                }
+                
+                echo '</table>';
+                
+                // Add a visual trend indicator
+                echo '<h3>Rating Trend</h3>';
+                
+                // Show rating trend
+                $trend = '';
+                $prevRating = null;
+                
+                // Sort ratings by date to show earliest to most recent
+                usort($ratingHistory, function($a, $b) {
+                    return strtotime($a['changed_at']) - strtotime($b['changed_at']);
+                });
+                
+                foreach($ratingHistory as $record) {
+                    if(!isset($record['new_rating'])) continue;
+                    
+                    if($prevRating !== null) {
+                        if($record['new_rating'] > $prevRating) {
+                            $trend .= '↗ '; // Upward trend
+                        } elseif($record['new_rating'] < $prevRating) {
+                            $trend .= '↘ '; // Downward trend
+                        } else {
+                            $trend .= '→ '; // No change
+                        }
+                    }
+                    
+                    $trend .= $record['new_rating'] . ' ';
+                    $prevRating = $record['new_rating'];
+                }
+                
+                echo '<p>' . $trend . '</p>';
+            }
+            
+            // Footer
+            echo '<div class="footer">
+                ProjectTracker | Generated on ' . date('Y-m-d H:i') . '
+            </div>';
+            
+            echo '</body></html>';
+            exit;
+            
+        } catch (Exception $e) {
+            // If an error occurs, show error
+            die('Error generating profile: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Upload document for an employee
+     * 
+     * @param int $userId Employee/user ID
+     */
+    public function uploadDocument($userId = null) {
+        if (!$userId) {
+            flash('employee_error', 'Invalid employee ID', 'alert alert-danger');
+            redirect('/employees');
+            return;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Check if file was uploaded
+            if (!isset($_FILES['document']) || $_FILES['document']['error'] !== UPLOAD_ERR_OK) {
+                flash('employee_error', 'Error uploading file. Please try again.', 'alert alert-danger');
+                redirect('/employees/viewEmployee/' . $userId);
+                return;
+            }
+
+            $file = $_FILES['document'];
+            
+            // Validate file size (10MB max)
+            if ($file['size'] > 10 * 1024 * 1024) {
+                flash('employee_error', 'File size exceeds 10MB limit.', 'alert alert-danger');
+                redirect('/employees/viewEmployee/' . $userId);
+                return;
+            }
+
+            // Validate file type
+            $allowedTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'txt'];
+            $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            
+            if (!in_array($fileExt, $allowedTypes)) {
+                flash('employee_error', 'Invalid file type. Allowed types: ' . implode(', ', $allowedTypes), 'alert alert-danger');
+                redirect('/employees/viewEmployee/' . $userId);
+                return;
+            }
+
+            // Create uploads directory if it doesn't exist
+            $uploadDir = 'uploads/employees/' . $userId . '/';
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            // Generate unique filename
+            $fileName = uniqid() . '_' . $file['name'];
+            $filePath = $uploadDir . $fileName;
+
+            // Move uploaded file
+            if (move_uploaded_file($file['tmp_name'], $filePath)) {
+                // Get additional metadata
+                $documentType = isset($_POST['document_type']) ? htmlspecialchars($_POST['document_type']) : null;
+                $description = isset($_POST['description']) ? htmlspecialchars($_POST['description']) : null;
+                
+                // Save to database
+                $fileData = [
+                    'name' => $file['name'],
+                    'path' => $filePath,
+                    'type' => $file['type'],
+                    'size' => $file['size']
+                ];
+
+                if ($this->employeeModel->uploadDocument($userId, $fileData, $documentType, $description)) {
+                    flash('employee_success', 'Document uploaded successfully.', 'alert alert-success');
+                } else {
+                    flash('employee_error', 'Error saving document to database.', 'alert alert-danger');
+                }
+            } else {
+                flash('employee_error', 'Error moving uploaded file.', 'alert alert-danger');
+            }
+        }
+        
+        redirect('/employees/viewEmployee/' . $userId);
+    }
+    
+    /**
+     * Download employee document
+     * 
+     * @param int $documentId Document ID
+     */
+    public function downloadDocument($documentId = null) {
+        if (!$documentId) {
+            flash('employee_error', 'Invalid document ID', 'alert alert-danger');
+            redirect('/employees');
+            return;
+        }
+        
+        $document = $this->employeeModel->getDocumentById($documentId);
+        
+        if ($document && file_exists($document['file_path'])) {
+            // Clear any output buffers that might corrupt the file
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Get MIME type based on file extension
+            $ext = strtolower(pathinfo($document['file_name'], PATHINFO_EXTENSION));
+            $contentType = 'application/octet-stream'; // Default
+            
+            // Set proper MIME type based on file extension
+            $mimeTypes = [
+                'pdf' => 'application/pdf',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'txt' => 'text/plain'
+            ];
+            
+            if (array_key_exists($ext, $mimeTypes)) {
+                $contentType = $mimeTypes[$ext];
+            }
+            
+            // Set the headers
+            header('Content-Type: ' . $contentType);
+            header('Content-Disposition: attachment; filename="' . $document['file_name'] . '"');
+            header('Content-Length: ' . filesize($document['file_path']));
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            
+            // Output the file in binary mode
+            readfile($document['file_path']);
+            exit;
+        } else {
+            flash('employee_error', 'Document not found.', 'alert alert-danger');
+            redirect('/employees');
+        }
+    }
+    
+    /**
+     * Delete employee document
+     * 
+     * @param int $documentId Document ID
+     * @param int $userId Employee/user ID (for redirect)
+     */
+    public function deleteDocument($documentId = null, $userId = null) {
+        if (!$documentId) {
+            flash('employee_error', 'Invalid document ID', 'alert alert-danger');
+            redirect('/employees');
+            return;
+        }
+        
+        $document = $this->employeeModel->getDocumentById($documentId);
+        
+        if ($document) {
+            // Save the user ID for redirect
+            $redirectUserId = $userId ?: $document['user_id'];
+            
+            // Delete file from server
+            if (file_exists($document['file_path'])) {
+                unlink($document['file_path']);
+            }
+            
+            // Delete from database
+            if ($this->employeeModel->deleteDocument($documentId)) {
+                flash('employee_success', 'Document deleted successfully.', 'alert alert-success');
+            } else {
+                flash('employee_error', 'Error deleting document from database.', 'alert alert-danger');
+            }
+            
+            redirect('/employees/viewEmployee/' . $redirectUserId);
+        } else {
+            flash('employee_error', 'Document not found.', 'alert alert-danger');
+            redirect('/employees');
+        }
+    }
+
+    /**
+     * Format file size in human-readable format
+     * 
+     * @param int $bytes Raw file size in bytes
+     * @return string Formatted file size (e.g., "2.5 MB")
+     */
+    private function formatFileSize($bytes) {
+        if (!is_numeric($bytes) || $bytes < 0) {
+            return '0 B';
+        }
+        
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= pow(1024, $pow);
+        
+        return round($bytes, 2) . ' ' . $units[$pow];
     }
 }
 ?> 

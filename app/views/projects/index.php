@@ -1,3 +1,16 @@
+<?php include_once VIEWSPATH . '/inc/header.php'; ?>
+
+<style>
+    .btn-icon {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
 <div class="container-fluid px-4">
     <!-- Header section with title, filters and actions -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
@@ -6,7 +19,7 @@
             <p class="text-muted d-none d-md-block">Manage and track all your projects</p>
         </div>
         
-        <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch">
+        <div class="d-flex flex-column flex-sm-row gap-2 align-items-center">
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-funnel me-1"></i> Filter
@@ -22,13 +35,13 @@
                 </ul>
             </div>
             
-            <div class="input-group">
+            <div class="input-group" style="height: 38px;">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
                 <input type="text" class="form-control" id="projectSearch" placeholder="Search projects..." aria-label="Search projects">
             </div>
             
-            <a href="/projects/create" class="btn btn-primary d-flex align-items-center">
-                <i class="bi bi-plus-lg me-1"></i> New Project
+            <a href="/projects/create" class="btn btn-primary btn-icon" aria-label="Create New Project" title="Create New Project">
+                <i class="bi bi-plus-lg"></i>
             </a>
         </div>
     </div>
@@ -42,7 +55,7 @@
             <?php if (empty($projects)) : ?>
                 <div class="card shadow-sm border-0">
                     <div class="card-body text-center py-5">
-                        <img src="/img/empty-projects.svg" alt="No projects found" class="img-fluid mb-3" style="max-height: 150px;">
+                        <i class="bi bi-kanban display-1 text-muted mb-3" style="font-size: 5rem;"></i>
                         <h3 class="text-muted mb-3">No Projects Found</h3>
                         <p class="text-muted mb-4">Get started by creating your first project</p>
                         <a href="/projects/create" class="btn btn-primary px-4 py-2">

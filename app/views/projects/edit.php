@@ -74,7 +74,7 @@ $title = 'Edit Project - ProjectTracker';
                                 if (isset($departments) && !empty($departments)):
                                     foreach ($departments as $department): ?>
                                         <option value="<?= $department->id ?>" <?= ($project->department_id == $department->id) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($department->name) ?> - Budget: $<?= number_format($department->budget, 2) ?>
+                                            <?= htmlspecialchars($department->name) ?> - Budget: <?= $currency['symbol'] ?><?= number_format($department->budget, 2) ?>
                                         </option>
                                 <?php 
                                     endforeach;
@@ -89,7 +89,7 @@ $title = 'Edit Project - ProjectTracker';
                         <div class="col-md-6 mb-3">
                             <label for="budget" class="form-label">Project Budget</label>
                             <div class="input-group">
-                                <span class="input-group-text">$</span>
+                                <span class="input-group-text"><?= $currency['symbol'] ?></span>
                                 <input type="text" class="form-control <?= isset($project->budget_err) ? 'is-invalid' : '' ?>" 
                                        id="budget" name="budget" value="<?= number_format($project->budget, 2) ?>" required>
                                 <div class="invalid-feedback">
@@ -97,7 +97,7 @@ $title = 'Edit Project - ProjectTracker';
                                 </div>
                             </div>
                             <?php if (isset($project->department_budget) && $project->department_budget > 0): ?>
-                                <small class="text-muted">Department Budget: $<?= number_format($project->department_budget, 2) ?></small>
+                                <small class="text-muted">Department Budget: <?= $currency['symbol'] ?><?= number_format($project->department_budget, 2) ?></small>
                             <?php endif; ?>
                         </div>
                     </div>

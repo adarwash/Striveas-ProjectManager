@@ -601,10 +601,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Add a hidden form for task deletion
+document.write(`
+    <form id="deleteTaskForm" action="" method="POST" style="display: none;">
+    </form>
+`);
+
 // Confirm delete function
 function confirmDelete(taskId) {
     if (confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
-        window.location.href = '<?= URLROOT ?>/tasks/delete/' + taskId;
+        // Set the form action and submit it as POST
+        const form = document.getElementById('deleteTaskForm');
+        form.action = '<?= URLROOT ?>/tasks/delete/' + taskId;
+        form.submit();
     }
 }
 </script> 

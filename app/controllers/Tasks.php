@@ -312,24 +312,29 @@ class Tasks extends Controller {
     public function delete($id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Get the task to find project_id for redirection
-            // Placeholder: $task = $this->taskModel->getTaskById($id);
-            $task = (object)[
-                'project_id' => 1
-            ];
+            $task = $this->taskModel->getTaskById($id);
+            
+            if (!$task) {
+                flash('task_error', 'Task not found', 'alert-danger');
+                redirect('tasks');
+                return;
+            }
             
             // Delete task
-            // Placeholder: $this->taskModel->delete($id);
-            
-            // Set flash message
-            // Placeholder: flash('task_message', 'Task deleted successfully');
-            
-            // Redirect to the project details page
-            header('Location: /projects/show/' . $task->project_id);
-            exit;
+            if ($this->taskModel->delete($id)) {
+                // Set flash message
+                flash('task_message', 'Task deleted successfully');
+                
+                // Redirect to the project details page
+                redirect('projects/viewProject/' . $task->project_id);
+            } else {
+                // Set flash message for error
+                flash('task_error', 'Error deleting task', 'alert-danger');
+                redirect('tasks/show/' . $id);
+            }
         } else {
             // If not POST request, redirect to tasks index
-            header('Location: /tasks');
-            exit;
+            redirect('tasks');
         }
     }
     
@@ -451,5 +456,60 @@ class Tasks extends Controller {
         }
         
         redirect('tasks/manageAssignments/' . $taskId);
+    }
+    
+    /**
+     * Update the status of a task
+     * 
+     * @param int $id Task ID
+     * @return void
+     */
+    public function updateStatus($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('tasks/show/' . $id);
+            return;
+        }
+        
+        // Get task by ID
+        $task = $this->taskModel->getTaskById($id);
+        
+        if (!$task) {
+            flash('task_error', 'Task not found', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
+        
+        // Sanitize POST data
+        $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+        
+        // Get new status
+        $newStatus = isset($_POST['status']) ? trim($_POST['status']) : '';
+        
+        if (empty($newStatus)) {
+            flash('task_error', 'No status provided', 'alert-danger');
+            redirect('tasks/show/' . $id);
+            return;
+        }
+        
+        // Update task status
+        if ($this->taskModel->updateStatus($id, $newStatus)) {
+            flash('task_message', 'Task status updated successfully');
+        } else {
+            flash('task_error', 'Error updating task status', 'alert-danger');
+        }
+        
+        redirect('tasks/show/' . $id);
+    }
+    
+    /**
+     * Mark a task as complete (convenience method)
+     * 
+     * @param int $id Task ID
+     * @return void
+     */
+    public function markComplete($id) {
+        // Simulate a POST request with status = Completed
+        $_POST['status'] = 'Completed';
+        $this->updateStatus($id);
     }
 } 

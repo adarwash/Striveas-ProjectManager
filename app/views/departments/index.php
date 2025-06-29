@@ -52,7 +52,7 @@
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted">Total Budget</h6>
                                 <h4 class="card-title budget-amount" data-usd-value="<?= $totalBudget ?>">
-                                    <?= $defaultCurrency . number_format($totalBudget, 2) ?>
+                                    <?= $currency['symbol'] ?><?= number_format($totalBudget, 2) ?>
                                 </h4>
                                 <small>Across all departments</small>
                             </div>
@@ -63,7 +63,7 @@
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted">Allocated Budget</h6>
                                 <h4 class="card-title budget-amount" data-usd-value="<?= $totalUsedBudget ?>">
-                                    <?= $defaultCurrency . number_format($totalUsedBudget, 2) ?>
+                                    <?= $currency['symbol'] ?><?= number_format($totalUsedBudget, 2) ?>
                                 </h4>
                                 <small>In active projects</small>
                             </div>
@@ -74,7 +74,7 @@
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted">Remaining Budget</h6>
                                 <h4 class="card-title budget-amount" data-usd-value="<?= $totalRemainingBudget ?>">
-                                    <?= $defaultCurrency . number_format($totalRemainingBudget, 2) ?>
+                                    <?= $currency['symbol'] ?><?= number_format($totalRemainingBudget, 2) ?>
                                 </h4>
                                 <div class="progress mt-2">
                                     <div class="progress-bar <?= ($percentageUsed > 90) ? 'bg-danger' : (($percentageUsed > 70) ? 'bg-warning' : 'bg-success') ?>" role="progressbar" style="width: <?= $percentageUsed ?>%" aria-valuenow="<?= $percentageUsed ?>" aria-valuemin="0" aria-valuemax="100"></div>
@@ -97,7 +97,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title">All Departments</h5>
                     <a href="/departments/create" class="btn btn-primary btn-sm">
-                        <i class="fa fa-plus"></i> New Department
+                        <i class="bi bi-plus-lg"></i> New Department
                     </a>
                 </div>
                 <div class="table-responsive">
@@ -174,10 +174,10 @@
                                         </td>
                                         <td class="text-center">
                                             <a href="/departments/show/<?= $department->id ?>" class="btn btn-sm btn-info">
-                                                <i class="fa fa-eye"></i>
+                                                <i class="bi bi-eye"></i>
                                             </a>
                                             <a href="/departments/edit/<?= $department->id ?>" class="btn btn-sm btn-warning">
-                                                <i class="fa fa-edit"></i>
+                                                <i class="bi bi-pencil"></i>
                                             </a>
                                         </td>
                                     </tr>

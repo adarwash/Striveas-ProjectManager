@@ -5,8 +5,8 @@ BEGIN
         [id] INT IDENTITY(1,1) PRIMARY KEY,
         [title] NVARCHAR(200) NOT NULL,
         [content] NVARCHAR(MAX) NOT NULL,
-        [type] NVARCHAR(50) NOT NULL, -- 'project' or 'task'
-        [reference_id] INT NOT NULL,  -- project_id or task_id
+        [type] NVARCHAR(50) NOT NULL, -- 'project', 'task', or 'personal'
+        [reference_id] INT NULL,  -- project_id or task_id, NULL for personal notes
         [created_by] INT NOT NULL,
         [created_at] DATETIME DEFAULT GETDATE(),
         [updated_at] DATETIME DEFAULT GETDATE(),

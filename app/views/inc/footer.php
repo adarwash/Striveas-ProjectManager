@@ -4,15 +4,20 @@
     <!-- Custom JS -->
     <script>
         // Close alerts after 5 seconds
-        const flashMessages = document.querySelectorAll('.flash-message');
-        flashMessages.forEach(message => {
-            setTimeout(() => {
-                const closeButton = message.querySelector('.btn-close');
-                if (closeButton) {
-                    closeButton.click();
-                }
-            }, 5000);
-        });
+        // Check if flashMessages hasn't been defined yet to avoid duplication
+        if (typeof flashMessagesInitialized === 'undefined') {
+            const notePageFlashMessages = document.querySelectorAll('.flash-message');
+            notePageFlashMessages.forEach(message => {
+                setTimeout(() => {
+                    const closeButton = message.querySelector('.btn-close');
+                    if (closeButton) {
+                        closeButton.click();
+                    }
+                }, 5000);
+            });
+            // Mark as initialized
+            var flashMessagesInitialized = true;
+        }
     </script>
 </body>
 </html>

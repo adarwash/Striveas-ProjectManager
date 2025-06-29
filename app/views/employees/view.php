@@ -12,6 +12,9 @@
         <p class="text-muted">Employee Performance Profile</p>
     </div>
     <div class="d-flex">
+        <a href="/employees/exportProfile/<?= $employee['user_id'] ?>" class="btn btn-success me-2" target="_blank">
+            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+        </a>
         <a href="/employees/edit/<?= $employee['user_id'] ?>" class="btn btn-primary me-2">
             <i class="bi bi-pencil"></i> Edit Profile
         </a>
@@ -484,6 +487,90 @@
                 </div>
             </div>
         </div>
+
+        <!-- Employee Documents Section -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Employee Documents</h5>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
+                    <i class="bi bi-upload"></i> Upload Document
+                </button>
+            </div>
+            <div class="card-body">
+                <?php if (empty($documents)): ?>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i> No documents uploaded yet.
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Type</th>
+                                    <th>Size</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Uploaded By</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($documents as $document): ?>
+                                <tr>
+                                    <td>
+                                        <?php 
+                                        $fileExt = strtolower(pathinfo($document['file_name'], PATHINFO_EXTENSION));
+                                        $iconClass = 'bi-file-earmark';
+                                        
+                                        // Set icon based on file type
+                                        switch ($fileExt) {
+                                            case 'pdf': $iconClass = 'bi-file-earmark-pdf'; break;
+                                            case 'doc': case 'docx': $iconClass = 'bi-file-earmark-word'; break;
+                                            case 'xls': case 'xlsx': $iconClass = 'bi-file-earmark-excel'; break;
+                                            case 'jpg': case 'jpeg': case 'png': $iconClass = 'bi-file-earmark-image'; break;
+                                            case 'txt': $iconClass = 'bi-file-earmark-text'; break;
+                                        }
+                                        ?>
+                                        <i class="bi <?= $iconClass ?> me-1"></i>
+                                        <?= htmlspecialchars($document['file_name']) ?>
+                                    </td>
+                                    <td><?= strtoupper($fileExt) ?></td>
+                                    <td><?= $document['formatted_size'] ?></td>
+                                    <td><?= htmlspecialchars($document['document_type'] ?? 'General') ?></td>
+                                    <td>
+                                        <?php if (!empty($document['description'])): ?>
+                                            <span data-bs-toggle="tooltip" title="<?= htmlspecialchars($document['description']) ?>">
+                                                <?= substr(htmlspecialchars($document['description']), 0, 20) ?><?= strlen($document['description']) > 20 ? '...' : '' ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-muted">—</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($document['uploaded_by_name']) ?></td>
+                                    <td><?= date('Y-m-d', strtotime($document['uploaded_at'])) ?></td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="/employees/downloadDocument/<?= $document['id'] ?>" 
+                                                class="btn btn-sm btn-outline-primary" title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                            <a href="/employees/deleteDocument/<?= $document['id'] ?>/<?= $employee['user_id'] ?>" 
+                                                class="btn btn-sm btn-outline-danger" title="Delete"
+                                                onclick="return confirm('Are you sure you want to delete this document?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -577,4 +664,58 @@
             showLessText.classList.toggle('d-none');
         });
     });
+</script>
+
+<!-- Upload Document Modal -->
+<div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadDocumentModalLabel">Upload Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/employees/uploadDocument/<?= $employee['user_id'] ?>" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="document" class="form-label">Select Document</label>
+                        <input type="file" class="form-control" id="document" name="document" required>
+                        <div class="form-text">Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, TXT (Max size: 10MB)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="document_type" class="form-label">Document Type</label>
+                        <select class="form-select" id="document_type" name="document_type">
+                            <option value="">-- Select document type --</option>
+                            <option value="Contract">Contract</option>
+                            <option value="Resume/CV">Resume/CV</option>
+                            <option value="Certificate">Certificate</option>
+                            <option value="ID">ID/Passport</option>
+                            <option value="Performance">Performance Review</option>
+                            <option value="Training">Training</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="2" placeholder="Optional description of the document"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Enable tooltips for document descriptions -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
 </script> 

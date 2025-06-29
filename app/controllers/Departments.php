@@ -2,6 +2,7 @@
 class Departments extends Controller {
     private $departmentModel;
     private $projectModel;
+    private $settingModel;
     
     public function __construct() {
         // Ensure user is logged in
@@ -23,6 +24,7 @@ class Departments extends Controller {
         // Load models
         $this->departmentModel = $this->model('Department');
         $this->projectModel = $this->model('Project');
+        $this->settingModel = $this->model('Setting');
     }
     
     // Display all departments
@@ -30,10 +32,14 @@ class Departments extends Controller {
         $departments = $this->departmentModel->getAllDepartments();
         $budgetStats = $this->departmentModel->getBudgetStats();
         
+        // Get currency settings
+        $currency = $this->settingModel->getCurrency();
+        
         $this->view('departments/index', [
             'title' => 'Departments',
             'departments' => $departments,
-            'budget_stats' => $budgetStats
+            'budgetStats' => $budgetStats,
+            'currency' => $currency
         ]);
     }
     
@@ -49,10 +55,14 @@ class Departments extends Controller {
         
         $projects = $this->departmentModel->getDepartmentProjects($id);
         
+        // Get currency settings
+        $currency = $this->settingModel->getCurrency();
+        
         $this->view('departments/show', [
             'title' => $department->name,
             'department' => $department,
-            'projects' => $projects
+            'projects' => $projects,
+            'currency' => $currency
         ]);
     }
     
@@ -60,6 +70,9 @@ class Departments extends Controller {
     public function create() {
         // Get available currencies
         $currencies = $this->departmentModel->getCurrencySymbols();
+        
+        // Get currency settings
+        $currency = $this->settingModel->getCurrency();
         
         // Default values
         $data = [
@@ -76,7 +89,8 @@ class Departments extends Controller {
         // Load view
         $this->view('departments/create', [
             'title' => 'Create Department',
-            'data' => $data
+            'data' => $data,
+            'currency' => $currency
         ]);
     }
     
@@ -158,12 +172,16 @@ class Departments extends Controller {
         // Get available currencies
         $currencies = $this->departmentModel->getCurrencySymbols();
         
+        // Get currency settings
+        $currency = $this->settingModel->getCurrency();
+        
         // Add currencies to department object
         $department->currencies = $currencies;
         
         $this->view('departments/edit', [
             'title' => 'Edit Department',
-            'department' => $department
+            'department' => $department,
+            'currency' => $currency
         ]);
     }
     

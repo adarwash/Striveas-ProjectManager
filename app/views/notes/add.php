@@ -50,13 +50,15 @@
                                     <option value="">Select type...</option>
                                     <option value="project" <?= (isset($type) && $type === 'project') ? 'selected' : '' ?>>Project</option>
                                     <option value="task" <?= (isset($type) && $type === 'task') ? 'selected' : '' ?>>Task</option>
+                                    <option value="personal" <?= (isset($type) && $type === 'personal') ? 'selected' : '' ?>>Personal</option>
                                 </select>
                                 <?php if (isset($type_err) && !empty($type_err)): ?>
                                     <div class="invalid-feedback"><?= $type_err ?></div>
                                 <?php endif; ?>
+                                <div class="form-text">Personal notes aren't linked to any project or task</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-6" id="reference-container">
                                 <label for="reference_id" class="form-label">Link To</label>
                                 <select class="form-select <?= isset($reference_id_err) && !empty($reference_id_err) ? 'is-invalid' : '' ?>" 
                                         id="reference_id" name="reference_id">
@@ -98,6 +100,7 @@ const tasks = <?= json_encode($tasks ?? []) ?>;
 function updateReferenceOptions() {
     const typeSelect = document.getElementById('type');
     const referenceSelect = document.getElementById('reference_id');
+    const referenceContainer = document.getElementById('reference-container');
     const selectedType = typeSelect.value;
     
     // Reference helper messages
@@ -112,6 +115,14 @@ function updateReferenceOptions() {
     noneMessage.classList.add('d-none');
     loadingMessage.classList.add('d-none');
     emptyMessage.classList.add('d-none');
+    
+    // Hide/show reference container based on type
+    if (selectedType === 'personal') {
+        referenceContainer.classList.add('d-none');
+        return;
+    } else {
+        referenceContainer.classList.remove('d-none');
+    }
     
     if (!selectedType) {
         noneMessage.classList.remove('d-none');

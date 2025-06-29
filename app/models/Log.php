@@ -101,7 +101,7 @@ class Log {
             // Ensure table exists
             $this->createLogsTable();
             
-            $query = "INSERT INTO system_logs (type, message, user_id, user, ip_address, user_agent, additional_data) 
+            $query = "INSERT INTO system_logs (type, message, user_id, [user], ip_address, user_agent, additional_data) 
                      VALUES (?, ?, ?, ?, ?, ?, ?)";
             
             $ip = $_SERVER['REMOTE_ADDR'] ?? '';

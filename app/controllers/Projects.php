@@ -5,6 +5,8 @@ class Projects extends Controller {
     private $noteModel;
     private $departmentModel;
     private $userModel;
+    private $siteModel;
+    private $settingModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -23,9 +25,14 @@ class Projects extends Controller {
         $this->noteModel = $this->model('Note');
         $this->departmentModel = $this->model('Department');
         $this->userModel = $this->model('User');
+        $this->siteModel = $this->model('Site');
+        $this->settingModel = $this->model('Setting');
         
         // Create project_users table if it doesn't exist
         $this->projectModel->createProjectUsersTable();
+        
+        // Create project_sites table if it doesn't exist
+        $this->projectModel->createProjectSitesTable();
     }
     
     // List all projects
@@ -33,9 +40,13 @@ class Projects extends Controller {
         // Get all projects
         $projects = $this->projectModel->getAllProjects(); // Get real projects from database
         
+        // Get currency settings
+        $currency = $this->settingModel->getCurrency();
+        
         $this->view('projects/index', [
             'title' => 'Projects',
-            'projects' => $projects
+            'projects' => $projects,
+            'currency' => $currency
         ]);
     }
     
@@ -44,9 +55,21 @@ class Projects extends Controller {
         // Get all departments for the dropdown
         $departments = $this->departmentModel->getAllDepartments();
         
+        // Get all sites for the dropdown
+        $sites = $this->siteModel->getAllSites();
+        
+        // Check if a site_id was passed in the URL (for pre-selecting)
+        $selectedSiteId = isset($_GET['site_id']) ? intval($_GET['site_id']) : null;
+        
+        // Get currency settings
+        $currency = $this->settingModel->getCurrency();
+        
         $this->view('projects/create', [
             'title' => 'Create Project',
-            'departments' => $departments
+            'departments' => $departments,
+            'sites' => $sites,
+            'selected_site_id' => $selectedSiteId,
+            'currency' => $currency
         ]);
     }
     
@@ -123,36 +146,102 @@ class Projects extends Controller {
                 $data['user_id'] = $_SESSION['user_id'];
                 
                 // Create project
-                $this->projectModel->create($data);
+                $projectId = $this->projectModel->create($data);
                 
-                // Set flash message
-                flash('project_message', 'Project created successfully');
-                
-                // Redirect to projects index
-                header('Location: /projects');
-                exit;
+                if ($projectId) {
+                    // If a site was selected, link it to the project
+                    if (!empty($_POST['site_id'])) {
+                        $siteId = intval($_POST['site_id']);
+                        $notes = !empty($_POST['site_notes']) ? trim($_POST['site_notes']) : '';
+                        $this->projectModel->linkProjectToSite($projectId, $siteId, $notes);
+                    }
+                    
+                    // Log the activity
+                    $activityLogModel = $this->model('ActivityLog');
+                    
+                    // Get department name for the description
+                    $departmentName = '';
+                    if (!empty($data['department_id'])) {
+                        $department = $this->departmentModel->getDepartmentById($data['department_id']);
+                        if ($department) {
+                            $departmentName = $department->name;
+                        }
+                    }
+                    
+                    // Format budget for description
+                    $formattedBudget = '$' . number_format($data['budget'], 2);
+                    
+                    // Create description
+                    $description = sprintf(
+                        'Created new project "%s" in department "%s" with budget %s, status "%s"',
+                        $data['title'],
+                        $departmentName,
+                        $formattedBudget,
+                        $data['status']
+                    );
+                    
+                    // Log the activity with additional metadata
+                    $metadata = [
+                        'title' => $data['title'],
+                        'department_id' => $data['department_id'],
+                        'department_name' => $departmentName,
+                        'budget' => $data['budget'],
+                        'start_date' => $data['start_date'],
+                        'end_date' => $data['end_date'],
+                        'status' => $data['status']
+                    ];
+                    
+                    $activityLogModel->log(
+                        $_SESSION['user_id'],
+                        'project',
+                        $projectId,
+                        'created',
+                        $description,
+                        $metadata
+                    );
+                    
+                    // Set flash message
+                    flash('project_message', 'Project created successfully');
+                    
+                    // Redirect to projects index
+                    redirect('projects');
+                } else {
+                    // Set error flash message
+                    flash('project_error', 'Error creating project', 'alert-danger');
+                    
+                    // Redirect back to create form
+                    redirect('projects/create');
+                }
             } else {
                 // Load view with errors
                 $this->view('projects/create', [
                     'title' => 'Create Project',
                     'data' => $data,
-                    'departments' => $this->departmentModel->getAllDepartments()
+                    'departments' => $this->departmentModel->getAllDepartments(),
+                    'sites' => $this->siteModel->getAllSites()
                 ]);
             }
         } else {
             // If not POST request, redirect to create form
-            header('Location: /projects/create');
-            exit;
+            redirect('projects/create');
         }
     }
     
     // Show a single project
-    public function viewProject($id) {
+    public function viewProject($id = null) {
+        // Check if id is provided
+        if (!$id) {
+            flash('project_error', 'No project id provided');
+            redirect('projects');
+        }
+        
+        // Get project
         $project = $this->projectModel->getProjectById($id);
         
+        // Check if project exists
         if (!$project) {
-            flash('project_error', 'Project not found', 'alert-danger');
-            redirect(URLROOT . '/projects');
+            flash('project_error', 'Project not found');
+            redirect('projects');
         }
         
         // Get all tasks for this project
@@ -161,15 +250,50 @@ class Projects extends Controller {
         // Get all notes for this project
         $notes = $this->noteModel->getNotesByReference('project', $id);
         
+        // Get recent task activities for this project
+        $taskActivities = $this->taskModel->getRecentTaskActivityByProject($id, 10);
+        
+        // Get project risk assessment
+        $risks = $this->projectModel->getProjectRisks($id);
+        
+        // Get project documents
+        $documents = $this->projectModel->getProjectDocuments($id);
+        
+        // Format file sizes
+        if (!empty($documents)) {
+            foreach ($documents as &$document) {
+                $document['formatted_size'] = $this->formatFileSize($document['file_size']);
+                
+                // Get uploader name
+                if (!empty($document['uploaded_by'])) {
+                    $uploader = $this->userModel->getUserById($document['uploaded_by']);
+                    $document['uploaded_by_name'] = $uploader ? $uploader->username : 'Unknown';
+                } else {
+                    $document['uploaded_by_name'] = 'System';
+                }
+            }
+        }
+        
         // Get all users assigned to this project
         $assignedUsers = $this->projectModel->getProjectUsers($id);
+        
+        // Get all sites linked to this project
+        $linkedSites = $this->projectModel->getLinkedSites($id);
+        
+        // Get currency settings
+        $currency = $this->settingModel->getCurrency();
         
         $this->view('projects/view', [
             'title' => $project->title,
             'project' => $project,
             'tasks' => $tasks,
             'notes' => $notes,
-            'assigned_users' => $assignedUsers
+            'task_activities' => $taskActivities,
+            'assigned_users' => $assignedUsers,
+            'risks' => $risks,
+            'documents' => $documents,
+            'linked_sites' => $linkedSites,
+            'currency' => $currency
         ]);
     }
     
@@ -187,10 +311,14 @@ class Projects extends Controller {
         // Get all departments for the dropdown
         $departments = $this->departmentModel->getAllDepartments();
         
+        // Get currency settings
+        $currency = $this->settingModel->getCurrency();
+        
         $this->view('projects/edit', [
             'title' => 'Edit Project',
             'project' => $project,
-            'departments' => $departments
+            'departments' => $departments,
+            'currency' => $currency
         ]);
     }
     
@@ -429,5 +557,526 @@ class Projects extends Controller {
         }
         
         redirect(URLROOT . '/projects/manageTeam/' . $projectId);
+    }
+    
+    /**
+     * Show form to manage sites linked to this project
+     * 
+     * @param int $id Project ID
+     * @return void
+     */
+    public function manageSites($id) {
+        $project = $this->projectModel->getProjectById($id);
+        
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect(URLROOT . '/projects');
+        }
+        
+        // Get all available sites
+        $allSites = $this->siteModel->getAllSites();
+        
+        // Get sites already linked to this project
+        $linkedSites = $this->projectModel->getLinkedSites($id);
+        
+        // Create a map of linked site IDs for easy lookup
+        $linkedSiteIds = [];
+        foreach ($linkedSites as $site) {
+            $linkedSiteIds[] = $site['id'];
+        }
+        
+        $this->view('projects/sites', [
+            'title' => 'Manage Sites - ' . $project->title,
+            'project' => $project,
+            'all_sites' => $allSites,
+            'linked_sites' => $linkedSites,
+            'linked_site_ids' => $linkedSiteIds
+        ]);
+    }
+    
+    /**
+     * Link a project to a site
+     * 
+     * @param int $id Project ID
+     * @return void
+     */
+    public function linkSite($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/projects/viewProject/' . $id);
+        }
+        
+        $project = $this->projectModel->getProjectById($id);
+        
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect('/projects');
+        }
+        
+        // Sanitize POST data
+        $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+        
+        $siteId = isset($_POST['site_id']) ? (int)$_POST['site_id'] : 0;
+        $notes = isset($_POST['notes']) ? trim($_POST['notes']) : '';
+        
+        if (empty($siteId)) {
+            flash('project_error', 'No site selected', 'alert-danger');
+            redirect('/projects/manageSites/' . $id);
+        }
+        
+        // Link the project to the site
+        $result = $this->projectModel->linkProjectToSite($id, $siteId, $notes);
+        
+        if ($result) {
+            flash('project_message', 'Project linked to site successfully');
+            redirect('/projects/manageSites/' . $id);
+        } else {
+            flash('project_error', 'Failed to link project to site', 'alert-danger');
+            redirect('/projects/manageSites/' . $id);
+        }
+    }
+    
+    /**
+     * Unlink a project from a site
+     * 
+     * @param int $id Project ID
+     * @param int $siteId Site ID
+     * @return void
+     */
+    public function unlinkSite($id, $siteId) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/projects/viewProject/' . $id);
+        }
+        
+        $project = $this->projectModel->getProjectById($id);
+        
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect('/projects');
+        }
+        
+        // Unlink the project from the site
+        $result = $this->projectModel->unlinkProjectFromSite($id, $siteId);
+        
+        if ($result) {
+            flash('project_message', 'Project unlinked from site successfully');
+            redirect('/projects/manageSites/' . $id);
+        } else {
+            flash('project_error', 'Failed to unlink project from site', 'alert-danger');
+            redirect('/projects/manageSites/' . $id);
+        }
+    }
+    
+    /**
+     * Display project activity history
+     * 
+     * @param int $id Project ID
+     * @return void
+     */
+    public function activity($id) {
+        // Get project details
+        $project = $this->projectModel->getProjectById($id);
+        
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect(URLROOT . '/projects');
+        }
+        
+        // Load the ActivityLog model
+        $activityLogModel = $this->model('ActivityLog');
+        
+        // Process filters if submitted
+        $filters = [
+            'entity_type' => 'project',
+            'entity_id' => $id
+        ];
+        
+        // Handle filter form submission
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Apply date filters if provided
+            if (!empty($_POST['start_date'])) {
+                $filters['start_date'] = $_POST['start_date'];
+            }
+            
+            if (!empty($_POST['end_date'])) {
+                $filters['end_date'] = $_POST['end_date'];
+            }
+            
+            // Apply action filter if provided
+            if (!empty($_POST['action_type']) && $_POST['action_type'] !== 'all') {
+                $filters['action'] = $_POST['action_type'];
+            }
+            
+            // Apply user filter if provided
+            if (!empty($_POST['user_id']) && $_POST['user_id'] !== 'all') {
+                $filters['user_id'] = $_POST['user_id'];
+            }
+        }
+        
+        // Get activities based on filters
+        $activities = $activityLogModel->getActivitiesWithFilters($filters);
+        
+        // Format activities for display
+        $formattedActivities = [];
+        foreach ($activities as $activity) {
+            $formattedActivities[] = $activityLogModel->formatActivityForDisplay($activity);
+        }
+        
+        // Get users for the filter dropdown
+        $users = $this->userModel->getAllUsers();
+        
+        // For backward compatibility, also get notes and task activities
+        // These will be shown only if there are no new-style activity logs yet
+        $notes = $this->noteModel->getNotesByReference('project', $id);
+        $taskActivities = $this->taskModel->getRecentTaskActivityByProject($id, 100);
+        
+        // Combine legacy activities
+        $legacyActivities = [];
+        
+        // Add notes to activities
+        foreach ($notes as $note) {
+            $legacyActivities[] = [
+                'type' => 'note',
+                'data' => $note,
+                'date' => $note['created_at']
+            ];
+        }
+        
+        // Add task activities to activities
+        foreach ($taskActivities as $task) {
+            $legacyActivities[] = [
+                'type' => 'task',
+                'data' => $task,
+                'date' => ($task->activity_type === 'updated' && !empty($task->updated_at)) ? $task->updated_at : $task->created_at
+            ];
+        }
+        
+        // Sort legacy activities by date (newest first)
+        usort($legacyActivities, function($a, $b) {
+            return strtotime($b['date']) - strtotime($a['date']);
+        });
+        
+        // Get action types for filter dropdown
+        $actionTypes = [
+            'created' => 'Created',
+            'updated' => 'Updated',
+            'deleted' => 'Deleted',
+            'completed' => 'Completed',
+            'assigned' => 'Assigned',
+            'uploaded' => 'Uploaded',
+            'downloaded' => 'Downloaded',
+            'linked' => 'Linked',
+            'unlinked' => 'Unlinked'
+        ];
+        
+        $this->view('projects/activity', [
+            'title' => 'Activity - ' . $project->title,
+            'project' => $project,
+            'activities' => $formattedActivities,
+            'legacy_activities' => $legacyActivities,
+            'users' => $users,
+            'action_types' => $actionTypes,
+            'filters' => $filters
+        ]);
+    }
+    
+    /**
+     * Upload a document for a project
+     * 
+     * @param int $projectId Project ID
+     * @return void
+     */
+    public function uploadDocument($projectId = null) {
+        // Check if project ID is provided
+        if (!$projectId) {
+            flash('project_error', 'No project id provided', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        
+        // Check if project exists
+        $project = $this->projectModel->getProjectById($projectId);
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        
+        // Check if it's a POST request
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('projects/viewProject/' . $projectId);
+            return;
+        }
+        
+        // Check if a file was uploaded
+        if (!isset($_FILES['document']) || $_FILES['document']['error'] !== UPLOAD_ERR_OK) {
+            flash('project_error', 'No file uploaded or upload error', 'alert-danger');
+            redirect('projects/viewProject/' . $projectId);
+            return;
+        }
+        
+        // Get file details
+        $file = $_FILES['document'];
+        $fileName = $file['name'];
+        $fileTmpPath = $file['tmp_name'];
+        $fileSize = $file['size'];
+        $fileType = $file['type'];
+        
+        // Validate file size (max 10MB)
+        $maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        if ($fileSize > $maxSize) {
+            flash('project_error', 'File size exceeds the maximum limit (10MB)', 'alert-danger');
+            redirect('projects/viewProject/' . $projectId);
+            return;
+        }
+        
+        // Get file extension
+        $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        
+        // Allowed file types
+        $allowedTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'txt', 'zip'];
+        
+        // Check if file type is allowed
+        if (!in_array($fileExt, $allowedTypes)) {
+            flash('project_error', 'File type not allowed', 'alert-danger');
+            redirect('projects/viewProject/' . $projectId);
+            return;
+        }
+        
+        // Create the upload directory if it doesn't exist
+        $uploadDir = APPROOT . '/../uploads/projects/' . $projectId . '/';
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+        
+        // Generate a unique filename to avoid conflicts
+        $newFileName = uniqid() . '_' . $fileName;
+        $uploadPath = $uploadDir . $newFileName;
+        
+        // Move the uploaded file to the destination
+        if (move_uploaded_file($fileTmpPath, $uploadPath)) {
+            // Get document type and description from POST
+            $documentType = isset($_POST['document_type']) ? trim($_POST['document_type']) : null;
+            $description = isset($_POST['description']) ? trim($_POST['description']) : null;
+            
+            // Save document info to database
+            $fileData = [
+                'file_name' => $fileName,
+                'file_path' => 'uploads/projects/' . $projectId . '/' . $newFileName,
+                'file_type' => $fileType,
+                'file_size' => $fileSize,
+                'uploaded_by' => $_SESSION['user_id']
+            ];
+            
+            $documentId = $this->projectModel->uploadDocument($projectId, $fileData, $documentType, $description);
+            
+            if ($documentId) {
+                // Log the activity
+                $activityLogModel = $this->model('ActivityLog');
+                
+                // Format file size for readable description
+                $formattedFileSize = $this->formatFileSize($fileSize);
+                
+                // Create description
+                $activityDescription = sprintf(
+                    'Uploaded document "%s" (%s) to project "%s"',
+                    $fileName,
+                    $formattedFileSize,
+                    $project->title
+                );
+                
+                if ($documentType) {
+                    $activityDescription .= sprintf(' - Type: %s', $documentType);
+                }
+                
+                // Prepare metadata
+                $metadata = [
+                    'document_id' => $documentId,
+                    'file_name' => $fileName,
+                    'file_type' => $fileType,
+                    'file_size' => $fileSize,
+                    'document_type' => $documentType,
+                    'description' => $description,
+                    'project_title' => $project->title
+                ];
+                
+                // Log the activity
+                $activityLogModel->log(
+                    $_SESSION['user_id'],
+                    'project',
+                    $projectId,
+                    'uploaded',
+                    $activityDescription,
+                    $metadata
+                );
+                
+                flash('project_message', 'Document uploaded successfully');
+            } else {
+                // Delete the file if database insert failed
+                unlink($uploadPath);
+                flash('project_error', 'Failed to save document information', 'alert-danger');
+            }
+        } else {
+            flash('project_error', 'Failed to upload document', 'alert-danger');
+        }
+        
+        redirect('projects/viewProject/' . $projectId);
+    }
+    
+    /**
+     * Download a document
+     * 
+     * @param int $documentId Document ID
+     * @return void
+     */
+    public function downloadDocument($documentId = null) {
+        // Check if document ID is provided
+        if (!$documentId) {
+            flash('project_error', 'No document id provided', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        
+        // Get document information
+        $document = $this->projectModel->getDocumentById($documentId);
+        
+        if (!$document) {
+            flash('project_error', 'Document not found', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        
+        // Get project information for logging
+        $project = $this->projectModel->getProjectById($document['project_id']);
+        
+        // Log the download activity before sending the file
+        if (isset($_SESSION['user_id']) && $project) {
+            $activityLogModel = $this->model('ActivityLog');
+            
+            // Format file size for readable description
+            $formattedFileSize = $this->formatFileSize($document['file_size']);
+            
+            // Create description
+            $activityDescription = sprintf(
+                'Downloaded document "%s" (%s) from project "%s"',
+                $document['file_name'],
+                $formattedFileSize,
+                $project->title
+            );
+            
+            // Prepare metadata
+            $metadata = [
+                'document_id' => $documentId,
+                'file_name' => $document['file_name'],
+                'file_type' => $document['file_type'],
+                'file_size' => $document['file_size'],
+                'project_id' => $document['project_id'],
+                'project_title' => $project->title
+            ];
+            
+            // Log the activity
+            $activityLogModel->log(
+                $_SESSION['user_id'],
+                'project',
+                $document['project_id'],
+                'downloaded',
+                $activityDescription,
+                $metadata
+            );
+        }
+        
+        // File path
+        $filePath = APPROOT . '/../' . $document['file_path'];
+        
+        // Check if file exists
+        if (!file_exists($filePath)) {
+            flash('project_error', 'Document file not found', 'alert-danger');
+            redirect('projects/viewProject/' . $document['project_id']);
+            return;
+        }
+        
+        // Clear all output buffers
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Set headers for download
+        header('Content-Description: File Transfer');
+        header('Content-Type: ' . $document['file_type']);
+        header('Content-Disposition: attachment; filename="' . $document['file_name'] . '"');
+        header('Content-Length: ' . filesize($filePath));
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Output file
+        readfile($filePath);
+        exit;
+    }
+    
+    /**
+     * Delete a document
+     * 
+     * @param int $documentId Document ID
+     * @param int $projectId Project ID
+     * @return void
+     */
+    public function deleteDocument($documentId = null, $projectId = null) {
+        // Check if document ID is provided
+        if (!$documentId) {
+            flash('project_error', 'No document id provided', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        
+        // Get document information
+        $document = $this->projectModel->getDocumentById($documentId);
+        
+        if (!$document) {
+            flash('project_error', 'Document not found', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        
+        // Check if project ID is set, if not, use from document
+        if (!$projectId) {
+            $projectId = $document['project_id'];
+        }
+        
+        // File path
+        $filePath = APPROOT . '/../' . $document['file_path'];
+        
+        // Delete file from storage
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+        
+        // Delete document record from database
+        $result = $this->projectModel->deleteDocument($documentId);
+        
+        if ($result) {
+            flash('project_message', 'Document deleted successfully');
+        } else {
+            flash('project_error', 'Failed to delete document', 'alert-danger');
+        }
+        
+        redirect('projects/viewProject/' . $projectId);
+    }
+    
+    /**
+     * Format file size for display
+     * 
+     * @param int $bytes File size in bytes
+     * @param int $precision Decimal precision 
+     * @return string Formatted file size
+     */
+    public function formatFileSize($bytes, $precision = 2) {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        
+        $bytes /= (1 << (10 * $pow));
+        
+        return round($bytes, $precision) . ' ' . $units[$pow];
     }
 } 

@@ -8,15 +8,34 @@ class Controller {
 
     // Load a view with a layout
     public function view($view, $data = []) {
+        // Check if view is numeric or not a string, and use a default view if so
+        if (is_numeric($view) || !is_string($view)) {
+            $view = 'errors/not_found';
+        }
+        
         // Extract data for use in the view
         extract($data);
-
+        
         // Start output buffering for dynamic content
         ob_start();
-
+        
         // Load the view file
-        require_once VIEWSPATH . '/' . $view . '.php';
-
+        $viewFile = VIEWSPATH . '/' . $view . '.php';
+        if (file_exists($viewFile)) {
+            require_once $viewFile;
+        } else {
+            // If view doesn't exist, load a not found view
+            if (file_exists(VIEWSPATH . '/errors/not_found.php')) {
+                require_once VIEWSPATH . '/errors/not_found.php';
+            } else {
+                // If even the not found view doesn't exist, show a simple message
+                echo '<div style="text-align:center; margin-top:50px;">';
+                echo '<h1>View Not Found</h1>';
+                echo '<p>The requested view "' . htmlspecialchars($view) . '" could not be found.</p>';
+                echo '</div>';
+            }
+        }
+        
         // Capture the view content
         $content = ob_get_clean();
 

@@ -21,7 +21,7 @@ class User {
         try {
             // Query to find the user by username
             // Adjust this query based on your actual database schema
-            $query = "SELECT * FROM Users WHERE username = ?";
+            $query = "SELECT * FROM [Users] WHERE username = ?";
             $result = $this->db->select($query, [$username]);
             
             if (empty($result)) {
@@ -57,7 +57,7 @@ class User {
      */
     public function getUserById(int $userId): array|bool {
         try {
-            $query = "SELECT * FROM Users WHERE id = ?";
+            $query = "SELECT * FROM [Users] WHERE id = ?";
             $result = $this->db->select($query, [$userId]);
             
             if (empty($result)) {
@@ -83,7 +83,7 @@ class User {
         try {
             $query = "SELECT id, username as name, email, full_name, 
                      role, created_at, last_login 
-                     FROM Users 
+                     FROM [Users] 
                      WHERE is_active = 1 
                      ORDER BY created_at DESC";
             $result = $this->db->select($query);
@@ -103,7 +103,7 @@ class User {
      */
     public function updateUserProfile(array $data): bool {
         try {
-            $query = "UPDATE Users SET 
+            $query = "UPDATE [Users] SET 
                       full_name = ?, 
                       email = ?, 
                       position = ?, 
@@ -134,7 +134,7 @@ class User {
      */
     public function checkPassword(int $userId, string $password): bool {
         try {
-            $query = "SELECT password FROM Users WHERE id = ?";
+            $query = "SELECT password FROM [Users] WHERE id = ?";
             $result = $this->db->select($query, [$userId]);
             
             if (empty($result)) {
@@ -159,7 +159,7 @@ class User {
     public function updatePassword(int $userId, string $newPassword): bool {
         try {
             // In a real application, you would use password_hash() here
-            $query = "UPDATE Users SET password = ? WHERE id = ?";
+            $query = "UPDATE [Users] SET password = ? WHERE id = ?";
             $params = [$newPassword, $userId];
             
             $this->db->update($query, $params);
@@ -503,7 +503,7 @@ class User {
      */
     public function updateProfilePicture($userId, $filename) {
         try {
-            $sql = "UPDATE users SET profile_picture = ? WHERE id = ?";
+            $sql = "UPDATE [users] SET profile_picture = ? WHERE id = ?";
             return $this->db->update($sql, [$filename, $userId]);
             
         } catch (Exception $e) {
@@ -526,7 +526,7 @@ class User {
     // Get total number of users
     public function getTotalUsers() {
         try {
-            $result = $this->db->select("SELECT COUNT(*) as total FROM users");
+            $result = $this->db->select("SELECT COUNT(*) as total FROM [users]");
             return $result[0]['total'] ?? 0;
         } catch (Exception $e) {
             error_log('GetTotalUsers Error: ' . $e->getMessage());
@@ -537,7 +537,7 @@ class User {
     // Get recent users for admin dashboard
     public function getRecentUsers($limit = 5) {
         try {
-            return $this->db->select("SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC LIMIT ?", [$limit]);
+            return $this->db->select("SELECT id, name, email, role, created_at FROM [users] ORDER BY created_at DESC LIMIT ?", [$limit]);
         } catch (Exception $e) {
             error_log('GetRecentUsers Error: ' . $e->getMessage());
             return [];
@@ -547,7 +547,7 @@ class User {
     // Update user role
     public function updateUserRole($userId, $role) {
         try {
-            $sql = "UPDATE users SET role = ? WHERE id = ?";
+            $sql = "UPDATE [users] SET role = ? WHERE id = ?";
             return $this->db->update($sql, [$role, $userId]);
         } catch (Exception $e) {
             error_log('UpdateUserRole Error: ' . $e->getMessage());
@@ -558,10 +558,101 @@ class User {
     // Delete user
     public function deleteUser($userId) {
         try {
-            $sql = "DELETE FROM users WHERE id = ?";
+            $sql = "DELETE FROM [users] WHERE id = ?";
             return $this->db->remove($sql, [$userId]);
         } catch (Exception $e) {
             error_log('DeleteUser Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Register a new user
+     * 
+     * @param array $data User data including name, email, password (hashed), and role
+     * @return bool True if successful, false otherwise
+     */
+    public function register(array $data): bool {
+        try {
+            $sql = "INSERT INTO [users] (username, password, email, full_name, role, created_at) 
+                   VALUES (?, ?, ?, ?, ?, GETDATE())";
+            
+            $result = $this->db->insert($sql, [
+                $data['name'], // This will be used as the username
+                $data['password'],
+                $data['email'],
+                $data['name'], // Using the name as full_name as well since we don't have a separate field
+                $data['role']
+            ]);
+            
+            // Insert returns the inserted ID or null, we need to convert to boolean
+            return $result !== null;
+        } catch (Exception $e) {
+            error_log('Register User Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update a user without changing password
+     * 
+     * @param array $data User data including id, name, email, and role
+     * @return bool True if successful, false otherwise
+     */
+    public function updateUser(array $data): bool {
+        try {
+            $sql = "UPDATE [users] SET 
+                    username = ?, 
+                    email = ?,
+                    full_name = ?,
+                    role = ? 
+                    WHERE id = ?";
+            
+            $this->db->update($sql, [
+                $data['name'],
+                $data['email'],
+                $data['name'], // Using name for full_name as well
+                $data['role'],
+                $data['id']
+            ]);
+            
+            // If we get here, the update was successful (no exception was thrown)
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdateUser Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update a user including password
+     * 
+     * @param array $data User data including id, name, email, password, and role
+     * @return bool True if successful, false otherwise
+     */
+    public function updateUserWithPassword(array $data): bool {
+        try {
+            $sql = "UPDATE [users] SET 
+                    username = ?, 
+                    email = ?,
+                    full_name = ?,
+                    password = ?,
+                    role = ? 
+                    WHERE id = ?";
+            
+            $this->db->update($sql, [
+                $data['name'],
+                $data['email'],
+                $data['name'], // Using name for full_name as well
+                $data['password'], // This is already hashed in the controller
+                $data['role'],
+                $data['id']
+            ]);
+            
+            // If we get here, the update was successful (no exception was thrown)
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdateUserWithPassword Error: ' . $e->getMessage());
             return false;
         }
     }

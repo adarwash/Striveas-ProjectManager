@@ -63,8 +63,8 @@
                             <div class="col-md-8">
                                 <p class="mb-1 text-muted">Budget</p>
                                 <p class="mb-1">
-                                    <strong>$<?= number_format($project->budget ?? 0, 2) ?></strong> 
-                                    of $<?= number_format($project->department_budget ?? 0, 2) ?>
+                                    <strong><?= $currency['symbol'] ?><?= number_format($project->budget ?? 0, 2) ?></strong> 
+                                    of <?= $currency['symbol'] ?><?= number_format($project->department_budget ?? 0, 2) ?>
                                 </p>
                                 
                                 <?php 
@@ -138,6 +138,44 @@
     </div>
     
     <div class="col-md-4">
+        <!-- Sites Section -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Sites</h5>
+                <a href="/projects/manageSites/<?= $project->id ?>" class="btn btn-sm btn-primary">
+                    <i class="bi bi-link"></i> Manage Sites
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <?php if (empty($linked_sites)): ?>
+                    <div class="p-4 text-center">
+                        <p class="text-muted mb-0">No sites linked to this project yet.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($linked_sites as $site): ?>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1"><?= htmlspecialchars($site['name']) ?></h6>
+                                        <small class="text-muted"><?= htmlspecialchars($site['location']) ?></small>
+                                    </div>
+                                    <?php if (!empty($site['notes'])): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                data-bs-toggle="tooltip" data-bs-placement="top" 
+                                                title="<?= htmlspecialchars($site['notes']) ?>">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <!-- Tasks Section -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Tasks</h5>
@@ -219,3 +257,13 @@
         </div>
     </div>
 </div> 
+
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script> 

@@ -603,5 +603,217 @@ class Employee {
             return [];
         }
     }
+    
+    /**
+     * Get all sites assigned to an employee
+     * 
+     * @param int $userId User ID
+     * @return array List of sites
+     */
+    public function getEmployeeSites($userId) {
+        try {
+            // Check if the EmployeeSites table exists
+            $checkTable = "IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'EmployeeSites')
+                          BEGIN
+                              SELECT 1 AS table_exists
+                          END
+                          ELSE
+                          BEGIN
+                              SELECT 0 AS table_exists
+                          END";
+                          
+            $result = $this->db->select($checkTable);
+            $tableExists = isset($result[0]['table_exists']) && $result[0]['table_exists'] == 1;
+            
+            if ($tableExists) {
+                // If the table exists, get the sites
+                $query = "SELECT es.*, s.name as site_name, s.location, s.status
+                         FROM EmployeeSites es
+                         JOIN Sites s ON es.site_id = s.id
+                         WHERE es.user_id = ?
+                         ORDER BY s.name ASC";
+                         
+                return $this->db->select($query, [$userId]);
+            } else {
+                // Return placeholder data for demonstration
+                // In a production app, you would create the table first
+                return [
+                    [
+                        'site_name' => 'Main Office',
+                        'location' => 'New York, NY',
+                        'role' => 'Regular Staff',
+                        'status' => 'Active'
+                    ],
+                    [
+                        'site_name' => 'Branch Office',
+                        'location' => 'Chicago, IL',
+                        'role' => 'Visiting',
+                        'status' => 'Temporary'
+                    ]
+                ];
+            }
+        } catch (Exception $e) {
+            error_log('Error fetching employee sites: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Upload document for an employee
+     * 
+     * @param int $userId User ID
+     * @param array $fileData File data
+     * @param string $documentType Document type (optional)
+     * @param string $description Document description (optional)
+     * @return bool Success status
+     */
+    public function uploadDocument($userId, $fileData, $documentType = null, $description = null) {
+        try {
+            // Use direct PDO connection to ensure compatibility
+            $pdo = new PDO(
+                "sqlsrv:Server=" . DB1['host'] . ";Database=" . DB1['dbname'] . ";TrustServerCertificate=true", 
+                DB1['user'], 
+                DB1['pass']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $sql = "INSERT INTO employee_documents 
+                    (user_id, file_name, file_path, file_type, file_size, document_type, description, uploaded_by, uploaded_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
+            
+            $stmt = $pdo->prepare($sql);
+            $result = $stmt->execute([
+                $userId,
+                $fileData['name'],
+                $fileData['path'],
+                $fileData['type'],
+                $fileData['size'],
+                $documentType,
+                $description,
+                $_SESSION['user_id']
+            ]);
+            
+            return $result;
+        } catch (Exception $e) {
+            error_log('Upload Employee Document Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get documents for an employee
+     * 
+     * @param int $userId User ID
+     * @return array Documents
+     */
+    public function getEmployeeDocuments($userId) {
+        try {
+            // Use direct PDO connection to ensure compatibility
+            $pdo = new PDO(
+                "sqlsrv:Server=" . DB1['host'] . ";Database=" . DB1['dbname'] . ";TrustServerCertificate=true", 
+                DB1['user'], 
+                DB1['pass']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            // Check if the table exists
+            $checkTable = "SELECT CASE WHEN EXISTS (
+                            SELECT * FROM INFORMATION_SCHEMA.TABLES 
+                            WHERE TABLE_NAME = 'employee_documents'
+                          ) THEN 1 ELSE 0 END AS table_exists";
+            
+            $checkStmt = $pdo->query($checkTable);
+            $row = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$row || $row['table_exists'] != 1) {
+                // Table doesn't exist, return empty array
+                return [];
+            }
+            
+            // If table exists, get documents
+            $sql = "SELECT d.*, u.username as uploaded_by_name 
+                    FROM employee_documents d
+                    LEFT JOIN Users u ON d.uploaded_by = u.id
+                    WHERE d.user_id = ? 
+                    ORDER BY d.uploaded_at DESC";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log('Get Employee Documents Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get document by ID
+     * 
+     * @param int $documentId Document ID
+     * @return array|bool Document data or false
+     */
+    public function getDocumentById($documentId) {
+        try {
+            // Use direct PDO connection to ensure compatibility
+            $pdo = new PDO(
+                "sqlsrv:Server=" . DB1['host'] . ";Database=" . DB1['dbname'] . ";TrustServerCertificate=true", 
+                DB1['user'], 
+                DB1['pass']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            // Check if the table exists
+            $checkTable = "SELECT CASE WHEN EXISTS (
+                            SELECT * FROM INFORMATION_SCHEMA.TABLES 
+                            WHERE TABLE_NAME = 'employee_documents'
+                          ) THEN 1 ELSE 0 END AS table_exists";
+            
+            $checkStmt = $pdo->query($checkTable);
+            $row = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$row || $row['table_exists'] != 1) {
+                // Table doesn't exist, return null
+                return false;
+            }
+            
+            // If table exists, get document
+            $sql = "SELECT d.*, u.username as uploaded_by_name 
+                    FROM employee_documents d
+                    LEFT JOIN Users u ON d.uploaded_by = u.id
+                    WHERE d.id = ?";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$documentId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: false;
+        } catch (Exception $e) {
+            error_log('Get Document By ID Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Delete document
+     * 
+     * @param int $documentId Document ID
+     * @return bool Success status
+     */
+    public function deleteDocument($documentId) {
+        try {
+            // Use direct PDO connection to ensure compatibility
+            $pdo = new PDO(
+                "sqlsrv:Server=" . DB1['host'] . ";Database=" . DB1['dbname'] . ";TrustServerCertificate=true", 
+                DB1['user'], 
+                DB1['pass']
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $sql = "DELETE FROM employee_documents WHERE id = ?";
+            $stmt = $pdo->prepare($sql);
+            return $stmt->execute([$documentId]);
+        } catch (Exception $e) {
+            error_log('Delete Employee Document Error: ' . $e->getMessage());
+            return false;
+        }
+    }
 }
 ?> 

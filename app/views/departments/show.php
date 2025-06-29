@@ -119,7 +119,7 @@
                         <?php if ($percentageUsed > 100): ?>
                             <div class="alert alert-danger mt-3 small">
                                 <i class="bi bi-exclamation-circle-fill"></i> 
-                                Budget exceeded! Projects are allocated $<?= number_format($usedBudget - $department->budget, 2) ?> more than the available budget.
+                                Budget exceeded! Projects are allocated <?= $currency['symbol'] ?><?= number_format($usedBudget - $department->budget, 2) ?> more than the available budget.
                             </div>
                         <?php endif; ?>
                     </div>
@@ -207,7 +207,7 @@
                                             ?>
                                             <span class="badge <?= $statusClass ?>"><?= $project->status ?></span>
                                         </td>
-                                        <td>$<?= number_format($project->budget, 2) ?></td>
+                                        <td><?= $currency['symbol'] ?><?= number_format($project->budget, 2) ?></td>
                                         <td><?= date('M j, Y', strtotime($project->start_date)) ?></td>
                                         <td><?= date('M j, Y', strtotime($project->end_date)) ?></td>
                                         <td>

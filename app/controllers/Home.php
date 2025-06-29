@@ -44,10 +44,9 @@
                     'budget_usage' => $budgetUsage
                 ]);
             } else {
-                // User is not logged in, show welcome page
-                $this->view('home/index', [
-                    'title' => 'Welcome'
-                ]);
+                // User is not logged in, redirect to login page
+                header('Location: /auth');
+                exit;
             }
         }
     }

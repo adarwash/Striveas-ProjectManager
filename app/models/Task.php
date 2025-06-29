@@ -100,6 +100,19 @@ class Task {
         ]);
     }
     
+    /**
+     * Update the status of a task
+     * 
+     * @param int $id Task ID
+     * @param string $status New status
+     * @return bool True if successful, false otherwise
+     */
+    public function updateStatus($id, $status) {
+        $query = "UPDATE tasks SET status = ?, updated_at = GETDATE() WHERE id = ?";
+        
+        return $this->db->update($query, [$status, $id]);
+    }
+    
     // Delete task
     public function delete($id) {
         $query = "DELETE FROM tasks WHERE id = ?";
@@ -522,6 +535,50 @@ class Task {
             return $this->db->select($query, [$limit]);
         } catch (Exception $e) {
             error_log('GetRecentTasks Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get recent task activity for a specific project
+     * 
+     * @param int $projectId The project ID
+     * @param int $limit The maximum number of activities to return
+     * @return array Array of recent task activities
+     */
+    public function getRecentTaskActivityByProject($projectId, $limit = 5) {
+        try {
+            // For MS SQL Server, use TOP instead of LIMIT
+            $query = "SELECT TOP $limit t.id, t.title, t.status, t.assigned_to, 
+                     u1.username as assigned_to_name, u2.username as created_by_name,
+                     t.created_at, t.updated_at,
+                     CASE 
+                         WHEN t.updated_at IS NOT NULL AND t.updated_at <> t.created_at THEN 'updated'
+                         ELSE 'created'
+                     END as activity_type
+                     FROM tasks t
+                     LEFT JOIN users u1 ON t.assigned_to = u1.id
+                     LEFT JOIN users u2 ON t.created_by = u2.id
+                     WHERE t.project_id = ?
+                     ORDER BY 
+                         CASE 
+                             WHEN t.updated_at IS NOT NULL AND t.updated_at <> t.created_at THEN t.updated_at
+                             ELSE t.created_at
+                         END DESC";
+            
+            $results = $this->db->select($query, [$projectId]);
+            
+            // Convert arrays to objects for consistency
+            $activities = [];
+            if (!empty($results)) {
+                foreach ($results as $result) {
+                    $activities[] = (object)$result;
+                }
+            }
+            
+            return $activities;
+        } catch (Exception $e) {
+            error_log('GetRecentTaskActivityByProject Error: ' . $e->getMessage());
             return [];
         }
     }

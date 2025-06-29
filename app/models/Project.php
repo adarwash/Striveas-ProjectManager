@@ -523,4 +523,303 @@ class Project {
             return [];
         }
     }
+
+    /**
+     * Create the project_sites table if it doesn't exist
+     * 
+     * @return boolean Success status
+     */
+    public function createProjectSitesTable() {
+        try {
+            $sql = "
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='project_sites' AND xtype='U')
+            BEGIN
+                CREATE TABLE project_sites (
+                    id INT IDENTITY(1,1) PRIMARY KEY,
+                    project_id INT NOT NULL,
+                    site_id INT NOT NULL,
+                    link_date DATETIME DEFAULT GETDATE(),
+                    notes NVARCHAR(500) NULL,
+                    created_at DATETIME DEFAULT GETDATE(),
+                    updated_at DATETIME NULL,
+                    CONSTRAINT fk_project_sites_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                    CONSTRAINT fk_project_sites_site FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+                    CONSTRAINT uk_project_site UNIQUE (project_id, site_id)
+                )
+            END";
+            
+            $this->db->query($sql);
+            return true;
+        } catch (Exception $e) {
+            error_log('Error creating project_sites table: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Link a project to a site
+     * 
+     * @param int $projectId Project ID
+     * @param int $siteId Site ID
+     * @param string $notes Optional notes about the link
+     * @return int|boolean The new link ID or false on failure
+     */
+    public function linkProjectToSite($projectId, $siteId, $notes = '') {
+        try {
+            // Ensure the table exists
+            $this->createProjectSitesTable();
+            
+            $query = "INSERT INTO project_sites (project_id, site_id, notes)
+                     VALUES (?, ?, ?)";
+            
+            return $this->db->insert($query, [$projectId, $siteId, $notes]);
+        } catch (Exception $e) {
+            error_log('Error linking project to site: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Unlink a project from a site
+     * 
+     * @param int $projectId Project ID
+     * @param int $siteId Site ID
+     * @return boolean Success status
+     */
+    public function unlinkProjectFromSite($projectId, $siteId) {
+        try {
+            $query = "DELETE FROM project_sites WHERE project_id = ? AND site_id = ?";
+            $this->db->remove($query, [$projectId, $siteId]);
+            return true;
+        } catch (Exception $e) {
+            error_log('Error unlinking project from site: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get all sites linked to a project
+     * 
+     * @param int $projectId Project ID
+     * @return array List of linked sites
+     */
+    public function getLinkedSites($projectId) {
+        try {
+            // Ensure the table exists
+            $this->createProjectSitesTable();
+            
+            $query = "SELECT s.*, ps.notes, ps.link_date
+                     FROM sites s
+                     JOIN project_sites ps ON s.id = ps.site_id
+                     WHERE ps.project_id = ?
+                     ORDER BY s.name ASC";
+            
+            return $this->db->select($query, [$projectId]);
+        } catch (Exception $e) {
+            error_log('Error getting linked sites: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get risk assessment data for a project
+     * 
+     * @param int $projectId Project ID
+     * @return array Array of risk items
+     */
+    public function getProjectRisks($projectId) {
+        try {
+            // Check if the project_risks table exists
+            $checkTable = "SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES 
+                           WHERE TABLE_NAME = 'project_risks'";
+            $result = $this->db->select($checkTable);
+            $tableExists = ($result && isset($result[0]['table_count']) && $result[0]['table_count'] > 0);
+            
+            if (!$tableExists) {
+                // Table doesn't exist, return empty array
+                return [];
+            }
+            
+            // If table exists, get risks
+            $sql = "SELECT r.*, u.username as created_by_name 
+                    FROM project_risks r
+                    LEFT JOIN users u ON r.created_by = u.id
+                    WHERE r.project_id = ? 
+                    ORDER BY r.severity DESC, r.created_at DESC";
+            
+            return $this->db->select($sql, [$projectId]);
+        } catch (Exception $e) {
+            error_log('Get Project Risks Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get all documents for a project
+     * 
+     * @param int $projectId Project ID
+     * @return array Array of document records
+     */
+    public function getProjectDocuments($projectId) {
+        try {
+            // Check if the project_documents table exists
+            $checkTable = "SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES 
+                           WHERE TABLE_NAME = 'project_documents'";
+            $result = $this->db->select($checkTable);
+            $tableExists = ($result && isset($result[0]['table_count']) && $result[0]['table_count'] > 0);
+            
+            if (!$tableExists) {
+                // Table doesn't exist, return empty array
+                return [];
+            }
+            
+            // If table exists, get documents
+            $sql = "SELECT d.*, u.username as uploaded_by_name 
+                    FROM project_documents d
+                    LEFT JOIN users u ON d.uploaded_by = u.id
+                    WHERE d.project_id = ? 
+                    ORDER BY d.uploaded_at DESC";
+            
+            return $this->db->select($sql, [$projectId]);
+        } catch (Exception $e) {
+            error_log('Get Project Documents Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Upload a document for a project
+     * 
+     * @param int $projectId Project ID
+     * @param array $fileData File data array
+     * @param string $documentType Document type
+     * @param string $description Document description
+     * @return int|bool Document ID if successful, false otherwise
+     */
+    public function uploadDocument($projectId, $fileData, $documentType = null, $description = null) {
+        try {
+            // Ensure the project_documents table exists
+            $this->createProjectDocumentsTable();
+            
+            $query = "INSERT INTO project_documents (project_id, file_name, file_path, file_type, file_size, document_type, description, uploaded_by, uploaded_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
+            
+            return $this->db->insert($query, [
+                $projectId,
+                $fileData['file_name'],
+                $fileData['file_path'],
+                $fileData['file_type'],
+                $fileData['file_size'],
+                $documentType,
+                $description,
+                $fileData['uploaded_by']
+            ]);
+        } catch (Exception $e) {
+            error_log('Upload Document Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get a document by ID
+     * 
+     * @param int $documentId Document ID
+     * @return array|bool Document data if found, false otherwise
+     */
+    public function getDocumentById($documentId) {
+        try {
+            // Check if the project_documents table exists
+            $checkTable = "SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES 
+                           WHERE TABLE_NAME = 'project_documents'";
+            $result = $this->db->select($checkTable);
+            $tableExists = ($result && isset($result[0]['table_count']) && $result[0]['table_count'] > 0);
+            
+            if (!$tableExists) {
+                // Table doesn't exist, return false
+                return false;
+            }
+            
+            $query = "SELECT * FROM project_documents WHERE id = ?";
+            $result = $this->db->select($query, [$documentId]);
+            return !empty($result) ? $result[0] : false;
+        } catch (Exception $e) {
+            error_log('Get Document Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Delete a document
+     * 
+     * @param int $documentId Document ID
+     * @return bool True if successful, false otherwise
+     */
+    public function deleteDocument($documentId) {
+        try {
+            $query = "DELETE FROM project_documents WHERE id = ?";
+            $this->db->remove($query, [$documentId]);
+            return true;
+        } catch (Exception $e) {
+            error_log('Delete Document Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Create project_documents table if it doesn't exist
+     * 
+     * @return bool True if successful or table already exists, false on error
+     */
+    public function createProjectDocumentsTable() {
+        try {
+            // First check if the table already exists
+            $checkTableQuery = "SELECT COUNT(*) AS table_exists FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'project_documents'";
+            $result = $this->db->select($checkTableQuery);
+            
+            // If table already exists, return true
+            if (!empty($result) && isset($result[0]['table_exists']) && $result[0]['table_exists'] > 0) {
+                return true;
+            }
+
+            // Create the table if it doesn't exist
+            $createTableQuery = "CREATE TABLE project_documents (
+                id INT IDENTITY(1,1) PRIMARY KEY,
+                project_id INT NOT NULL,
+                file_name NVARCHAR(255) NOT NULL,
+                file_path NVARCHAR(500) NOT NULL,
+                file_type NVARCHAR(100) NULL,
+                file_size BIGINT NULL,
+                document_type NVARCHAR(100) NULL,
+                description NVARCHAR(MAX) NULL,
+                uploaded_by INT NOT NULL,
+                uploaded_at DATETIME DEFAULT GETDATE(),
+                CONSTRAINT fk_project_documents_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                CONSTRAINT fk_project_documents_user FOREIGN KEY (uploaded_by) REFERENCES users(id)
+            )";
+            
+            // Execute the create table query
+            $this->db->query($createTableQuery);
+            
+            // Add indexes for better performance
+            $indexQueries = [
+                "CREATE INDEX idx_project_documents_project ON project_documents (project_id)",
+                "CREATE INDEX idx_project_documents_uploaded_by ON project_documents (uploaded_by)",
+                "CREATE INDEX idx_project_documents_uploaded_at ON project_documents (uploaded_at)"
+            ];
+            
+            foreach ($indexQueries as $indexQuery) {
+                try {
+                    $this->db->query($indexQuery);
+                } catch (Exception $e) {
+                    // Continue if index creation fails
+                    error_log('Error creating index: ' . $e->getMessage());
+                }
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('Error creating project_documents table: ' . $e->getMessage());
+            return false;
+        }
+    }
 } 

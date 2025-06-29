@@ -15,6 +15,28 @@
  */
 
 /**
+ * Sanitize user input to prevent XSS and other security issues
+ *
+ * @param mixed $input The input to sanitize
+ * @return mixed The sanitized input
+ */
+function sanitize_input($input) {
+    if (is_array($input)) {
+        // Recursively sanitize arrays
+        foreach ($input as $key => $value) {
+            $input[$key] = sanitize_input($value);
+        }
+        return $input;
+    } elseif (is_string($input)) {
+        // Trim and sanitize strings
+        return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
+    } else {
+        // Return other types as is
+        return $input;
+    }
+}
+
+/**
  * Check if the current user is logged in
  * @return bool True if user is logged in, false otherwise
  */
@@ -25,6 +47,19 @@ function isLoggedIn() {
     }
     
     return isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true;
+}
+
+/**
+ * Check if the current user is an admin
+ * @return bool True if user is an admin, false otherwise
+ */
+function isAdmin() {
+    // Start session if not already started
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
 }
 
 /**
@@ -56,6 +91,11 @@ function urlIs($path) {
  * @return void
  */
 function redirect($url) {
+    // Ensure the URL starts with a slash for relative URLs
+    if (substr($url, 0, 1) !== '/' && substr($url, 0, 4) !== 'http') {
+        $url = '/' . $url;
+    }
+    
     if (!headers_sent()) {
         header('Location: ' . $url);
         exit;

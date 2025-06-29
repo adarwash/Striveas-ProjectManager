@@ -39,14 +39,23 @@ class Notes extends Controller {
      */
     public function add() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            // Check if it's an AJAX request
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                return $this->addAjax();
+            }
+            
+            // Process regular form submission
+            // Sanitize POST data - using a modern approach instead of deprecated FILTER_SANITIZE_STRING
+            $title = isset($_POST['title']) ? htmlspecialchars(trim($_POST['title']), ENT_QUOTES, 'UTF-8') : '';
+            $content = isset($_POST['content']) ? htmlspecialchars(trim($_POST['content']), ENT_QUOTES, 'UTF-8') : '';
+            $type = isset($_POST['type']) ? htmlspecialchars(trim($_POST['type']), ENT_QUOTES, 'UTF-8') : '';
+            $reference_id = isset($_POST['reference_id']) ? (int)$_POST['reference_id'] : null;
             
             $data = [
-                'title' => trim($_POST['title']),
-                'content' => trim($_POST['content']),
-                'type' => trim($_POST['type']),
-                'reference_id' => (int)$_POST['reference_id'],
+                'title' => $title,
+                'content' => $content,
+                'type' => $type,
+                'reference_id' => $reference_id,
                 'created_by' => $_SESSION['user_id'],
                 'title_err' => '',
                 'content_err' => '',
@@ -65,21 +74,24 @@ class Notes extends Controller {
             }
             
             // Validate type
-            if (!in_array($data['type'], ['project', 'task'])) {
+            if (!in_array($data['type'], ['project', 'task', 'personal'])) {
                 $data['type_err'] = 'Invalid note type';
             }
             
-            // Validate reference exists
+            // Validate reference exists (only for project and task types)
             if ($data['type'] === 'project') {
                 $project = $this->projectModel->getProjectById($data['reference_id']);
                 if (!$project) {
                     $data['reference_id_err'] = 'Project not found';
                 }
-            } else {
+            } elseif ($data['type'] === 'task') {
                 $task = $this->taskModel->getTaskById($data['reference_id']);
                 if (!$task) {
                     $data['reference_id_err'] = 'Task not found';
                 }
+            } else {
+                // For personal notes, no reference needed
+                $data['reference_id_err'] = '';
             }
             
             // Make sure no errors
@@ -115,6 +127,168 @@ class Notes extends Controller {
     }
     
     /**
+     * Handle AJAX request to add a note
+     */
+    private function addAjax() {
+        // Prevent any output by starting output buffering
+        ob_start();
+        
+        try {
+            // Clear any previous output that might have occurred
+            if (ob_get_length()) ob_clean();
+            
+            // Set header for JSON response
+            header('Content-Type: application/json');
+            
+            // Sanitize POST data - using modern alternatives to deprecated FILTER_SANITIZE_STRING
+            $title = isset($_POST['title']) ? htmlspecialchars(trim($_POST['title']), ENT_QUOTES, 'UTF-8') : '';
+            $content = isset($_POST['content']) ? htmlspecialchars(trim($_POST['content']), ENT_QUOTES, 'UTF-8') : '';
+            $type = isset($_POST['type']) ? htmlspecialchars(trim($_POST['type']), ENT_QUOTES, 'UTF-8') : '';
+            $reference_id = isset($_POST['reference_id']) ? (int)$_POST['reference_id'] : null;
+            
+            $data = [
+                'title' => $title,
+                'content' => $content,
+                'type' => $type,
+                'reference_id' => $reference_id,
+                'created_by' => $_SESSION['user_id'] ?? 0
+            ];
+            
+            error_log('AJAX Note Add - Data: ' . json_encode($data));
+            
+            // Check for missing required data
+            if (empty($title) || empty($content) || empty($type)) {
+                error_log('AJAX Note Add - Missing form fields: ' . json_encode($_POST));
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Missing required form fields',
+                    'debug' => [
+                        'provided_data' => $_POST,
+                        'processed_data' => $data
+                    ]
+                ]);
+                ob_end_flush();
+                return;
+            }
+            
+            $errors = [];
+            
+            // Validate title
+            if (empty($data['title'])) {
+                $errors['title'] = 'Please enter a title';
+            }
+            
+            // Validate content
+            if (empty($data['content'])) {
+                $errors['content'] = 'Please enter note content';
+            }
+            
+            // Validate type
+            if (!in_array($data['type'], ['project', 'task', 'personal'])) {
+                $errors['type'] = 'Invalid note type';
+                error_log('AJAX Note Add - Invalid type: ' . $data['type']);
+            }
+            
+            // Validate reference exists (only for project and task types)
+            if ($data['type'] === 'project') {
+                if (empty($data['reference_id'])) {
+                    $errors['reference_id'] = 'Project ID is required';
+                    error_log('AJAX Note Add - Missing project ID');
+                } else {
+                    $project = $this->projectModel->getProjectById($data['reference_id']);
+                    if (!$project) {
+                        $errors['reference_id'] = 'Project not found';
+                        error_log('AJAX Note Add - Invalid project ID: ' . $data['reference_id']);
+                    }
+                }
+            } elseif ($data['type'] === 'task') {
+                if (empty($data['reference_id'])) {
+                    $errors['reference_id'] = 'Task ID is required';
+                    error_log('AJAX Note Add - Missing task ID');
+                } else {
+                    $task = $this->taskModel->getTaskById($data['reference_id']);
+                    if (!$task) {
+                        $errors['reference_id'] = 'Task not found';
+                        error_log('AJAX Note Add - Invalid task ID: ' . $data['reference_id']);
+                    }
+                }
+            }
+            
+            // Return errors if any
+            if (!empty($errors)) {
+                echo json_encode([
+                    'success' => false,
+                    'errors' => $errors,
+                    'message' => 'Please fix the errors and try again.'
+                ]);
+                ob_end_flush();
+                return;
+            }
+            
+            // Log before attempting to create note
+            error_log('AJAX Note Add - About to create note: ' . json_encode($data));
+            
+            // For personal notes, set reference_id to null
+            if ($data['type'] === 'personal') {
+                $data['reference_id'] = null;
+            }
+            
+            // Create note
+            $noteId = $this->noteModel->create($data);
+            
+            if ($noteId) {
+                error_log('AJAX Note Add - Note created successfully with ID/result: ' . (is_int($noteId) ? $noteId : 'true'));
+                
+                // Try to get the note details if we have an ID
+                $note = is_int($noteId) ? $this->noteModel->getNoteById($noteId) : null;
+                
+                if ($note) {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Note added successfully',
+                        'note' => $note
+                    ]);
+                } else {
+                    // We don't have the note details, but the creation was successful
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Note added successfully',
+                        'note_created' => true
+                    ]);
+                }
+            } else {
+                error_log('AJAX Note Add - Failed to create note');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to add note. Please try again.'
+                ]);
+            }
+        } catch (Exception $e) {
+            $errorMessage = 'Error in Notes::addAjax: ' . $e->getMessage();
+            error_log($errorMessage);
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            
+            // In case headers haven't been sent yet
+            if (!headers_sent()) {
+                header('Content-Type: application/json');
+            }
+            
+            echo json_encode([
+                'success' => false,
+                'message' => 'An unexpected error occurred. Please try again later.',
+                'debug' => [
+                    'error' => $errorMessage,
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]
+            ]);
+        }
+        
+        // Ensure output buffer is flushed
+        ob_end_flush();
+    }
+    
+    /**
      * Edit a note
      */
     public function edit($id) {
@@ -133,13 +307,14 @@ class Notes extends Controller {
         }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            // Sanitize POST data using modern approach instead of deprecated FILTER_SANITIZE_STRING
+            $title = isset($_POST['title']) ? htmlspecialchars(trim($_POST['title']), ENT_QUOTES, 'UTF-8') : '';
+            $content = isset($_POST['content']) ? htmlspecialchars(trim($_POST['content']), ENT_QUOTES, 'UTF-8') : '';
             
             $data = [
                 'id' => $id,
-                'title' => trim($_POST['title']),
-                'content' => trim($_POST['content']),
+                'title' => $title,
+                'content' => $content,
                 'created_by' => $_SESSION['user_id'],
                 'title_err' => '',
                 'content_err' => ''
@@ -217,16 +392,60 @@ class Notes extends Controller {
      * Delete a note
      */
     public function delete($id) {
+        // Handle AJAX request
+        $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Get note to verify it exists
+            $note = $this->noteModel->getNoteById($id);
+            
+            if (!$note) {
+                if ($isAjax) {
+                    echo json_encode(['success' => false, 'message' => 'Note not found']);
+                    return;
+                } else {
+                    flash('note_error', 'Note not found', 'alert alert-danger');
+                    redirect('notes');
+                    return;
+                }
+            }
+            
+            // Check if user owns this note
+            if ($note['created_by'] != $_SESSION['user_id']) {
+                if ($isAjax) {
+                    echo json_encode(['success' => false, 'message' => 'You are not authorized to delete this note']);
+                    return;
+                } else {
+                    flash('note_error', 'You are not authorized to delete this note', 'alert alert-danger');
+                    redirect('notes');
+                    return;
+                }
+            }
+            
             // Delete note
             if ($this->noteModel->delete($id, $_SESSION['user_id'])) {
-                flash('note_success', 'Note deleted successfully');
+                if ($isAjax) {
+                    echo json_encode(['success' => true, 'message' => 'Note deleted successfully']);
+                    return;
+                } else {
+                    flash('note_success', 'Note deleted successfully');
+                }
             } else {
-                flash('note_error', 'Something went wrong. Please try again.');
+                if ($isAjax) {
+                    echo json_encode(['success' => false, 'message' => 'Something went wrong. Please try again.']);
+                    return;
+                } else {
+                    flash('note_error', 'Something went wrong. Please try again.');
+                }
             }
+        } else if ($isAjax) {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+            return;
         }
         
-        redirect('notes');
+        if (!$isAjax) {
+            redirect('notes');
+        }
     }
     
     /**
