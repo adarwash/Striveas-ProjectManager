@@ -544,7 +544,7 @@ class User {
         }
     }
 
-    // Update user role
+    // Update user role (supports both old role field and new role_id)
     public function updateUserRole($userId, $role) {
         try {
             $sql = "UPDATE [users] SET role = ? WHERE id = ?";
@@ -653,6 +653,171 @@ class User {
             return true;
         } catch (Exception $e) {
             error_log('UpdateUserWithPassword Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update user's role_id (for new role-based permission system)
+     * 
+     * @param array $data User data with role_id
+     * @return bool True if successful, false otherwise
+     */
+    public function updateUserRoleId(array $data): bool {
+        try {
+            $query = "UPDATE [Users] SET role_id = ? WHERE id = ?";
+            $params = [$data['role_id'], $data['id']];
+            
+            $this->db->update($query, $params);
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdateUserRoleId Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get user with role information
+     * 
+     * @param int $userId User ID
+     * @return array|bool User data with role info, false if not found
+     */
+    public function getUserWithRole(int $userId): array|bool {
+        try {
+            $query = "SELECT u.*, r.name as role_name, r.display_name as role_display_name, r.description as role_description
+                     FROM [Users] u
+                     LEFT JOIN [Roles] r ON u.role_id = r.id
+                     WHERE u.id = ?";
+            $result = $this->db->select($query, [$userId]);
+            
+            if (empty($result)) {
+                return false;
+            }
+            
+            $user = $result[0];
+            unset($user['password']); // Don't return the password
+            
+            return $user;
+        } catch (Exception $e) {
+            error_log('GetUserWithRole Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get all users with their role information
+     * 
+     * @return array Array of users with role information
+     */
+    public function getAllUsersWithRoles(): array {
+        try {
+            $query = "SELECT u.id, u.username as name, u.email, u.full_name, 
+                     u.role, u.role_id, u.created_at, u.last_login,
+                     r.display_name as role_display_name, r.description as role_description
+                     FROM [Users] u
+                     LEFT JOIN [Roles] r ON u.role_id = r.id
+                     WHERE u.is_active = 1 
+                     ORDER BY u.created_at DESC";
+            $result = $this->db->select($query);
+            
+            return $result ?: [];
+        } catch (Exception $e) {
+            error_log('GetAllUsersWithRoles Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Check if user has specific permission
+     * 
+     * @param int $userId User ID
+     * @param string $permissionName Permission name
+     * @return bool True if user has permission, false otherwise
+     */
+    public function hasPermission(int $userId, string $permissionName): bool {
+        try {
+            // Check direct user permissions first
+            $query = "SELECT up.granted 
+                     FROM [UserPermissions] up
+                     INNER JOIN [Permissions] p ON up.permission_id = p.id
+                     WHERE up.user_id = ? AND p.name = ?";
+            $result = $this->db->select($query, [$userId, $permissionName]);
+            
+            if (!empty($result)) {
+                return $result[0]['granted'] == 1;
+            }
+            
+            // Check role-based permissions
+            $query = "SELECT COUNT(*) as count
+                     FROM [Users] u
+                     INNER JOIN [Roles] r ON u.role_id = r.id
+                     INNER JOIN [RolePermissions] rp ON r.id = rp.role_id
+                     INNER JOIN [Permissions] p ON rp.permission_id = p.id
+                     WHERE u.id = ? AND p.name = ? AND r.is_active = 1 AND p.is_active = 1";
+            $result = $this->db->select($query, [$userId, $permissionName]);
+            
+            return !empty($result) && $result[0]['count'] > 0;
+        } catch (Exception $e) {
+            error_log('HasPermission Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get user's permissions
+     * 
+     * @param int $userId User ID
+     * @return array Array of permission names
+     */
+    public function getUserPermissions(int $userId): array {
+        try {
+            // Get permissions from role and direct assignments
+            $query = "SELECT DISTINCT p.name 
+                     FROM [Permissions] p
+                     WHERE p.id IN (
+                         -- Role-based permissions
+                         SELECT rp.permission_id 
+                         FROM [RolePermissions] rp
+                         INNER JOIN [Roles] r ON rp.role_id = r.id
+                         INNER JOIN [Users] u ON r.id = u.role_id
+                         WHERE u.id = ? AND r.is_active = 1 AND p.is_active = 1
+                         
+                         UNION
+                         
+                         -- Direct user permissions
+                         SELECT up.permission_id
+                         FROM [UserPermissions] up
+                         WHERE up.user_id = ? AND up.granted = 1
+                     )
+                     AND p.is_active = 1";
+            $result = $this->db->select($query, [$userId, $userId]);
+            
+            return array_column($result ?: [], 'name');
+        } catch (Exception $e) {
+            error_log('GetUserPermissions Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Create permissions tables if they don't exist
+     * 
+     * @return bool True if successful, false otherwise
+     */
+    public function createPermissionTables(): bool {
+        try {
+            // Get the SQL to create permission tables
+            $sql = file_get_contents('../sql/create_permissions_tables.sql');
+            
+            if (!$sql) {
+                error_log('Could not read create_permissions_tables.sql file');
+                return false;
+            }
+            
+            $this->db->query($sql);
+            return true;
+        } catch (Exception $e) {
+            error_log('CreatePermissionTables Error: ' . $e->getMessage());
             return false;
         }
     }
