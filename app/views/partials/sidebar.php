@@ -71,28 +71,7 @@
             </li>
             <?php endif; ?>
             
-            <!-- Legacy Activities (for backward compatibility) -->
-            <li class="nav-item">
-                <a href="/activities" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/activities' || $_SERVER['REQUEST_URI'] === '/activities/' || strpos($_SERVER['REQUEST_URI'], '/activities/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-clock"></i>
-                    <span>Daily Activities</span>
-                </a>
-            </li>
-            
-            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
-            <li class="nav-item">
-                <a href="/activities/manage" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/activities/manage' || $_SERVER['REQUEST_URI'] === '/activities/manage/' ? 'active' : '' ?>">
-                    <i class="bi bi-clipboard-check"></i>
-                    <span>Manage Activities</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/activities/report" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/activities/report' || $_SERVER['REQUEST_URI'] === '/activities/report/' ? 'active' : '' ?>">
-                    <i class="bi bi-file-earmark-bar-graph"></i>
-                    <span>Activity Reports</span>
-                </a>
-            </li>
-            <?php endif; ?>
+
             <li class="nav-item">
                 <a href="/invoices" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/invoices' || $_SERVER['REQUEST_URI'] === '/invoices/' || strpos($_SERVER['REQUEST_URI'], '/invoices/') === 0 ? 'active' : '' ?>">
                     <i class="bi bi-receipt"></i>

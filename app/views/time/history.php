@@ -1,208 +1,299 @@
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title-box">
-                <h4 class="page-title">Time History</h4>
-                <div class="page-title-right">
-                    <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="/time">Time Tracking</a></li>
-                        <li class="breadcrumb-item active">History</li>
-                    </ol>
+<?php require VIEWSPATH . '/partials/header.php'; ?>
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Time History</h1>
+    
+    <!-- Filter Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-funnel me-2"></i> Filter Time Entries</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" 
+                           value="<?php echo $start_date; ?>">
                 </div>
-            </div>
+                <div class="col-md-4">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" 
+                           value="<?php echo $end_date; ?>">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i> Apply Filter
+                    </button>
+                    <a href="/time/history" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Reset
+                    </a>
+                    <a href="/time" class="btn btn-outline-info ms-2">
+                        <i class="bi bi-arrow-left me-1"></i> Back
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <form method="GET" class="row g-3">
-                        <div class="col-md-4">
-                            <label for="start_date" class="form-label">Start Date</label>
-                            <input type="date" class="form-control" id="start_date" name="start_date" 
-                                   value="<?php echo $start_date; ?>">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="end_date" class="form-label">End Date</label>
-                            <input type="date" class="form-control" id="end_date" name="end_date" 
-                                   value="<?php echo $end_date; ?>">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">&nbsp;</label>
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-search me-2"></i>Filter
-                                </button>
-                                <a href="/time/history" class="btn btn-outline-secondary">
-                                    <i class="fas fa-refresh me-2"></i>Reset
-                                </a>
+    <!-- Summary Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i> Summary (<?= date('M d, Y', strtotime($start_date)) ?> - <?= date('M d, Y', strtotime($end_date)) ?>)</h5>
+        </div>
+        <div class="card-body">
+            <?php if (empty($time_entries)): ?>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i> No time tracking data found for the selected period.
+                </div>
+            <?php else: ?>
+                <div class="row">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-primary shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                            Total Hours</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?= number_format($total_hours, 1) ?></div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+                    </div>
 
-    <!-- Summary Cards -->
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
-                    <h5 class="card-title">Total Days</h5>
-                    <h3 class="text-primary"><?php echo count($time_entries); ?></h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <i class="fas fa-clock fa-2x text-success mb-2"></i>
-                    <h5 class="card-title">Total Hours</h5>
-                    <h3 class="text-success"><?php echo number_format($total_hours, 2); ?></h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
-                    <h5 class="card-title">Average/Day</h5>
-                    <h3 class="text-info">
-                        <?php echo count($time_entries) > 0 ? number_format($total_hours / count($time_entries), 2) : '0.00'; ?>
-                    </h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <i class="fas fa-coffee fa-2x text-warning mb-2"></i>
-                    <h5 class="card-title">Break Time</h5>
-                    <h3 class="text-warning">
-                        <?php 
-                        $totalBreakMinutes = array_sum(array_column($time_entries, 'total_break_minutes'));
-                        echo sprintf('%02d:%02d', floor($totalBreakMinutes / 60), $totalBreakMinutes % 60);
-                        ?>
-                    </h3>
-                </div>
-            </div>
-        </div>
-    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-success shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                            Work Days</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?= count($time_entries) ?></div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-    <!-- Time Entries Table -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title mb-0">Time Entries</h4>
-                    <div>
-                        <button class="btn btn-sm btn-outline-primary" onclick="exportData()">
-                            <i class="fas fa-download me-1"></i>Export
-                        </button>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-info shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                            Avg Hours Per Day</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?= count($time_entries) > 0 ? number_format($total_hours / count($time_entries), 1) : '0.0' ?>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-warning shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                            Total Break Time</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?php 
+                                            $totalBreakMinutes = array_sum(array_column($time_entries, 'total_break_minutes'));
+                                            echo sprintf('%02d:%02d', floor($totalBreakMinutes / 60), $totalBreakMinutes % 60);
+                                            ?>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-coffee fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
-                    <?php if (!empty($time_entries)): ?>
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Clock In</th>
-                                        <th>Clock Out</th>
-                                        <th>Work Hours</th>
-                                        <th>Break Time</th>
-                                        <th>Net Hours</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($time_entries as $entry): ?>
-                                        <tr>
-                                            <td>
-                                                <strong><?php echo date('M d, Y', strtotime($entry['clock_in_time'])); ?></strong>
-                                                <br>
-                                                <small class="text-muted"><?php echo date('l', strtotime($entry['clock_in_time'])); ?></small>
-                                            </td>
-                                            <td>
-                                                <span class="badge badge-success">
-                                                    <?php echo date('h:i A', strtotime($entry['clock_in_time'])); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <?php if ($entry['clock_out_time']): ?>
-                                                    <span class="badge badge-danger">
-                                                        <?php echo date('h:i A', strtotime($entry['clock_out_time'])); ?>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="badge badge-warning">In Progress</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <?php if ($entry['total_hours']): ?>
-                                                    <strong><?php echo number_format($entry['total_hours'], 2); ?> hrs</strong>
-                                                <?php else: ?>
-                                                    <span class="text-muted">N/A</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <span class="text-warning">
-                                                    <?php 
-                                                    $breakMins = $entry['total_break_minutes'] ?? 0;
-                                                    echo sprintf('%02d:%02d', floor($breakMins / 60), $breakMins % 60);
-                                                    ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <?php if ($entry['total_hours']): ?>
-                                                    <?php 
-                                                    $netHours = $entry['total_hours'] - (($entry['total_break_minutes'] ?? 0) / 60);
-                                                    echo '<strong class="text-primary">' . number_format(max(0, $netHours), 2) . ' hrs</strong>';
-                                                    ?>
-                                                <?php else: ?>
-                                                    <span class="text-muted">N/A</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <span class="badge badge-<?php echo $entry['status'] === 'completed' ? 'success' : ($entry['status'] === 'active' ? 'primary' : 'secondary'); ?>">
-                                                    <?php echo ucfirst($entry['status']); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-outline-info" onclick="viewDetails(<?php echo $entry['id']; ?>)" title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <?php if (!empty($entry['breaks'])): ?>
-                                                        <button class="btn btn-outline-warning" onclick="viewBreaks(<?php echo $entry['id']; ?>)" title="View Breaks">
-                                                            <i class="fas fa-coffee"></i>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php else: ?>
-                        <div class="text-center py-5">
-                            <i class="fas fa-clock fa-4x text-muted mb-3"></i>
-                            <h5 class="text-muted">No Time Entries Found</h5>
-                            <p class="text-muted">No time entries found for the selected date range.</p>
-                            <a href="/time" class="btn btn-primary">
-                                <i class="fas fa-clock me-2"></i>Start Tracking Time
-                            </a>
-                        </div>
-                    <?php endif; ?>
+                
+                <!-- Daily Hours Chart -->
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <canvas id="dailyHoursChart"></canvas>
+                    </div>
                 </div>
+                
+                <!-- Chart Script -->
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const ctx = document.getElementById('dailyHoursChart').getContext('2d');
+                        
+                        // Extract data for chart
+                        const dates = [];
+                        const hours = [];
+                        const breakMinutes = [];
+                        
+                        <?php foreach($time_entries as $entry): ?>
+                            dates.push('<?= date('M d', strtotime($entry['clock_in_time'])) ?>');
+                            hours.push(<?= floatval($entry['total_hours'] ?? 0) ?>);
+                            breakMinutes.push(<?= floatval(($entry['total_break_minutes'] ?? 0) / 60) ?>);
+                        <?php endforeach; ?>
+                        
+                        const dailyHoursChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: dates,
+                                datasets: [{
+                                    label: 'Work Hours',
+                                    data: hours,
+                                    backgroundColor: 'rgba(78, 115, 223, 0.6)',
+                                    borderColor: 'rgba(78, 115, 223, 1)',
+                                    borderWidth: 1
+                                }, {
+                                    label: 'Break Hours',
+                                    data: breakMinutes,
+                                    backgroundColor: 'rgba(255, 193, 7, 0.6)',
+                                    borderColor: 'rgba(255, 193, 7, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                interaction: {
+                                    mode: 'index',
+                                    intersect: false,
+                                },
+                                scales: {
+                                    x: {
+                                        stacked: false,
+                                    },
+                                    y: {
+                                        stacked: false,
+                                        beginAtZero: true,
+                                        title: {
+                                            display: true,
+                                            text: 'Hours'
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    title: {
+                                        display: true,
+                                        text: 'Daily Time Tracking Summary'
+                                    },
+                                    legend: {
+                                        display: true,
+                                        position: 'top'
+                                    }
+                                }
+                            }
+                        });
+                    });
+                </script>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Detailed Time Entries -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i> Detailed Time Log</h5>
+            <div>
+                <button class="btn btn-sm btn-outline-primary" onclick="exportData()">
+                    <i class="bi bi-download me-1"></i>Export CSV
+                </button>
             </div>
+        </div>
+        <div class="card-body">
+            <?php if (empty($time_entries)): ?>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i> No time entries found for the selected period.
+                </div>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-hover" id="timeEntriesTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Clock In</th>
+                                <th>Clock Out</th>
+                                <th>Work Hours</th>
+                                <th>Break Time</th>
+                                <th>Net Hours</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($time_entries as $entry): ?>
+                            <tr>
+                                <td><?= date('M d (D)', strtotime($entry['clock_in_time'])) ?></td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <?= date('H:i', strtotime($entry['clock_in_time'])) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if ($entry['clock_out_time']): ?>
+                                        <span class="badge bg-danger">
+                                            <?= date('H:i', strtotime($entry['clock_out_time'])) ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-warning">Active</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?= $entry['total_hours'] ? number_format($entry['total_hours'], 1) . ' hrs' : '-' ?>
+                                </td>
+                                <td>
+                                    <?php 
+                                    $breakMins = $entry['total_break_minutes'] ?? 0;
+                                    echo sprintf('%02d:%02d', floor($breakMins / 60), $breakMins % 60);
+                                    ?>
+                                </td>
+                                <td>
+                                    <?php if ($entry['total_hours']): ?>
+                                        <?php 
+                                        $netHours = $entry['total_hours'] - (($entry['total_break_minutes'] ?? 0) / 60);
+                                        echo '<strong>' . number_format(max(0, $netHours), 1) . ' hrs</strong>';
+                                        ?>
+                                    <?php else: ?>
+                                        -
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if($entry['status'] === 'completed'): ?>
+                                        <span class="badge bg-success">Completed</span>
+                                    <?php elseif($entry['status'] === 'active'): ?>
+                                        <span class="badge bg-primary">Active</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">Incomplete</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewTimeDetails(<?= $entry['id'] ?>)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <?php if (!empty($entry['breaks'])): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-warning ms-1" onclick="viewBreaks(<?= $entry['id'] ?>)">
+                                            <i class="bi bi-cup"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -245,7 +336,7 @@
 
 <script>
 // View time entry details
-function viewDetails(entryId) {
+function viewTimeDetails(entryId) {
     const entry = <?php echo json_encode($time_entries); ?>.find(e => e.id == entryId);
     
     if (!entry) return;
@@ -253,23 +344,41 @@ function viewDetails(entryId) {
     const content = `
         <div class="row">
             <div class="col-md-6">
-                <h6>Date & Time</h6>
-                <p><strong>Date:</strong> ${new Date(entry.clock_in_time).toLocaleDateString()}</p>
-                <p><strong>Clock In:</strong> ${new Date(entry.clock_in_time).toLocaleTimeString()}</p>
-                <p><strong>Clock Out:</strong> ${entry.clock_out_time ? new Date(entry.clock_out_time).toLocaleTimeString() : 'Not clocked out'}</p>
+                <h6><i class="bi bi-calendar3 me-2"></i>Date & Time</h6>
+                <div class="mb-3">
+                    <small class="text-muted">Date</small>
+                    <div><strong>${new Date(entry.clock_in_time).toLocaleDateString()}</strong></div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Clock In</small>
+                    <div><span class="badge bg-success">${new Date(entry.clock_in_time).toLocaleTimeString()}</span></div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Clock Out</small>
+                    <div>${entry.clock_out_time ? '<span class="badge bg-danger">' + new Date(entry.clock_out_time).toLocaleTimeString() + '</span>' : '<span class="badge bg-warning">Not clocked out</span>'}</div>
+                </div>
             </div>
             <div class="col-md-6">
-                <h6>Time Summary</h6>
-                <p><strong>Total Hours:</strong> ${entry.total_hours ? entry.total_hours + ' hrs' : 'N/A'}</p>
-                <p><strong>Break Time:</strong> ${Math.floor((entry.total_break_minutes || 0) / 60)}:${String((entry.total_break_minutes || 0) % 60).padStart(2, '0')}</p>
-                <p><strong>Status:</strong> <span class="badge badge-${entry.status === 'completed' ? 'success' : 'primary'}">${entry.status}</span></p>
+                <h6><i class="bi bi-clock me-2"></i>Time Summary</h6>
+                <div class="mb-3">
+                    <small class="text-muted">Total Hours</small>
+                    <div><strong>${entry.total_hours ? entry.total_hours + ' hrs' : 'N/A'}</strong></div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Break Time</small>
+                    <div><strong>${Math.floor((entry.total_break_minutes || 0) / 60)}:${String((entry.total_break_minutes || 0) % 60).padStart(2, '0')}</strong></div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Status</small>
+                    <div><span class="badge bg-${entry.status === 'completed' ? 'success' : (entry.status === 'active' ? 'primary' : 'secondary')}">${entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}</span></div>
+                </div>
             </div>
         </div>
-        ${entry.notes ? `<div class="mt-3"><h6>Notes</h6><p class="text-muted">${entry.notes}</p></div>` : ''}
+        ${entry.notes ? `<div class="mt-4"><h6><i class="bi bi-sticky me-2"></i>Notes</h6><div class="p-3 bg-light rounded"><p class="mb-0">${entry.notes}</p></div></div>` : ''}
     `;
     
     document.getElementById('detailsContent').innerHTML = content;
-    $('#detailsModal').modal('show');
+    new bootstrap.Modal(document.getElementById('detailsModal')).show();
 }
 
 // View breaks for time entry
@@ -277,21 +386,25 @@ function viewBreaks(entryId) {
     const entry = <?php echo json_encode($time_entries); ?>.find(e => e.id == entryId);
     
     if (!entry || !entry.breaks || entry.breaks.length === 0) {
-        document.getElementById('breaksContent').innerHTML = '<p class="text-muted">No breaks recorded for this time entry.</p>';
-        $('#breaksModal').modal('show');
+        document.getElementById('breaksContent').innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>No breaks recorded for this time entry.</div>';
+        new bootstrap.Modal(document.getElementById('breaksModal')).show();
         return;
     }
     
-    let content = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Type</th><th>Start</th><th>End</th><th>Duration</th></tr></thead><tbody>';
+    let content = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>Type</th><th>Start Time</th><th>End Time</th><th>Duration</th><th>Notes</th></tr></thead><tbody>';
     
     entry.breaks.forEach(breakItem => {
         const duration = breakItem.break_duration_minutes || 0;
+        const breakTypeColor = breakItem.break_type === 'lunch' ? 'warning' : 
+                              breakItem.break_type === 'meeting' ? 'info' : 
+                              breakItem.break_type === 'personal' ? 'danger' : 'secondary';
         content += `
             <tr>
-                <td><span class="badge badge-secondary">${breakItem.break_type}</span></td>
+                <td><span class="badge bg-${breakTypeColor}">${breakItem.break_type}</span></td>
                 <td>${new Date(breakItem.break_start).toLocaleTimeString()}</td>
-                <td>${breakItem.break_end ? new Date(breakItem.break_end).toLocaleTimeString() : 'Ongoing'}</td>
-                <td>${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, '0')}</td>
+                <td>${breakItem.break_end ? new Date(breakItem.break_end).toLocaleTimeString() : '<span class="badge bg-warning">Ongoing</span>'}</td>
+                <td><strong>${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, '0')}</strong></td>
+                <td><small class="text-muted">${breakItem.notes || '-'}</small></td>
             </tr>
         `;
     });
@@ -299,7 +412,7 @@ function viewBreaks(entryId) {
     content += '</tbody></table></div>';
     
     document.getElementById('breaksContent').innerHTML = content;
-    $('#breaksModal').modal('show');
+    new bootstrap.Modal(document.getElementById('breaksModal')).show();
 }
 
 // Export data
@@ -321,4 +434,84 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('start_date').max = today;
     document.getElementById('end_date').max = today;
 });
-</script> 
+</script>
+
+<style>
+/* Custom styling for summary cards */
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.text-xs {
+    font-size: 0.75rem;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+
+.text-uppercase {
+    text-transform: uppercase !important;
+}
+
+.no-gutters {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.no-gutters > .col,
+.no-gutters > [class*="col-"] {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+.py-2 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+/* Chart container styling */
+#dailyHoursChart {
+    max-height: 400px;
+}
+
+/* Table styling improvements */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.card.shadow-sm {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+
+.card.shadow {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+</style>
+
+<?php require VIEWSPATH . '/partials/footer.php'; ?> 
