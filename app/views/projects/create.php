@@ -1,6 +1,6 @@
 <?php
 // Set title for the page
-$title = 'Create Project - ProjectTracker';
+$title = 'Create Project - HiveITPortal';
 ?>
 
 <!-- Page Header -->

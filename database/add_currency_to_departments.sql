@@ -1,5 +1,5 @@
 -- Add currency column to departments table
-USE ProjectTracker;
+USE HiveITPortal;
 GO
 
 -- Check if the currency column exists

@@ -1,6 +1,6 @@
 <?php
 // Set title for the page
-$title = 'Dashboard - ProjectTracker';
+$title = 'Dashboard - HiveITPortal';
 ?>
 
 <?php require VIEWSPATH . '/partials/header.php'; ?>

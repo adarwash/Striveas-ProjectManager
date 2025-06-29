@@ -1,6 +1,6 @@
-# Shared Calendar Integration
+# Calendar Integration System
 
-This feature allows users to link their external calendars (Google Calendar, Microsoft Outlook, and iCal feeds) with the Project Tracker application.
+This feature allows users to link their external calendars (Google Calendar, Microsoft Outlook, and iCal feeds) with the HiveIT Portal application.
 
 ## Features
 

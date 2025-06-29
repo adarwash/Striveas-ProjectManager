@@ -2,7 +2,7 @@
 
 ## Overview
 
-I've built a comprehensive role-based permission management system for your ProjectTracker application. This system allows you to:
+I've built a comprehensive role-based permission management system for your HiveITPortal application. This system allows you to:
 
 - Create and manage roles with different access levels
 - Assign granular permissions to roles
@@ -34,7 +34,7 @@ The permission system adds the following tables:
 1. **Run the SQL Script**:
    ```sql
    -- Execute the permissions table creation script
-   USE ProjectTracker;
+   USE HiveITPortal;
    -- Run the content from sql/create_permissions_tables.sql
    ```
 
@@ -200,4 +200,4 @@ sql/
 - Verify database table structure matches the schema
 - Ensure proper foreign key relationships
 
-This permission system provides enterprise-level access control while maintaining ease of use and flexibility for your ProjectTracker application. 
+This permission system provides enterprise-level access control while maintaining ease of use and flexibility for your HiveITPortal application. 

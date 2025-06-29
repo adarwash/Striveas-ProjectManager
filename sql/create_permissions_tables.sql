@@ -1,5 +1,5 @@
 -- Create Permissions tables for granular access control
-USE ProjectTracker;
+USE HiveITPortal;
 
 -- Drop tables if they exist (in correct order to handle foreign keys)
 IF OBJECT_ID('dbo.UserPermissions', 'U') IS NOT NULL

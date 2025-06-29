@@ -1,5 +1,5 @@
 -- Create Employees Management table for tracking employee performance and data
-USE ProjectTracker;
+USE HiveITPortal;
 
 -- Drop the table if it already exists
 IF OBJECT_ID('dbo.EmployeeManagement', 'U') IS NOT NULL

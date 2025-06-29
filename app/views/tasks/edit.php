@@ -1,6 +1,6 @@
 <?php
 // Set title for the page
-$title = 'Edit Task - ProjectTracker';
+$title = 'Edit Task - HiveITPortal';
 ?>
 
 <!-- Page Header -->

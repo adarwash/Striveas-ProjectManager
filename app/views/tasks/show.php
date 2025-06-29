@@ -1,6 +1,6 @@
 <?php
 // Set title for the page
-$title = htmlspecialchars($task->title) . ' - ProjectTracker';
+$title = htmlspecialchars($task->title) . ' - HiveITPortal';
 ?>
 
 <!-- Page Header -->

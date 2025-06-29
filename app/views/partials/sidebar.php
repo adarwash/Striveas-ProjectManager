@@ -4,7 +4,7 @@
     <div class="sidebar-header">
         <a href="/" class="sidebar-brand">
             <i class="bi bi-kanban"></i>
-            <span>ProjectTracker</span>
+            <span>HiveITPortal</span>
         </a>
     </div>
     

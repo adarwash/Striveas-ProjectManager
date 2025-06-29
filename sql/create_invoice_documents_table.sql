@@ -1,4 +1,4 @@
-USE [ProjectTracker]
+USE [HiveITPortal]
 GO
 
 -- Create the invoice_documents table if it doesn't exist

@@ -1,6 +1,6 @@
 -- Create Time Tracking tables for MySQL
--- Use ProjectTracker database
-USE ProjectTracker;
+-- Use HiveITPortal database
+USE HiveITPortal;
 
 -- Drop tables if they exist (in correct order to handle foreign keys)
 DROP TABLE IF EXISTS TimeBreaks;

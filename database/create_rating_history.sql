@@ -1,5 +1,5 @@
 -- Create Rating History table for tracking changes in performance ratings
-USE ProjectTracker;
+USE HiveITPortal;
 
 -- Drop the table if it already exists
 IF OBJECT_ID('dbo.EmployeeRatingHistory', 'U') IS NOT NULL

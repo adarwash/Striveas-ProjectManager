@@ -1,6 +1,6 @@
 # Time Tracking System
 
-A comprehensive time tracking system for the ProjectTracker application that allows users to clock in/out, take breaks, and track their work hours. The system persists time tracking even when users sign out and provides detailed reporting capabilities.
+A comprehensive time tracking system for the HiveITPortal application that allows users to clock in/out, take breaks, and track their work hours. The system persists time tracking even when users sign out and provides detailed reporting capabilities.
 
 ## Features
 

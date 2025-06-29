@@ -1,5 +1,5 @@
 -- Create Time Tracking tables
-USE ProjectTracker;
+USE HiveITPortal;
 
 -- Drop tables if they exist (in correct order to handle foreign keys)
 IF OBJECT_ID('dbo.TimeBreaks', 'U') IS NOT NULL

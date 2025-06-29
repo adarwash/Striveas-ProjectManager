@@ -1,5 +1,5 @@
 -- Create Users table for authentication
-USE ProjectTracker;
+USE HiveITPortal;
 
 -- Drop the table if it already exists
 IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL
