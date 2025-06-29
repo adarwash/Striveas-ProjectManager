@@ -9,9 +9,9 @@
     define('URLROOT', 'http://' . $_SERVER['HTTP_HOST']);
     
     // Site Name
-    define('SITENAME', 'Project Tracker');
+    define('SITENAME', 'Hive IT Portal');
     
-    define('DEFAULT_TITLE', 'ProjectTracker');
+    define('DEFAULT_TITLE', 'Hive IT Portal');
     
     // SQL Server connection
     define('DB1', [

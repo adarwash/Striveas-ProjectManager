@@ -4,7 +4,7 @@
     <div class="sidebar-header">
         <a href="/" class="sidebar-brand">
             <i class="bi bi-kanban"></i>
-            <span>HiveITPortal</span>
+            <span>Hive IT Portal</span>
         </a>
     </div>
     
@@ -40,38 +40,12 @@
             
         </ul>
         
-        <!-- Time Tracking Menu -->
-        <div class="menu-category">Time Tracking</div>
-        <ul class="nav flex-column">
             <li class="nav-item">
                 <a href="/time" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/time' || $_SERVER['REQUEST_URI'] === '/time/' || strpos($_SERVER['REQUEST_URI'], '/time/') === 0 ? 'active' : '' ?>">
-                    <i class="fas fa-clock"></i>
-                    <span>Clock In/Out</span>
+                    <i class="bi bi-stopwatch"></i>
+                    <span>Time Tracking</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="/time/history" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/time/history' || $_SERVER['REQUEST_URI'] === '/time/history/' ? 'active' : '' ?>">
-                    <i class="fas fa-history"></i>
-                    <span>Time History</span>
-                </a>
-            </li>
-            
-            <?php if (function_exists('hasPermission') && hasPermission('reports_read')): ?>
-            <li class="nav-item">
-                <a href="/time/team" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/time/team' || $_SERVER['REQUEST_URI'] === '/time/team/' ? 'active' : '' ?>">
-                    <i class="fas fa-users"></i>
-                    <span>Team Time</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/time/reports" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/time/reports' || $_SERVER['REQUEST_URI'] === '/time/reports/' ? 'active' : '' ?>">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Time Reports</span>
-                </a>
-            </li>
-            <?php endif; ?>
-            
-
             <li class="nav-item">
                 <a href="/invoices" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/invoices' || $_SERVER['REQUEST_URI'] === '/invoices/' || strpos($_SERVER['REQUEST_URI'], '/invoices/') === 0 ? 'active' : '' ?>">
                     <i class="bi bi-receipt"></i>
@@ -139,6 +113,18 @@
                     <span>Permissions</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="/time/admin" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/time/admin' || strpos($_SERVER['REQUEST_URI'], '/time/admin') === 0 ? 'active' : '' ?>">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Time Tracking Admin</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/time/analytics" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/time/analytics' || strpos($_SERVER['REQUEST_URI'], '/time/analytics') === 0 ? 'active' : '' ?>">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Time Analytics</span>
+                </a>
+            </li>
             <?php endif; ?>
             <li class="nav-item">
                 <a href="/employees" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/employees' || $_SERVER['REQUEST_URI'] === '/employees/' || strpos($_SERVER['REQUEST_URI'], '/employees/') === 0 ? 'active' : '' ?>">
@@ -179,68 +165,94 @@
             ?>
             
             <?php if ($userStatus): ?>
-            <div class="widget-card">
+            <div class="time-status-widget">
                 <div class="widget-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">
-                            <i class="fas fa-clock me-2"></i>Time Status
-                        </h6>
-                        <span class="widget-time" id="sidebarCurrentTime"><?php echo date('H:i'); ?></span>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="widget-title">
+                            <i class="fas fa-clock-four"></i>
+                            <span>Time Status</span>
+                        </div>
+                        <div class="current-time" id="sidebarCurrentTime"><?php echo date('H:i'); ?></div>
                     </div>
-                </div>
-                <div class="widget-body">
-                    <div class="status-indicator">
+                    
+                    <!-- Status Indicator -->
+                    <div class="status-display">
                         <?php if ($userStatus['status'] === 'clocked_in'): ?>
-                            <div class="status-badge status-working">
-                                <i class="fas fa-play"></i>
-                                <span>Working</span>
+                            <div class="status-card working">
+                                <div class="status-icon">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <div class="status-info">
+                                    <div class="status-label">Currently Working</div>
+                                    <div class="status-time">
+                                        Since <?php echo date('H:i', strtotime($userStatus['clock_in_time'] ?? 'now')); ?>
+                                    </div>
+                                </div>
                             </div>
                         <?php elseif ($userStatus['status'] === 'on_break'): ?>
-                            <div class="status-badge status-break">
-                                <i class="fas fa-pause"></i>
-                                <span>On Break</span>
+                            <div class="status-card on-break">
+                                <div class="status-icon">
+                                    <i class="fas fa-pause-circle"></i>
+                                </div>
+                                <div class="status-info">
+                                    <div class="status-label">On Break</div>
+                                    <div class="status-time">
+                                        Since <?php echo date('H:i', strtotime($userStatus['break_start_time'] ?? 'now')); ?>
+                                    </div>
+                                </div>
                             </div>
                         <?php else: ?>
-                            <div class="status-badge status-offline">
-                                <i class="fas fa-stop"></i>
-                                <span>Clocked Out</span>
+                            <div class="status-card offline">
+                                <div class="status-icon">
+                                    <i class="fas fa-stop-circle"></i>
+                                </div>
+                                <div class="status-info">
+                                    <div class="status-label">Clocked Out</div>
+                                    <div class="status-time">Ready to start</div>
+                                </div>
                             </div>
                         <?php endif; ?>
                     </div>
                     
-                    <div class="time-summary">
-                        <div class="time-item">
-                            <small>Today</small>
-                            <strong><?php echo $todaySummary ? number_format($todaySummary['total_hours'] ?? 0, 1) . 'h' : '0.0h'; ?></strong>
+                    <!-- Time Statistics -->
+                    <div class="time-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Today's Hours</div>
+                            <div class="stat-value"><?php echo $todaySummary ? number_format($todaySummary['total_hours'] ?? 0, 1) : '0.0'; ?>h</div>
                         </div>
                         <?php if ($userStatus['status'] !== 'clocked_out'): ?>
-                        <div class="time-item">
-                            <small>Session</small>
-                            <strong id="sidebarSessionTime">
+                        <div class="stat-item">
+                            <div class="stat-label">Session Time</div>
+                            <div class="stat-value" id="sidebarSessionTime">
                                 <?php 
                                 $minutes = $userStatus['elapsed_work_time'] ?? 0;
-                                echo sprintf('%02d:%02d', floor($minutes / 60), $minutes % 60);
+                                echo sprintf('%dh %02dm', floor($minutes / 60), $minutes % 60);
                                 ?>
-                            </strong>
+                            </div>
                         </div>
                         <?php endif; ?>
                     </div>
                     
-                    <div class="quick-actions">
+                    <!-- Quick Actions -->
+                    <div class="widget-actions">
                         <?php if ($userStatus['status'] === 'clocked_out'): ?>
-                            <button class="btn btn-success btn-sm w-100" onclick="sidebarClockIn()">
-                                <i class="fas fa-play me-1"></i>Clock In
+                            <button class="action-btn primary" onclick="sidebarClockIn()">
+                                <i class="fas fa-play"></i>
+                                <span>Clock In</span>
                             </button>
                         <?php elseif ($userStatus['status'] === 'clocked_in'): ?>
-                            <button class="btn btn-warning btn-sm me-1" onclick="sidebarStartBreak()">
-                                <i class="fas fa-pause me-1"></i>Break
+                            <button class="action-btn warning" onclick="sidebarStartBreak()">
+                                <i class="fas fa-coffee"></i>
+                                <span>Take Break</span>
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="sidebarClockOut()">
-                                <i class="fas fa-stop me-1"></i>Out
+                            <button class="action-btn danger" onclick="sidebarClockOut()">
+                                <i class="fas fa-stop"></i>
+                                <span>Clock Out</span>
                             </button>
                         <?php elseif ($userStatus['status'] === 'on_break'): ?>
-                            <button class="btn btn-success btn-sm w-100" onclick="sidebarEndBreak()">
-                                <i class="fas fa-play me-1"></i>End Break
+                            <button class="action-btn success" onclick="sidebarEndBreak()">
+                                <i class="fas fa-play"></i>
+                                <span>End Break</span>
                             </button>
                         <?php endif; ?>
                     </div>
@@ -292,12 +304,60 @@
     padding: 20px !important;
 }
 
+/* Navigation list styling - Remove dots */
+.sidebar .nav {
+    list-style: none !important;
+    padding-left: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.sidebar .nav-item {
+    list-style: none !important;
+}
+
+/* Sidebar general styling */
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    background: #ffffff;
+    border-right: 1px solid rgba(0,0,0,0.08);
+    overflow-y: auto;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.sidebar-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    text-decoration: none !important;
+    color: #2c3e50 !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+}
+
+.sidebar-brand i {
+    font-size: 1.5rem !important;
+    color: #3498db !important;
+}
+
+.sidebar-menu {
+    padding: 1rem 0;
+}
+
 /* Consistent sidebar link styling */
 .sidebar .nav-link {
     display: flex !important;
     align-items: center !important;
     padding: 0.75rem 1rem !important;
-    color: var(--dark-color) !important;
+    color: #2c3e50 !important;
     text-decoration: none !important;
     border-radius: 0.375rem !important;
     transition: all 0.2s !important;
@@ -309,113 +369,223 @@
 
 /* Hover style */
 .sidebar .nav-link:hover {
-    background-color: var(--primary-light) !important;
+    background-color: rgba(52, 152, 219, 0.1) !important;
+    color: #3498db !important;
 }
 
-/* Time Tracking Widget Styles */
+/* Modern Time Status Widget Styles */
 .time-tracking-widget {
     margin: 1rem 0.75rem;
-    border-top: 1px solid rgba(0,0,0,0.1);
+    border-top: 1px solid rgba(0,0,0,0.08);
     padding-top: 1rem;
 }
 
-.widget-card {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 0.75rem;
-    padding: 1rem;
-    border: 1px solid rgba(0,0,0,0.05);
+.time-status-widget {
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fc 100%);
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
 }
 
-.widget-header h6 {
-    color: var(--dark-color);
-    font-weight: 600;
+.time-status-widget:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
 }
 
-.widget-time {
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-    color: var(--primary-color);
-    font-size: 0.9rem;
-}
-
-.status-indicator {
-    margin: 0.75rem 0;
-}
-
-.status-badge {
-    display: inline-flex;
+.widget-title {
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 2rem;
-    font-size: 0.85rem;
     font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
 }
 
-.status-working {
-    background-color: rgba(25, 135, 84, 0.1);
-    color: #198754;
-    border: 1px solid rgba(25, 135, 84, 0.2);
+.widget-title i {
+    color: #3498db;
+    font-size: 1.1rem;
 }
 
-.status-break {
-    background-color: rgba(255, 193, 7, 0.1);
-    color: #ffc107;
-    border: 1px solid rgba(255, 193, 7, 0.2);
+.current-time {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-weight: 700;
+    color: #3498db;
+    font-size: 1rem;
+    background: rgba(52, 152, 219, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
 }
 
-.status-offline {
-    background-color: rgba(108, 117, 125, 0.1);
-    color: #6c757d;
-    border: 1px solid rgba(108, 117, 125, 0.2);
-}
-
-.time-summary {
-    display: flex;
-    justify-content: space-between;
+/* Status Display */
+.status-display {
     margin: 0.75rem 0;
-    padding: 0.5rem;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 0.5rem;
 }
 
-.time-item {
-    text-align: center;
+.status-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.status-card.working {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(39, 174, 96, 0.15) 100%);
+    border: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+.status-card.on-break {
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.1) 0%, rgba(243, 156, 18, 0.15) 100%);
+    border: 1px solid rgba(241, 196, 15, 0.2);
+}
+
+.status-card.offline {
+    background: linear-gradient(135deg, rgba(149, 165, 166, 0.1) 0%, rgba(127, 140, 141, 0.15) 100%);
+    border: 1px solid rgba(149, 165, 166, 0.2);
+}
+
+.status-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.status-card.working .status-icon {
+    color: #27ae60;
+}
+
+.status-card.on-break .status-icon {
+    color: #f39c12;
+}
+
+.status-card.offline .status-icon {
+    color: #95a5a6;
+}
+
+.status-info {
     flex: 1;
 }
 
-.time-item small {
-    display: block;
-    color: var(--muted-color);
+.status-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #2c3e50;
+    margin-bottom: 0.125rem;
+}
+
+.status-time {
     font-size: 0.75rem;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+/* Time Statistics */
+.time-stats {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+    padding: 0.75rem;
+    background: rgba(52, 152, 219, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(52, 152, 219, 0.1);
+}
+
+.stat-item {
+    flex: 1;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
     margin-bottom: 0.25rem;
 }
 
-.time-item strong {
-    color: var(--dark-color);
-    font-size: 0.9rem;
-    font-family: 'Courier New', monospace;
+.stat-value {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 0.95rem;
 }
 
-.quick-actions {
+/* Widget Actions */
+.widget-actions {
     display: flex;
     gap: 0.5rem;
-    margin-top: 0.75rem;
+    margin-top: 1rem;
 }
 
-.quick-actions .btn {
+.action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    border: none;
+    border-radius: 8px;
     font-size: 0.8rem;
-    padding: 0.375rem 0.5rem;
-    border-radius: 0.5rem;
     font-weight: 600;
-}
-    color: var(--primary-color) !important;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
+.action-btn i {
+    font-size: 0.9rem;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.action-btn.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.action-btn.success {
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+}
+
+.action-btn.success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+}
+
+.action-btn.warning {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+}
+
+.action-btn.warning:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+}
+
+.action-btn.danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.action-btn.danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
 /* Active style */
 .sidebar .nav-link.active {
-    background-color: var(--primary-light) !important;
-    color: var(--primary-color) !important;
+    background-color: rgba(52, 152, 219, 0.15) !important;
+    color: #3498db !important;
     font-weight: 600 !important;
 }
 
@@ -431,7 +601,7 @@
     text-transform: uppercase !important;
     font-size: 0.75rem !important;
     font-weight: 600 !important;
-    color: var(--text-muted) !important;
+    color: #7f8c8d !important;
     margin: 1rem 1.5rem 0.5rem !important;
 }
 </style>
@@ -469,7 +639,7 @@ function updateSidebarSession() {
                     const minutes = data.elapsed_work_time;
                     const hours = Math.floor(minutes / 60);
                     const mins = minutes % 60;
-                    sessionElement.textContent = String(hours).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
+                    sessionElement.textContent = hours + 'h ' + String(mins).padStart(2, '0') + 'm';
                 }
             })
             .catch(error => {

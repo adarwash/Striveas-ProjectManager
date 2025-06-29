@@ -166,6 +166,129 @@ class Time extends Controller{
     }
     
     /**
+     * Admin dashboard - comprehensive view for admins
+     */
+    public function admin() {
+        // Check if user is admin
+        if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+            header('Location: /dashboard');
+            exit();
+        }
+        
+        $startDate = $_GET['start_date'] ?? date('Y-m-d', strtotime('-7 days'));
+        $endDate = $_GET['end_date'] ?? date('Y-m-d');
+        $userId = $_GET['user_id'] ?? null;
+        $department = $_GET['department'] ?? null;
+        
+        // Get all users for admin view
+        $allUsers = $this->timeModel->getAllUsersWithTimeData($startDate, $endDate, $userId, $department);
+        $departments = $this->timeModel->getDepartments();
+        $timeStatistics = $this->timeModel->getOverallStatistics($startDate, $endDate);
+        $currentlyActive = $this->timeModel->getCurrentlyActiveUsers();
+        $recentActivity = $this->timeModel->getRecentActivity(20);
+        
+        $data = [
+            'title' => 'Time Tracking Admin Dashboard',
+            'all_users' => $allUsers,
+            'departments' => $departments,
+            'time_statistics' => $timeStatistics,
+            'currently_active' => $currentlyActive,
+            'recent_activity' => $recentActivity,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'selected_user_id' => $userId,
+            'selected_department' => $department
+        ];
+        
+        $this->view('time/admin', $data);
+    }
+    
+    /**
+     * Get member details for admin (AJAX)
+     */
+    public function getMemberDetails() {
+        // Check permissions
+        if (!$this->userModel->hasPermission($_SESSION['user_id'], 'reports_read')) {
+            $this->jsonResponse(['success' => false, 'message' => 'Access denied']);
+            return;
+        }
+        
+        $userId = $_GET['user_id'] ?? null;
+        $date = $_GET['date'] ?? date('Y-m-d');
+        
+        if (!$userId) {
+            $this->jsonResponse(['success' => false, 'message' => 'User ID required']);
+            return;
+        }
+        
+        $memberDetails = $this->timeModel->getUserDetailedSummary($userId, $date);
+        $userInfo = $this->userModel->getUserById($userId);
+        
+        // Generate HTML for the modal
+        $html = $this->generateMemberDetailsHTML($memberDetails, $userInfo, $date);
+        
+        $this->jsonResponse([
+            'success' => true,
+            'html' => $html,
+            'data' => $memberDetails
+        ]);
+    }
+    
+    /**
+     * Admin action: Clock out user (emergency)
+     */
+    public function adminClockOut() {
+        // Check if user is admin
+        if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+            $this->jsonResponse(['success' => false, 'message' => 'Access denied']);
+            return;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request method']);
+            return;
+        }
+        
+        $userId = $_POST['user_id'] ?? null;
+        $reason = $_POST['reason'] ?? 'Admin override';
+        
+        if (!$userId) {
+            $this->jsonResponse(['success' => false, 'message' => 'User ID required']);
+            return;
+        }
+        
+        $result = $this->timeModel->adminClockOut($userId, $_SESSION['user_id'], $reason);
+        $this->jsonResponse($result);
+    }
+    
+    /**
+     * Generate detailed analytics for admin
+     */
+    public function analytics() {
+        // Check if user is admin
+        if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+            header('Location: /dashboard');
+            exit();
+        }
+        
+        $period = $_GET['period'] ?? 'month'; // week, month, quarter, year
+        $department = $_GET['department'] ?? null;
+        
+        $analyticsData = $this->timeModel->getAnalyticsData($period, $department);
+        $departments = $this->timeModel->getDepartments();
+        
+        $data = [
+            'title' => 'Time Tracking Analytics',
+            'analytics' => $analyticsData,
+            'departments' => $departments,
+            'selected_period' => $period,
+            'selected_department' => $department
+        ];
+        
+        $this->view('time/analytics', $data);
+    }
+    
+    /**
      * Export time data to CSV
      */
     public function export() {
@@ -208,6 +331,100 @@ class Time extends Controller{
         }
         
         fclose($output);
+    }
+    
+    /**
+     * Generate HTML for member details modal
+     */
+    private function generateMemberDetailsHTML($memberDetails, $userInfo, $date) {
+        $html = '<div class="container-fluid">';
+        
+        // User Info Header
+        $html .= '<div class="row mb-3">';
+        $html .= '<div class="col-md-12">';
+        $html .= '<div class="d-flex align-items-center mb-3">';
+        $html .= '<div class="bg-primary rounded-circle p-3 me-3">';
+        $html .= '<i class="fas fa-user text-white fa-lg"></i>';
+        $html .= '</div>';
+        $html .= '<div>';
+        $html .= '<h5 class="mb-1">' . htmlspecialchars($userInfo['full_name'] ?? $userInfo['username']) . '</h5>';
+        $html .= '<small class="text-muted">@' . htmlspecialchars($userInfo['username']) . ' • ' . date('M d, Y', strtotime($date)) . '</small>';
+        $html .= '</div>';
+        $html .= '</div>';
+        $html .= '</div>';
+        $html .= '</div>';
+        
+        // Time Summary Cards
+        $html .= '<div class="row mb-4">';
+        $html .= '<div class="col-md-4">';
+        $html .= '<div class="card bg-light">';
+        $html .= '<div class="card-body text-center">';
+        $html .= '<i class="fas fa-clock text-primary fa-2x mb-2"></i>';
+        $html .= '<h6>Total Hours</h6>';
+        $html .= '<h4 class="text-primary">' . number_format($memberDetails['total_hours'] ?? 0, 2) . '</h4>';
+        $html .= '</div>';
+        $html .= '</div>';
+        $html .= '</div>';
+        
+        $html .= '<div class="col-md-4">';
+        $html .= '<div class="card bg-light">';
+        $html .= '<div class="card-body text-center">';
+        $html .= '<i class="fas fa-coffee text-warning fa-2x mb-2"></i>';
+        $html .= '<h6>Break Time</h6>';
+        $breakMins = $memberDetails['total_break_minutes'] ?? 0;
+        $html .= '<h4 class="text-warning">' . sprintf('%02d:%02d', floor($breakMins / 60), $breakMins % 60) . '</h4>';
+        $html .= '</div>';
+        $html .= '</div>';
+        $html .= '</div>';
+        
+        $html .= '<div class="col-md-4">';
+        $html .= '<div class="card bg-light">';
+        $html .= '<div class="card-body text-center">';
+        $html .= '<i class="fas fa-chart-line text-success fa-2x mb-2"></i>';
+        $html .= '<h6>Net Work</h6>';
+        $netHours = ($memberDetails['total_hours'] ?? 0) - (($memberDetails['total_break_minutes'] ?? 0) / 60);
+        $html .= '<h4 class="text-success">' . number_format(max(0, $netHours), 2) . '</h4>';
+        $html .= '</div>';
+        $html .= '</div>';
+        $html .= '</div>';
+        $html .= '</div>';
+        
+        // Time Entries Detail
+        if (!empty($memberDetails['entries'])) {
+            $html .= '<div class="row">';
+            $html .= '<div class="col-md-12">';
+            $html .= '<h6>Time Entries</h6>';
+            $html .= '<div class="table-responsive">';
+            $html .= '<table class="table table-sm">';
+            $html .= '<thead><tr><th>Clock In</th><th>Clock Out</th><th>Duration</th><th>Breaks</th><th>Status</th></tr></thead>';
+            $html .= '<tbody>';
+            
+            foreach ($memberDetails['entries'] as $entry) {
+                $html .= '<tr>';
+                $html .= '<td><span class="badge bg-success">' . date('H:i', strtotime($entry['clock_in_time'])) . '</span></td>';
+                $html .= '<td>';
+                if ($entry['clock_out_time']) {
+                    $html .= '<span class="badge bg-danger">' . date('H:i', strtotime($entry['clock_out_time'])) . '</span>';
+                } else {
+                    $html .= '<span class="badge bg-warning">Active</span>';
+                }
+                $html .= '</td>';
+                $html .= '<td>' . number_format($entry['total_hours'] ?? 0, 2) . ' hrs</td>';
+                $html .= '<td>' . ($entry['break_count'] ?? 0) . '</td>';
+                $html .= '<td><span class="badge bg-' . ($entry['status'] === 'completed' ? 'success' : 'primary') . '">' . ucfirst($entry['status']) . '</span></td>';
+                $html .= '</tr>';
+            }
+            
+            $html .= '</tbody>';
+            $html .= '</table>';
+            $html .= '</div>';
+            $html .= '</div>';
+            $html .= '</div>';
+        }
+        
+        $html .= '</div>';
+        
+        return $html;
     }
     
     /**

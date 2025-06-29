@@ -355,5 +355,268 @@ class TimeTracking {
         $sql = "SELECT * FROM dbo.DailyTimeSummary WHERE work_date = ? ORDER BY full_name ASC";
         return $this->db->select($sql, [$date]) ?: [];
     }
+    
+    /**
+     * Get all users with time data for admin view
+     */
+    public function getAllUsersWithTimeData($startDate, $endDate, $userId = null, $department = null) {
+        $sql = "SELECT DISTINCT u.id as user_id, u.username, u.full_name,
+                u.email, u.role
+                FROM dbo.Users u";
+        
+        $params = [];
+        if ($userId) {
+            $sql .= " WHERE u.id = ?";
+            $params[] = $userId;
+        }
+        if ($department) {
+            $sql .= $userId ? " AND" : " WHERE";
+            $sql .= " u.role = ?";
+            $params[] = $department;
+        }
+        
+        $allUsers = $this->db->select($sql, $params);
+        
+        // For each user, get their time data
+        $usersWithTimeData = [];
+        foreach ($allUsers as $user) {
+            $userStatus = $this->getUserStatus($user['user_id']);
+            $todaySummary = $this->getDailySummary($user['user_id']);
+            $periodSummary = $this->getPeriodSummary($user['user_id'], $startDate, $endDate);
+            $lastActivity = $this->getLastActivity($user['user_id']);
+            
+            $usersWithTimeData[] = array_merge($user, [
+                'current_status' => $userStatus['status'],
+                'today_hours' => $todaySummary['total_hours'] ?? 0,
+                'period_total_hours' => $periodSummary['total_hours'] ?? 0,
+                'total_break_minutes' => $periodSummary['total_break_minutes'] ?? 0,
+                'last_activity' => $lastActivity
+            ]);
+        }
+        
+        return $usersWithTimeData;
+    }
+    
+    /**
+     * Get currently active users
+     */
+    public function getCurrentlyActiveUsers() {
+        $sql = "SELECT u.id as user_id, u.username, u.full_name,
+                te.clock_in_time, te.id as time_entry_id,
+                CASE 
+                    WHEN tb.break_start IS NOT NULL AND tb.break_end IS NULL THEN 'on_break'
+                    ELSE 'working'
+                END as status,
+                DATEDIFF(minute, te.clock_in_time, GETDATE()) as elapsed_minutes,
+                tb.break_start
+                FROM dbo.Users u
+                INNER JOIN dbo.TimeEntries te ON u.id = te.user_id
+                LEFT JOIN dbo.TimeBreaks tb ON te.id = tb.time_entry_id AND tb.break_end IS NULL
+                WHERE te.status = 'active'
+                ORDER BY te.clock_in_time";
+        
+        return $this->db->select($sql) ?: [];
+    }
+    
+    /**
+     * Get overall statistics for admin dashboard
+     */
+    public function getOverallStatistics($startDate, $endDate) {
+        $sql = "SELECT 
+                COUNT(DISTINCT te.user_id) as active_users,
+                SUM(te.total_hours) as total_hours,
+                SUM(te.total_break_minutes) as total_break_minutes,
+                AVG(te.total_hours) as avg_hours_per_user,
+                COUNT(te.id) as total_entries
+                FROM dbo.TimeEntries te
+                WHERE CAST(te.clock_in_time AS DATE) BETWEEN ? AND ?
+                AND te.status = 'completed'";
+        
+        $result = $this->db->select($sql, [$startDate, $endDate]);
+        return $result ? $result[0] : [
+            'active_users' => 0,
+            'total_hours' => 0,
+            'total_break_minutes' => 0,
+            'avg_hours_per_user' => 0,
+            'total_entries' => 0
+        ];
+    }
+    
+    /**
+     * Get recent activity for admin dashboard
+     */
+    public function getRecentActivity($limit = 20) {
+        $sql = "SELECT 
+                u.username,
+                u.full_name as user_name,
+                'clock_in' as action,
+                te.clock_in_time as timestamp
+                FROM dbo.TimeEntries te
+                INNER JOIN dbo.Users u ON te.user_id = u.id
+                WHERE te.clock_in_time IS NOT NULL
+                
+                UNION ALL
+                
+                SELECT 
+                u.username,
+                u.full_name as user_name,
+                'clock_out' as action,
+                te.clock_out_time as timestamp
+                FROM dbo.TimeEntries te
+                INNER JOIN dbo.Users u ON te.user_id = u.id
+                WHERE te.clock_out_time IS NOT NULL
+                
+                UNION ALL
+                
+                SELECT 
+                u.username,
+                u.full_name as user_name,
+                'break_start' as action,
+                tb.break_start as timestamp
+                FROM dbo.TimeBreaks tb
+                INNER JOIN dbo.TimeEntries te ON tb.time_entry_id = te.id
+                INNER JOIN dbo.Users u ON te.user_id = u.id
+                WHERE tb.break_start IS NOT NULL
+                
+                UNION ALL
+                
+                SELECT 
+                u.username,
+                u.full_name as user_name,
+                'break_end' as action,
+                tb.break_end as timestamp
+                FROM dbo.TimeBreaks tb
+                INNER JOIN dbo.TimeEntries te ON tb.time_entry_id = te.id
+                INNER JOIN dbo.Users u ON te.user_id = u.id
+                WHERE tb.break_end IS NOT NULL
+                
+                ORDER BY timestamp DESC";
+        
+        $result = $this->db->select($sql);
+        return array_slice($result ?: [], 0, $limit);
+    }
+    
+    /**
+     * Get departments for filtering (using roles since no department column exists)
+     */
+    public function getDepartments() {
+        $sql = "SELECT DISTINCT role FROM dbo.Users WHERE role IS NOT NULL ORDER BY role";
+        $result = $this->db->select($sql);
+        return array_column($result ?: [], 'role');
+    }
+    
+    /**
+     * Get user detailed summary for a specific date
+     */
+    public function getUserDetailedSummary($userId, $date) {
+        $dailySummary = $this->getDailySummary($userId, $date);
+        
+        // Get detailed entries for the date
+        $sql = "SELECT te.*, 
+                COUNT(tb.id) as break_count,
+                SUM(tb.break_duration_minutes) as total_break_minutes_detailed
+                FROM dbo.TimeEntries te
+                LEFT JOIN dbo.TimeBreaks tb ON te.id = tb.time_entry_id
+                WHERE te.user_id = ? AND CAST(te.clock_in_time AS DATE) = ?
+                GROUP BY te.id, te.user_id, te.clock_in_time, te.clock_out_time, 
+                         te.total_hours, te.total_break_minutes, te.status, te.notes, te.created_at, te.updated_at
+                ORDER BY te.clock_in_time";
+        
+        $entries = $this->db->select($sql, [$userId, $date]);
+        
+        return array_merge($dailySummary ?: [], [
+            'entries' => $entries ?: []
+        ]);
+    }
+    
+    /**
+     * Admin force clock out user
+     */
+    public function adminClockOut($userId, $adminId, $reason = 'Admin override') {
+        try {
+            $activeEntry = $this->getActiveTimeEntry($userId);
+            if (!$activeEntry) {
+                return ['success' => false, 'message' => 'User is not currently clocked in'];
+            }
+            
+            $clockOutTime = date('Y-m-d H:i:s');
+            
+            // End any active breaks
+            $this->endActiveBreaks($activeEntry['id']);
+            
+            // Calculate total hours
+            $totalMinutes = $this->calculateTotalMinutes($activeEntry['clock_in_time'], $clockOutTime);
+            $totalBreakMinutes = $this->getTotalBreakMinutes($activeEntry['id']);
+            $netMinutes = $totalMinutes - $totalBreakMinutes;
+            $totalHours = round($netMinutes / 60, 2);
+            
+            $notes = ($activeEntry['notes'] ? $activeEntry['notes'] . ' | ' : '') . 'Admin force clock out: ' . $reason;
+            $sql = "UPDATE dbo.TimeEntries SET clock_out_time = ?, total_hours = ?, total_break_minutes = ?, status = 'completed', notes = ?, updated_at = ? WHERE id = ?";
+            $this->db->update($sql, [$clockOutTime, $totalHours, $totalBreakMinutes, $notes, date('Y-m-d H:i:s'), $activeEntry['id']]);
+            
+            return [
+                'success' => true,
+                'message' => 'User clocked out successfully by admin',
+                'clock_out_time' => $clockOutTime,
+                'total_hours' => $totalHours
+            ];
+            
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Get period summary for user
+     */
+    private function getPeriodSummary($userId, $startDate, $endDate) {
+        $sql = "SELECT 
+                SUM(total_hours) as total_hours,
+                SUM(total_break_minutes) as total_break_minutes,
+                COUNT(*) as total_entries
+                FROM dbo.TimeEntries 
+                WHERE user_id = ? AND CAST(clock_in_time AS DATE) BETWEEN ? AND ? AND status = 'completed'";
+        
+        $result = $this->db->select($sql, [$userId, $startDate, $endDate]);
+        return $result ? $result[0] : [
+            'total_hours' => 0,
+            'total_break_minutes' => 0,
+            'total_entries' => 0
+        ];
+    }
+    
+    /**
+     * Get last activity for user
+     */
+    private function getLastActivity($userId) {
+        $sql = "SELECT TOP 1 
+                CASE 
+                    WHEN clock_out_time IS NOT NULL THEN clock_out_time
+                    WHEN clock_in_time IS NOT NULL THEN clock_in_time
+                    ELSE created_at
+                END as last_activity
+                FROM dbo.TimeEntries 
+                WHERE user_id = ? 
+                ORDER BY created_at DESC";
+        
+        $result = $this->db->select($sql, [$userId]);
+        return $result ? $result[0]['last_activity'] : null;
+    }
+    
+    /**
+     * Get analytics data for admin
+     */
+    public function getAnalyticsData($period = 'month', $department = null) {
+        // This would contain complex analytics queries
+        // For now, return basic structure
+        return [
+            'period' => $period,
+            'department' => $department,
+            'productivity_trends' => [],
+            'user_comparisons' => [],
+            'break_patterns' => [],
+            'peak_hours' => []
+        ];
+    }
 }
 ?> 
