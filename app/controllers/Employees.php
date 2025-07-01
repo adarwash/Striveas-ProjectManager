@@ -939,5 +939,184 @@ class Employees extends Controller {
         
         return round($bytes, 2) . ' ' . $units[$pow];
     }
+
+    /**
+     * Employee Performance Dashboard with Time Tracking Integration
+     */
+    public function performance() {
+        // Check admin/manager permissions
+        if (!in_array($_SESSION['role'], ['admin', 'manager'])) {
+            flash('employee_error', 'You do not have permission to access performance data', 'alert alert-danger');
+            redirect('/dashboard');
+        }
+        
+        // Get parameters
+        $days = $_GET['days'] ?? 30;
+        $sortBy = $_GET['sort'] ?? 'productivity_rating';
+        $userId = $_GET['user_id'] ?? null;
+        
+        if ($userId) {
+            // Single employee performance view
+            $employee = $this->employeeModel->getEmployeePerformanceWithTimeTracking($userId, $days);
+            
+            if (!$employee) {
+                flash('employee_error', 'Employee not found', 'alert alert-danger');
+                redirect('/employees/performance');
+            }
+            
+            $data = [
+                'title' => 'Employee Performance Analysis - ' . $employee['full_name'],
+                'employee' => $employee,
+                'days' => $days,
+                'single_view' => true
+            ];
+            
+            $this->view('employees/performance_detail', $data);
+        } else {
+            // All employees performance overview
+            $employees = $this->employeeModel->getAllEmployeesWithTimeTrackingPerformance($days, $sortBy);
+            $performanceSummary = $this->employeeModel->getTimeTrackingPerformanceSummary($days);
+            
+            $data = [
+                'title' => 'Employee Performance Dashboard',
+                'employees' => $employees,
+                'performance_summary' => $performanceSummary,
+                'days' => $days,
+                'sort_by' => $sortBy,
+                'single_view' => false
+            ];
+            
+            $this->view('employees/performance_dashboard', $data);
+        }
+    }
+    
+    /**
+     * Get time tracking analytics for an employee (AJAX)
+     */
+    public function getTimeAnalytics($userId = null) {
+        if (!$userId) {
+            $this->jsonResponse(['error' => 'User ID required']);
+            return;
+        }
+        
+        $days = $_GET['days'] ?? 30;
+        $employee = $this->employeeModel->getEmployeePerformanceWithTimeTracking($userId, $days);
+        
+        if (!$employee) {
+            $this->jsonResponse(['error' => 'Employee not found']);
+            return;
+        }
+        
+        $this->jsonResponse([
+            'success' => true,
+            'data' => $employee['time_performance'],
+            'trends' => $employee['time_performance']['trends']
+        ]);
+    }
+    
+    /**
+     * Export employee performance report to CSV
+     */
+    public function exportPerformanceReport() {
+        // Check admin permissions
+        if ($_SESSION['role'] !== 'admin') {
+            flash('employee_error', 'You do not have permission to export reports', 'alert alert-danger');
+            redirect('/employees/performance');
+        }
+        
+        $days = $_GET['days'] ?? 30;
+        $employees = $this->employeeModel->getAllEmployeesWithTimeTrackingPerformance($days);
+        
+        // Set headers for CSV download
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="employee_performance_report_' . date('Y-m-d') . '.csv"');
+        
+        // Open output stream
+        $output = fopen('php://output', 'w');
+        
+        // Write CSV headers
+        fputcsv($output, [
+            'Employee Name',
+            'Email',
+            'Role',
+            'Performance Rating',
+            'Total Hours (' . $days . ' days)',
+            'Avg Hours/Day',
+            'Punctuality Score (%)',
+            'Attendance Rate (%)',
+            'Consistency Score (%)',
+            'Break Efficiency',
+            'Productivity Rating',
+            'Tasks Completed',
+            'Tasks Pending',
+            'Last Review Date'
+        ]);
+        
+        // Write employee data
+        foreach ($employees as $employee) {
+            fputcsv($output, [
+                $employee['full_name'],
+                $employee['email'],
+                $employee['role'],
+                $employee['performance_rating'],
+                $employee['time_performance']['total_hours'],
+                $employee['time_performance']['avg_hours_per_day'],
+                $employee['time_performance']['punctuality_score'],
+                $employee['time_performance']['attendance_rate'],
+                $employee['time_performance']['consistency_score'],
+                $employee['time_performance']['break_efficiency'],
+                $employee['time_performance']['productivity_rating'],
+                $employee['tasks_completed'],
+                $employee['tasks_pending'],
+                $employee['last_review_date'] ?? 'Not reviewed'
+            ]);
+        }
+        
+        fclose($output);
+        exit;
+    }
+    
+    /**
+     * Update performance rating based on time tracking data
+     */
+    public function updatePerformanceRating($userId = null) {
+        if (!$userId) {
+            $this->jsonResponse(['error' => 'User ID required']);
+            return;
+        }
+        
+        // Check admin permissions
+        if ($_SESSION['role'] !== 'admin') {
+            $this->jsonResponse(['error' => 'Permission denied']);
+            return;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $data = [
+                'user_id' => $userId,
+                'performance_rating' => $_POST['performance_rating'] ?? 0,
+                'notes' => $_POST['notes'] ?? '',
+                'last_review_date' => date('Y-m-d')
+            ];
+            
+            if ($this->employeeModel->updateEmployeeRecord($data, $_SESSION['user_id'])) {
+                $this->jsonResponse([
+                    'success' => true,
+                    'message' => 'Performance rating updated successfully'
+                ]);
+            } else {
+                $this->jsonResponse(['error' => 'Failed to update performance rating']);
+            }
+        }
+    }
+
+    /**
+     * Helper method to send JSON responses
+     */
+    private function jsonResponse($data) {
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
+    }
 }
 ?> 

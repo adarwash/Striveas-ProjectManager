@@ -194,9 +194,14 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0">Employee List</h5>
-        <a href="/employees/create" class="btn btn-sm btn-primary">
-            <i class="bi bi-plus"></i> Add New
-        </a>
+        <div class="btn-group">
+            <a href="/employees/performance" class="btn btn-sm btn-info">
+                <i class="bi bi-graph-up-arrow"></i> Performance Dashboard
+            </a>
+            <a href="/employees/create" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus"></i> Add New
+            </a>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">

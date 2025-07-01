@@ -12,6 +12,9 @@
         <p class="text-muted">Employee Performance Profile</p>
     </div>
     <div class="d-flex">
+        <a href="/employees/performance?user_id=<?= $employee['user_id'] ?>" class="btn btn-info me-2">
+            <i class="bi bi-graph-up-arrow"></i> Performance Analysis
+        </a>
         <a href="/employees/exportProfile/<?= $employee['user_id'] ?>" class="btn btn-success me-2" target="_blank">
             <i class="bi bi-file-earmark-pdf"></i> Export PDF
         </a>

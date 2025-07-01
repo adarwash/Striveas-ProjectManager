@@ -815,5 +815,321 @@ class Employee {
             return false;
         }
     }
+    
+    /**
+     * Get comprehensive employee performance data including time tracking
+     * 
+     * @param int $userId User ID
+     * @param int $days Number of days to analyze (default 30)
+     * @return array Comprehensive performance data
+     */
+    public function getEmployeePerformanceWithTimeTracking($userId, $days = 30) {
+        try {
+            // Get basic employee data
+            $employee = $this->getEmployeeById($userId);
+            if (!$employee) {
+                return false;
+            }
+            
+            // Get time tracking model
+            require_once __DIR__ . '/TimeTracking.php';
+            $timeModel = new TimeTracking();
+            
+            $startDate = date('Y-m-d', strtotime("-{$days} days"));
+            $endDate = date('Y-m-d');
+            
+            // Get time tracking performance metrics
+            $timePerformance = $this->calculateTimePerformanceMetrics($userId, $startDate, $endDate);
+            
+            // Get recent time entries
+            $recentEntries = $timeModel->getUserTimeEntries($userId, $startDate, $endDate, 10);
+            
+            // Get current status
+            $currentStatus = $timeModel->getUserStatus($userId);
+            
+            // Combine all data
+            return array_merge($employee, [
+                'time_performance' => $timePerformance,
+                'recent_time_entries' => $recentEntries,
+                'current_status' => $currentStatus,
+                'analysis_period' => $days
+            ]);
+            
+        } catch (Exception $e) {
+            error_log('Error getting employee performance with time tracking: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Calculate time-based performance metrics
+     * 
+     * @param int $userId User ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Performance metrics
+     */
+    private function calculateTimePerformanceMetrics($userId, $startDate, $endDate) {
+        try {
+            $metrics = [
+                'total_hours' => 0,
+                'avg_hours_per_day' => 0,
+                'punctuality_score' => 0,
+                'consistency_score' => 0,
+                'break_efficiency' => 0,
+                'attendance_rate' => 0,
+                'productivity_rating' => 'Good',
+                'trends' => []
+            ];
+            
+            // Get time entries for the period
+            $query = "SELECT 
+                        COUNT(*) as total_days,
+                        SUM(total_hours) as total_hours,
+                        AVG(total_hours) as avg_hours,
+                        MIN(total_hours) as min_hours,
+                        MAX(total_hours) as max_hours,
+                        SUM(total_break_minutes) as total_break_minutes,
+                        AVG(total_break_minutes) as avg_break_minutes,
+                        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_days,
+                        COUNT(CASE WHEN DATEPART(hour, clock_in_time) <= 9 THEN 1 END) as on_time_days
+                      FROM TimeEntries 
+                      WHERE user_id = ? AND CAST(clock_in_time AS DATE) BETWEEN ? AND ? AND status = 'completed'";
+                      
+            $result = $this->db->select($query, [$userId, $startDate, $endDate]);
+            
+            if (!empty($result)) {
+                $data = $result[0];
+                
+                $metrics['total_hours'] = round($data['total_hours'] ?? 0, 2);
+                $metrics['avg_hours_per_day'] = round($data['avg_hours'] ?? 0, 2);
+                $metrics['total_break_minutes'] = $data['total_break_minutes'] ?? 0;
+                $metrics['avg_break_minutes'] = round($data['avg_break_minutes'] ?? 0, 1);
+                
+                // Calculate punctuality score (percentage of on-time arrivals)
+                $totalDays = $data['total_days'] ?? 0;
+                $onTimeDays = $data['on_time_days'] ?? 0;
+                $metrics['punctuality_score'] = $totalDays > 0 ? round(($onTimeDays / $totalDays) * 100, 1) : 0;
+                
+                // Calculate consistency score (how consistent are the working hours)
+                $avgHours = $data['avg_hours'] ?? 0;
+                $minHours = $data['min_hours'] ?? 0;
+                $maxHours = $data['max_hours'] ?? 0;
+                
+                if ($avgHours > 0) {
+                    $variance = (($maxHours - $minHours) / $avgHours) * 100;
+                    $metrics['consistency_score'] = max(0, round(100 - $variance, 1));
+                }
+                
+                // Calculate attendance rate
+                $expectedDays = $this->getWorkingDaysInPeriod($startDate, $endDate);
+                $metrics['attendance_rate'] = $expectedDays > 0 ? round(($totalDays / $expectedDays) * 100, 1) : 0;
+                
+                // Calculate break efficiency (reasonable break time vs total time)
+                if ($metrics['total_hours'] > 0) {
+                    $breakHours = $metrics['total_break_minutes'] / 60;
+                    $breakRatio = ($breakHours / $metrics['total_hours']) * 100;
+                    $metrics['break_efficiency'] = $breakRatio <= 15 ? 'Excellent' : ($breakRatio <= 25 ? 'Good' : 'Needs Improvement');
+                }
+                
+                // Overall productivity rating
+                $metrics['productivity_rating'] = $this->calculateProductivityRating($metrics);
+            }
+            
+            // Get daily trends
+            $metrics['trends'] = $this->getDailyTimeTracking($userId, $startDate, $endDate);
+            
+            return $metrics;
+            
+        } catch (Exception $e) {
+            error_log('Error calculating time performance metrics: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get daily time tracking trends
+     * 
+     * @param int $userId User ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Daily trends
+     */
+    private function getDailyTimeTracking($userId, $startDate, $endDate) {
+        try {
+            $query = "SELECT 
+                        CAST(clock_in_time AS DATE) as work_date,
+                        MIN(clock_in_time) as first_clock_in,
+                        MAX(clock_out_time) as last_clock_out,
+                        SUM(total_hours) as daily_hours,
+                        SUM(total_break_minutes) as daily_break_minutes,
+                        COUNT(*) as entries_count
+                      FROM TimeEntries 
+                      WHERE user_id = ? AND CAST(clock_in_time AS DATE) BETWEEN ? AND ? AND status = 'completed'
+                      GROUP BY CAST(clock_in_time AS DATE)
+                      ORDER BY work_date DESC";
+                      
+            return $this->db->select($query, [$userId, $startDate, $endDate]) ?: [];
+            
+        } catch (Exception $e) {
+            error_log('Error getting daily time tracking: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Calculate productivity rating based on metrics
+     * 
+     * @param array $metrics Performance metrics
+     * @return string Productivity rating
+     */
+    private function calculateProductivityRating($metrics) {
+        $score = 0;
+        
+        // Hours per day score (assuming 8 hours is ideal)
+        if ($metrics['avg_hours_per_day'] >= 7.5) $score += 25;
+        elseif ($metrics['avg_hours_per_day'] >= 6) $score += 20;
+        elseif ($metrics['avg_hours_per_day'] >= 4) $score += 15;
+        else $score += 10;
+        
+        // Punctuality score
+        if ($metrics['punctuality_score'] >= 90) $score += 25;
+        elseif ($metrics['punctuality_score'] >= 80) $score += 20;
+        elseif ($metrics['punctuality_score'] >= 70) $score += 15;
+        else $score += 10;
+        
+        // Consistency score
+        if ($metrics['consistency_score'] >= 80) $score += 25;
+        elseif ($metrics['consistency_score'] >= 60) $score += 20;
+        else $score += 15;
+        
+        // Attendance score
+        if ($metrics['attendance_rate'] >= 95) $score += 25;
+        elseif ($metrics['attendance_rate'] >= 85) $score += 20;
+        elseif ($metrics['attendance_rate'] >= 75) $score += 15;
+        else $score += 10;
+        
+        // Return rating based on total score
+        if ($score >= 90) return 'Excellent';
+        elseif ($score >= 75) return 'Very Good';
+        elseif ($score >= 60) return 'Good';
+        elseif ($score >= 45) return 'Fair';
+        else return 'Needs Improvement';
+    }
+    
+    /**
+     * Get working days in period (excluding weekends)
+     * 
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return int Number of working days
+     */
+    private function getWorkingDaysInPeriod($startDate, $endDate) {
+        $start = new DateTime($startDate);
+        $end = new DateTime($endDate);
+        $workingDays = 0;
+        
+        while ($start <= $end) {
+            $dayOfWeek = $start->format('N'); // 1 = Monday, 7 = Sunday
+            if ($dayOfWeek < 6) { // Monday to Friday
+                $workingDays++;
+            }
+            $start->modify('+1 day');
+        }
+        
+        return $workingDays;
+    }
+    
+    /**
+     * Get all employees with comprehensive performance data including time tracking
+     * 
+     * @param int $days Number of days to analyze
+     * @param string $sortBy Sort field (performance_rating, productivity_rating, total_hours, etc.)
+     * @return array List of employees with comprehensive data
+     */
+    public function getAllEmployeesWithTimeTrackingPerformance($days = 30, $sortBy = 'performance_rating') {
+        try {
+            $employees = $this->getAllEmployees();
+            $enhancedEmployees = [];
+            
+            foreach ($employees as $employee) {
+                $performanceData = $this->getEmployeePerformanceWithTimeTracking($employee['user_id'], $days);
+                if ($performanceData) {
+                    $enhancedEmployees[] = $performanceData;
+                }
+            }
+            
+            // Sort by specified field
+            if ($sortBy === 'productivity_rating') {
+                // Custom sort for productivity rating
+                $ratingOrder = ['Excellent' => 5, 'Very Good' => 4, 'Good' => 3, 'Fair' => 2, 'Needs Improvement' => 1];
+                usort($enhancedEmployees, function($a, $b) use ($ratingOrder) {
+                    $aRating = $ratingOrder[$a['time_performance']['productivity_rating']] ?? 0;
+                    $bRating = $ratingOrder[$b['time_performance']['productivity_rating']] ?? 0;
+                    return $bRating <=> $aRating;
+                });
+            } else {
+                // Standard sort
+                usort($enhancedEmployees, function($a, $b) use ($sortBy) {
+                    if (isset($a['time_performance'][$sortBy]) && isset($b['time_performance'][$sortBy])) {
+                        return $b['time_performance'][$sortBy] <=> $a['time_performance'][$sortBy];
+                    }
+                    return ($b[$sortBy] ?? 0) <=> ($a[$sortBy] ?? 0);
+                });
+            }
+            
+            return $enhancedEmployees;
+            
+        } catch (Exception $e) {
+            error_log('Error getting employees with time tracking performance: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get time tracking performance summary for all employees
+     * 
+     * @param int $days Number of days to analyze
+     * @return array Summary statistics
+     */
+    public function getTimeTrackingPerformanceSummary($days = 30) {
+        try {
+            $startDate = date('Y-m-d', strtotime("-{$days} days"));
+            $endDate = date('Y-m-d');
+            
+            $query = "SELECT 
+                        COUNT(DISTINCT te.user_id) as active_employees,
+                        AVG(te.total_hours) as avg_hours_per_entry,
+                        SUM(te.total_hours) as total_company_hours,
+                        AVG(te.total_break_minutes) as avg_break_minutes,
+                        COUNT(CASE WHEN DATEPART(hour, te.clock_in_time) <= 9 THEN 1 END) as on_time_entries,
+                        COUNT(te.id) as total_entries,
+                        COUNT(CASE WHEN te.status = 'completed' THEN 1 END) as completed_entries
+                      FROM TimeEntries te
+                      INNER JOIN EmployeeManagement em ON te.user_id = em.user_id
+                      WHERE CAST(te.clock_in_time AS DATE) BETWEEN ? AND ?";
+                      
+            $result = $this->db->select($query, [$startDate, $endDate]);
+            
+            if (!empty($result)) {
+                $data = $result[0];
+                return [
+                    'active_employees' => $data['active_employees'] ?? 0,
+                    'avg_hours_per_entry' => round($data['avg_hours_per_entry'] ?? 0, 2),
+                    'total_company_hours' => round($data['total_company_hours'] ?? 0, 2),
+                    'avg_break_minutes' => round($data['avg_break_minutes'] ?? 0, 1),
+                    'punctuality_rate' => $data['total_entries'] > 0 ? round(($data['on_time_entries'] / $data['total_entries']) * 100, 1) : 0,
+                    'completion_rate' => $data['total_entries'] > 0 ? round(($data['completed_entries'] / $data['total_entries']) * 100, 1) : 0,
+                    'period_days' => $days
+                ];
+            }
+            
+            return [];
+            
+        } catch (Exception $e) {
+            error_log('Error getting time tracking performance summary: ' . $e->getMessage());
+            return [];
+        }
+    }
 }
 ?> 

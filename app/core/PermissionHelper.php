@@ -343,6 +343,12 @@ class PermissionHelper {
                 'url' => '/employees',
                 'icon' => 'bi bi-person-badge',
                 'permission' => 'employees.read'
+            ],
+            [
+                'title' => 'Employee Performance',
+                'url' => '/employees/performance',
+                'icon' => 'bi bi-graph-up-arrow',
+                'permission' => 'employees.read'
             ]
         ];
         
