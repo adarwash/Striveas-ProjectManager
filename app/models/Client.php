@@ -32,19 +32,19 @@ class Client {
     }
     
     /**
-     * Get clients assigned to a site
+     * Get sites assigned to a client
      *
-     * @param int $siteId Site ID
-     * @return array Array of clients
+     * @param int $clientId Client ID
+     * @return array Array of sites assigned to the client
      */
-    public function getSiteClients($siteId) {
-        $query = "SELECT c.*, sc.relationship_type 
-                 FROM Clients c
-                 JOIN SiteClients sc ON c.id = sc.client_id
-                 WHERE sc.site_id = ?
-                 ORDER BY c.name ASC";
+    public function getSiteClients($clientId) {
+        $query = "SELECT s.*, sc.relationship_type 
+                 FROM Sites s
+                 JOIN SiteClients sc ON s.id = sc.site_id
+                 WHERE sc.client_id = ?
+                 ORDER BY s.name ASC";
         
-        return $this->db->select($query, [$siteId]);
+        return $this->db->select($query, [$clientId]);
     }
     
     /**
@@ -56,7 +56,7 @@ class Client {
     public function addClient($data) {
         try {
             $query = "INSERT INTO Clients (name, contact_person, email, phone, address, industry, status, notes, created_at) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
             
             return $this->db->insert($query, [
                 $data['name'],
@@ -91,7 +91,7 @@ class Client {
                          industry = ?, 
                          status = ?, 
                          notes = ?, 
-                         updated_at = NOW() 
+                         updated_at = GETDATE() 
                      WHERE id = ?";
             
             $this->db->update($query, [
@@ -157,7 +157,7 @@ class Client {
             } else {
                 // Create new relationship
                 $query = "INSERT INTO SiteClients (client_id, site_id, relationship_type, created_at) 
-                         VALUES (?, ?, ?, NOW())";
+                         VALUES (?, ?, ?, GETDATE())";
                 $this->db->insert($query, [$clientId, $siteId, $relationshipType]);
             }
             
@@ -188,31 +188,28 @@ class Client {
     }
     
     /**
-     * Update site client assignments
+     * Update site client assignments for a specific client
      * 
-     * @param int $siteId Site ID
-     * @param array $clientIds Client IDs to assign
-     * @param array $relationshipTypes Relationship types for each client
+     * @param int $clientId Client ID
+     * @param array $siteIds Site IDs to assign
+     * @param array $relationshipTypes Relationship types for each site
      * @return boolean Success status
      */
-    public function updateSiteClientAssignments($siteId, $clientIds, $relationshipTypes) {
+    public function updateSiteClientAssignments($clientId, $siteIds, $relationshipTypes) {
         try {
-            $this->db->beginTransaction();
-            
-            // Remove all current client assignments
-            $removeQuery = "DELETE FROM SiteClients WHERE site_id = ?";
-            $this->db->remove($removeQuery, [$siteId]);
+            // Remove all current site assignments for this client
+            $removeQuery = "DELETE FROM SiteClients WHERE client_id = ?";
+            $this->db->remove($removeQuery, [$clientId]);
             
             // Add new assignments
-            if (!empty($clientIds)) {
-                $query = "INSERT INTO SiteClients (client_id, site_id, relationship_type, created_at) 
-                         VALUES (?, ?, ?, NOW())";
-                
-                foreach ($clientIds as $index => $clientId) {
+            if (!empty($siteIds)) {
+                foreach ($siteIds as $index => $siteId) {
                     $relationshipType = isset($relationshipTypes[$index]) 
                                       ? $relationshipTypes[$index] 
                                       : 'Standard';
                     
+                    $query = "INSERT INTO SiteClients (client_id, site_id, relationship_type, created_at) 
+                             VALUES (?, ?, ?, GETDATE())";
                     $this->db->insert($query, [
                         $clientId,
                         $siteId,
@@ -221,12 +218,9 @@ class Client {
                 }
             }
             
-            $this->db->commitTransaction();
-            
             return true;
         } catch (Exception $e) {
-            $this->db->rollbackTransaction();
-            error_log('Error updating site client assignments: ' . $e->getMessage());
+            error_log('Error updating client site assignments: ' . $e->getMessage());
             return false;
         }
     }

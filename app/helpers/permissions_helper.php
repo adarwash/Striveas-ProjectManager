@@ -22,15 +22,6 @@ function hasPermission($permissionName) {
 }
 
 /**
- * Check if the current user is an admin
- * 
- * @return bool True if user is admin, false otherwise
- */
-function isAdmin() {
-    return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
-}
-
-/**
  * Check if the current user is a manager
  * 
  * @return bool True if user is manager, false otherwise

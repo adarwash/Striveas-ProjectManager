@@ -95,6 +95,12 @@ class PermissionHelper {
             'sites/edit' => 'sites.update',
             'sites/delete' => 'sites.delete',
             
+            // Clients
+            'clients' => 'clients.read',
+            'clients/create' => 'clients.create',
+            'clients/edit' => 'clients.update',
+            'clients/delete' => 'clients.delete',
+            
             // Employee Management
             'employees' => 'employees.read',
             'employees/create' => 'employees.create',
@@ -274,6 +280,12 @@ class PermissionHelper {
                 'url' => '/sites',
                 'icon' => 'bi bi-geo-alt',
                 'permission' => 'sites.read'
+            ],
+            [
+                'title' => 'Clients',
+                'url' => '/clients',
+                'icon' => 'bi bi-people',
+                'permission' => 'clients.read'
             ],
             [
                 'title' => 'Calendar',

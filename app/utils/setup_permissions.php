@@ -7,7 +7,7 @@
  */
 
 // Include necessary files
-require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../models/Permission.php';
 require_once __DIR__ . '/../models/Role.php';
 
@@ -52,6 +52,13 @@ class PermissionSetup {
             ['name' => 'sites.read', 'display_name' => 'View Sites', 'description' => 'View site information', 'module' => 'sites', 'action' => 'read'],
             ['name' => 'sites.update', 'display_name' => 'Update Sites', 'description' => 'Edit site information', 'module' => 'sites', 'action' => 'update'],
             ['name' => 'sites.delete', 'display_name' => 'Delete Sites', 'description' => 'Delete sites', 'module' => 'sites', 'action' => 'delete'],
+
+            // Clients Module
+            ['name' => 'clients.create', 'display_name' => 'Create Clients', 'description' => 'Create new clients', 'module' => 'clients', 'action' => 'create'],
+            ['name' => 'clients.read', 'display_name' => 'View Clients', 'description' => 'View client information', 'module' => 'clients', 'action' => 'read'],
+            ['name' => 'clients.update', 'display_name' => 'Update Clients', 'description' => 'Edit client information', 'module' => 'clients', 'action' => 'update'],
+            ['name' => 'clients.delete', 'display_name' => 'Delete Clients', 'description' => 'Delete clients', 'module' => 'clients', 'action' => 'delete'],
+            ['name' => 'clients.assign_sites', 'display_name' => 'Assign Sites to Clients', 'description' => 'Assign and manage client-site relationships', 'module' => 'clients', 'action' => 'assign'],
             
             // Employee Management
             ['name' => 'employees.create', 'display_name' => 'Create Employees', 'description' => 'Create new employee records', 'module' => 'employees', 'action' => 'create'],
@@ -111,6 +118,7 @@ class PermissionSetup {
                 'time.access', 'time.admin', 'time.reports',
                 'suppliers.create', 'suppliers.read', 'suppliers.update', 'suppliers.delete',
                 'sites.create', 'sites.read', 'sites.update', 'sites.delete',
+                'clients.create', 'clients.read', 'clients.update', 'clients.delete', 'clients.assign_sites',
                 'employees.create', 'employees.read', 'employees.update', 'employees.delete',
                 'admin.access', 'users.manage', 'tasks.assign', 'tasks.manage'
             ],
@@ -119,6 +127,7 @@ class PermissionSetup {
                 'notes.create', 'notes.read', 'notes.update', 'notes.delete',
                 'time.access', 'time.reports',
                 'suppliers.read', 'sites.read',
+                'clients.create', 'clients.read', 'clients.update', 'clients.assign_sites',
                 'employees.read', 'employees.update',
                 'tasks.assign', 'tasks.manage'
             ],
@@ -126,17 +135,17 @@ class PermissionSetup {
                 'dashboard.access', 'calendar.access', 'gantt.access',
                 'notes.create', 'notes.read', 'notes.update',
                 'time.access',
-                'suppliers.read', 'sites.read'
+                'suppliers.read', 'sites.read', 'clients.read'
             ],
             'client' => [
                 'dashboard.access', 'calendar.access',
                 'notes.read',
-                'suppliers.read', 'sites.read'
+                'suppliers.read', 'sites.read', 'clients.read'
             ],
             'viewer' => [
                 'dashboard.access', 'calendar.access', 'gantt.access',
                 'notes.read',
-                'suppliers.read', 'sites.read'
+                'suppliers.read', 'sites.read', 'clients.read'
             ]
         ];
         
