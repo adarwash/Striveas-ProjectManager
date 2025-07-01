@@ -124,6 +124,14 @@
                             </a>
                         </div>
                     </div>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-4">
+                            <a href="<?= URLROOT ?>/permissions/setup" class="btn btn-outline-danger w-100 py-3">
+                                <i class="bi bi-gear d-block fs-3 mb-2"></i>
+                                Permission Setup
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

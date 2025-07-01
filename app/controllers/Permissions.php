@@ -233,4 +233,68 @@ class Permissions extends Controller {
             }
         }
     }
+    
+    // Permission setup utility
+    public function setup() {
+        // Include the setup utility
+        require_once APPROOT . '/utils/setup_permissions.php';
+        
+        $results = [];
+        $setupUtil = new PermissionSetup();
+        
+        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
+            try {
+                switch ($_POST['action']) {
+                    case 'setup_permissions':
+                        $results = $setupUtil->setupPageAccessPermissions();
+                        flash('permissions_message', 'Permission setup completed successfully', 'alert alert-success');
+                        break;
+                        
+                    case 'assign_roles':
+                        $results = $setupUtil->assignPermissionsToRoles();
+                        flash('permissions_message', 'Role permission assignment completed successfully', 'alert alert-success');
+                        break;
+                        
+                    case 'full_setup':
+                        $results = $setupUtil->runFullSetup();
+                        flash('permissions_message', 'Full permission setup completed successfully', 'alert alert-success');
+                        break;
+                        
+                    default:
+                        flash('permissions_message', 'Invalid action specified', 'alert alert-danger');
+                        break;
+                }
+            } catch (Exception $e) {
+                $results = ['Error: ' . $e->getMessage()];
+                flash('permissions_message', 'Setup failed: ' . $e->getMessage(), 'alert alert-danger');
+            }
+        }
+        
+        // Get current system statistics
+        $stats = [
+            'total_permissions' => count($this->permissionModel->getAllPermissions()),
+            'total_roles' => count($this->roleModel->getAllRoles()),
+            'total_users' => count($this->userModel->getAllUsers())
+        ];
+        
+        // Get permissions by module
+        $permissions = $this->permissionModel->getAllPermissions();
+        $permissionsByModule = [];
+        foreach ($permissions as $permission) {
+            $module = $permission['module'];
+            if (!isset($permissionsByModule[$module])) {
+                $permissionsByModule[$module] = 0;
+            }
+            $permissionsByModule[$module]++;
+        }
+        
+        $data = [
+            'title' => 'Permission Setup',
+            'results' => $results,
+            'stats' => $stats,
+            'permissions_by_module' => $permissionsByModule
+        ];
+        
+        $this->view('admin/permissions/setup', $data);
+    }
 } 

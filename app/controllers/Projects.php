@@ -1,4 +1,7 @@
 <?php
+// Include PermissionHelper for page access control
+require_once __DIR__ . '/../core/PermissionHelper.php';
+
 class Projects extends Controller {
     private $projectModel;
     private $taskModel;
@@ -18,6 +21,9 @@ class Projects extends Controller {
             header('Location: /auth');
             exit;
         }
+        
+        // Check page access permission
+        PermissionHelper::requirePageAccess('projects');
         
         // Load the project model
         $this->projectModel = $this->model('Project');
@@ -52,6 +58,9 @@ class Projects extends Controller {
     
     // Show the form to create a new project
     public function create() {
+        // Check create permission
+        PermissionHelper::requirePermission('projects.create');
+        
         // Get all departments for the dropdown
         $departments = $this->departmentModel->getAllDepartments();
         
@@ -75,6 +84,9 @@ class Projects extends Controller {
     
     // Process the new project form
     public function store() {
+        // Check create permission
+        PermissionHelper::requirePermission('projects.create');
+        
         // Process form data if POST request
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize POST data
@@ -299,6 +311,9 @@ class Projects extends Controller {
     
     // Show form to edit project
     public function edit($id) {
+        // Check update permission
+        PermissionHelper::requirePermission('projects.update');
+        
         // Get project by ID
         $project = $this->projectModel->getProjectById($id);
         
@@ -324,6 +339,9 @@ class Projects extends Controller {
     
     // Process the edit form
     public function update($id) {
+        // Check update permission
+        PermissionHelper::requirePermission('projects.update');
+        
         // Process form data if POST request
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize POST data
@@ -418,6 +436,9 @@ class Projects extends Controller {
     
     // Delete a project
     public function delete($id) {
+        // Check delete permission
+        PermissionHelper::requirePermission('projects.delete');
+        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Delete project
             $this->projectModel->delete($id);

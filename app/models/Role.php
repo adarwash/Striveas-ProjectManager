@@ -21,9 +21,9 @@ class Role {
     
     // Get role by name
     public function getRoleByName($name) {
-        $this->db->query('SELECT * FROM dbo.Roles WHERE name = :name');
-        $this->db->bind(':name', $name);
-        return $this->db->single();
+        $query = 'SELECT * FROM dbo.Roles WHERE name = ?';
+        $result = $this->db->select($query, [$name]);
+        return !empty($result) ? $result[0] : false;
     }
     
     // Create new role
@@ -64,36 +64,40 @@ class Role {
     
     // Delete role
     public function deleteRole($id) {
-        // First check if any users are assigned to this role
-        $this->db->query('SELECT COUNT(*) as user_count FROM dbo.Users WHERE role_id = :id');
-        $this->db->bind(':id', $id);
-        $result = $this->db->single();
-        
-        if ($result['user_count'] > 0) {
-            return false; // Cannot delete role with assigned users
+        try {
+            // First check if any users are assigned to this role
+            $result = $this->db->select('SELECT COUNT(*) as user_count FROM dbo.Users WHERE role_id = ?', [$id]);
+            
+            if (!empty($result) && $result[0]['user_count'] > 0) {
+                return false; // Cannot delete role with assigned users
+            }
+            
+            // Remove all role-permission associations
+            $this->db->remove('DELETE FROM dbo.RolePermissions WHERE role_id = ?', [$id]);
+            
+            // Delete the role
+            $this->db->remove('DELETE FROM dbo.Roles WHERE id = ?', [$id]);
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('DeleteRole Error: ' . $e->getMessage());
+            return false;
         }
-        
-        // Remove all role-permission associations
-        $this->db->query('DELETE FROM dbo.RolePermissions WHERE role_id = :id');
-        $this->db->bind(':id', $id);
-        $this->db->execute();
-        
-        // Delete the role
-        $this->db->query('DELETE FROM dbo.Roles WHERE id = :id');
-        $this->db->bind(':id', $id);
-        
-        return $this->db->execute();
     }
     
     // Get role permissions
     public function getRolePermissions($roleId) {
-        $this->db->query('SELECT p.* 
-                         FROM dbo.Permissions p
-                         INNER JOIN dbo.RolePermissions rp ON p.id = rp.permission_id
-                         WHERE rp.role_id = :role_id AND p.is_active = 1
-                         ORDER BY p.module, p.action, p.display_name');
-        $this->db->bind(':role_id', $roleId);
-        return $this->db->resultSet();
+        try {
+            $query = 'SELECT p.* 
+                     FROM dbo.Permissions p
+                     INNER JOIN dbo.RolePermissions rp ON p.id = rp.permission_id
+                     WHERE rp.role_id = ? AND p.is_active = 1
+                     ORDER BY p.module, p.action, p.display_name';
+            return $this->db->select($query, [$roleId]) ?: [];
+        } catch (Exception $e) {
+            error_log('GetRolePermissions Error: ' . $e->getMessage());
+            return [];
+        }
     }
     
     // Get role permissions grouped by module
@@ -114,34 +118,36 @@ class Role {
     
     // Assign permission to role
     public function assignPermissionToRole($roleId, $permissionId) {
-        $this->db->query('INSERT INTO dbo.RolePermissions (role_id, permission_id) 
-                         VALUES (:role_id, :permission_id)');
-        $this->db->bind(':role_id', $roleId);
-        $this->db->bind(':permission_id', $permissionId);
-        return $this->db->execute();
+        try {
+            $this->db->insert('INSERT INTO dbo.RolePermissions (role_id, permission_id) VALUES (?, ?)', [$roleId, $permissionId]);
+            return true;
+        } catch (Exception $e) {
+            error_log('AssignPermissionToRole Error: ' . $e->getMessage());
+            return false;
+        }
     }
     
     // Remove permission from role
     public function removePermissionFromRole($roleId, $permissionId) {
-        $this->db->query('DELETE FROM dbo.RolePermissions 
-                         WHERE role_id = :role_id AND permission_id = :permission_id');
-        $this->db->bind(':role_id', $roleId);
-        $this->db->bind(':permission_id', $permissionId);
-        return $this->db->execute();
+        try {
+            $this->db->remove('DELETE FROM dbo.RolePermissions WHERE role_id = ? AND permission_id = ?', [$roleId, $permissionId]);
+            return true;
+        } catch (Exception $e) {
+            error_log('RemovePermissionFromRole Error: ' . $e->getMessage());
+            return false;
+        }
     }
     
     // Sync role permissions (bulk update)
     public function syncRolePermissions($roleId, $permissionIds) {
         try {
             // First remove all existing permissions for this role
-            $deleteQuery = 'DELETE FROM dbo.RolePermissions WHERE role_id = ?';
-            $this->db->query($deleteQuery, [$roleId]);
+            $this->db->remove('DELETE FROM dbo.RolePermissions WHERE role_id = ?', [$roleId]);
             
             // Then add the new permissions
             if (!empty($permissionIds)) {
                 foreach ($permissionIds as $permissionId) {
-                    $insertQuery = 'INSERT INTO dbo.RolePermissions (role_id, permission_id) VALUES (?, ?)';
-                    $this->db->insert($insertQuery, [$roleId, $permissionId]);
+                    $this->db->insert('INSERT INTO dbo.RolePermissions (role_id, permission_id) VALUES (?, ?)', [$roleId, $permissionId]);
                 }
             }
             
@@ -154,27 +160,34 @@ class Role {
     
     // Get users with specific role
     public function getUsersByRole($roleId) {
-        $this->db->query('SELECT u.* FROM dbo.Users u WHERE u.role_id = :role_id');
-        $this->db->bind(':role_id', $roleId);
-        return $this->db->resultSet();
+        try {
+            $query = 'SELECT u.* FROM dbo.Users u WHERE u.role_id = ?';
+            return $this->db->select($query, [$roleId]) ?: [];
+        } catch (Exception $e) {
+            error_log('GetUsersByRole Error: ' . $e->getMessage());
+            return [];
+        }
     }
     
     // Get role statistics
     public function getRoleStats($roleId) {
-        // Get user count
-        $this->db->query('SELECT COUNT(*) as user_count FROM dbo.Users WHERE role_id = :role_id');
-        $this->db->bind(':role_id', $roleId);
-        $userCount = $this->db->single()['user_count'];
-        
-        // Get permission count
-        $this->db->query('SELECT COUNT(*) as permission_count FROM dbo.RolePermissions WHERE role_id = :role_id');
-        $this->db->bind(':role_id', $roleId);
-        $permissionCount = $this->db->single()['permission_count'];
-        
-        return [
-            'user_count' => $userCount,
-            'permission_count' => $permissionCount
-        ];
+        try {
+            // Get user count
+            $userResult = $this->db->select('SELECT COUNT(*) as user_count FROM dbo.Users WHERE role_id = ?', [$roleId]);
+            $userCount = !empty($userResult) ? $userResult[0]['user_count'] : 0;
+            
+            // Get permission count
+            $permResult = $this->db->select('SELECT COUNT(*) as permission_count FROM dbo.RolePermissions WHERE role_id = ?', [$roleId]);
+            $permissionCount = !empty($permResult) ? $permResult[0]['permission_count'] : 0;
+            
+            return [
+                'user_count' => $userCount,
+                'permission_count' => $permissionCount
+            ];
+        } catch (Exception $e) {
+            error_log('GetRoleStats Error: ' . $e->getMessage());
+            return ['user_count' => 0, 'permission_count' => 0];
+        }
     }
     
     // Get all roles with their stats
@@ -193,39 +206,46 @@ class Role {
     
     // Check if role has permission
     public function roleHasPermission($roleId, $permissionName) {
-        $this->db->query('SELECT COUNT(*) as count
-                         FROM dbo.RolePermissions rp
-                         INNER JOIN dbo.Permissions p ON rp.permission_id = p.id
-                         WHERE rp.role_id = :role_id AND p.name = :permission_name AND p.is_active = 1');
-        $this->db->bind(':role_id', $roleId);
-        $this->db->bind(':permission_name', $permissionName);
-        $result = $this->db->single();
-        
-        return $result['count'] > 0;
+        try {
+            $query = 'SELECT COUNT(*) as count
+                     FROM dbo.RolePermissions rp
+                     INNER JOIN dbo.Permissions p ON rp.permission_id = p.id
+                     WHERE rp.role_id = ? AND p.name = ? AND p.is_active = 1';
+            $result = $this->db->select($query, [$roleId, $permissionName]);
+            return !empty($result) && $result[0]['count'] > 0;
+        } catch (Exception $e) {
+            error_log('RoleHasPermission Error: ' . $e->getMessage());
+            return false;
+        }
     }
     
-    // Get all permission IDs for a role (useful for forms)
+    // Get permission IDs for a role (helper for forms)
     public function getRolePermissionIds($roleId) {
-        $query = 'SELECT permission_id FROM dbo.RolePermissions WHERE role_id = ?';
-        $results = $this->db->select($query, [$roleId]) ?: [];
-        return array_column($results, 'permission_id');
+        try {
+            $query = 'SELECT permission_id FROM dbo.RolePermissions WHERE role_id = ?';
+            $results = $this->db->select($query, [$roleId]);
+            return array_column($results ?: [], 'permission_id');
+        } catch (Exception $e) {
+            error_log('GetRolePermissionIds Error: ' . $e->getMessage());
+            return [];
+        }
     }
     
-    // Create default roles if they don't exist
+    // Create default roles if they don't exist (for setup)
     public function createDefaultRolesIfNotExist() {
         $defaultRoles = [
-            ['name' => 'super_admin', 'display_name' => 'Super Administrator', 'description' => 'Full system access with all permissions'],
-            ['name' => 'admin', 'display_name' => 'Administrator', 'description' => 'Administrative access to most system features'],
-            ['name' => 'manager', 'display_name' => 'Project Manager', 'description' => 'Can manage projects, tasks, and team members'],
-            ['name' => 'employee', 'display_name' => 'Employee', 'description' => 'Standard employee access to assigned projects and tasks'],
-            ['name' => 'client', 'display_name' => 'Client', 'description' => 'Limited access to view assigned projects and reports'],
-            ['name' => 'viewer', 'display_name' => 'Viewer', 'description' => 'Read-only access to assigned content']
+            ['name' => 'super_admin', 'display_name' => 'Super Administrator', 'description' => 'Full system access'],
+            ['name' => 'admin', 'display_name' => 'Administrator', 'description' => 'Administrative access'],
+            ['name' => 'manager', 'display_name' => 'Manager', 'description' => 'Project management access'],
+            ['name' => 'employee', 'display_name' => 'Employee', 'description' => 'Standard employee access'],
+            ['name' => 'client', 'display_name' => 'Client', 'description' => 'Client access'],
+            ['name' => 'viewer', 'display_name' => 'Viewer', 'description' => 'Read-only access']
         ];
         
-        foreach ($defaultRoles as $role) {
-            $existing = $this->getRoleByName($role['name']);
+        foreach ($defaultRoles as $roleData) {
+            $existing = $this->getRoleByName($roleData['name']);
             if (!$existing) {
-                $this->createRole($role);
+                $this->createRole($roleData);
             }
         }
     }

@@ -48,62 +48,71 @@ class Permission {
     
     // Get permission by name
     public function getPermissionByName($name) {
-        $this->db->query('SELECT * FROM dbo.Permissions WHERE name = :name');
-        $this->db->bind(':name', $name);
-        return $this->db->single();
+        $query = 'SELECT * FROM dbo.Permissions WHERE name = ?';
+        $result = $this->db->select($query, [$name]);
+        return !empty($result) ? $result[0] : false;
     }
     
     // Create new permission
     public function createPermission($data) {
-        $this->db->query('INSERT INTO dbo.Permissions (name, display_name, description, module, action) 
-                         VALUES (:name, :display_name, :description, :module, :action)');
-        
-        $this->db->bind(':name', $data['name']);
-        $this->db->bind(':display_name', $data['display_name']);
-        $this->db->bind(':description', $data['description']);
-        $this->db->bind(':module', $data['module']);
-        $this->db->bind(':action', $data['action']);
-        
-        return $this->db->execute();
+        try {
+            $query = 'INSERT INTO dbo.Permissions (name, display_name, description, module, action) VALUES (?, ?, ?, ?, ?)';
+            $params = [
+                $data['name'],
+                $data['display_name'],
+                $data['description'],
+                $data['module'],
+                $data['action']
+            ];
+            
+            $this->db->insert($query, $params);
+            return true;
+        } catch (Exception $e) {
+            error_log('CreatePermission Error: ' . $e->getMessage());
+            return false;
+        }
     }
     
     // Update permission
     public function updatePermission($data) {
-        $this->db->query('UPDATE dbo.Permissions 
-                         SET display_name = :display_name, 
-                             description = :description, 
-                             module = :module, 
-                             action = :action,
-                             is_active = :is_active
-                         WHERE id = :id');
-        
-        $this->db->bind(':id', $data['id']);
-        $this->db->bind(':display_name', $data['display_name']);
-        $this->db->bind(':description', $data['description']);
-        $this->db->bind(':module', $data['module']);
-        $this->db->bind(':action', $data['action']);
-        $this->db->bind(':is_active', $data['is_active'] ?? 1);
-        
-        return $this->db->execute();
+        try {
+            $query = 'UPDATE dbo.Permissions 
+                     SET display_name = ?, description = ?, module = ?, action = ?, is_active = ?
+                     WHERE id = ?';
+            $params = [
+                $data['display_name'],
+                $data['description'],
+                $data['module'],
+                $data['action'],
+                $data['is_active'] ?? 1,
+                $data['id']
+            ];
+            
+            $this->db->update($query, $params);
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdatePermission Error: ' . $e->getMessage());
+            return false;
+        }
     }
     
     // Delete permission
     public function deletePermission($id) {
-        // First remove all role-permission associations
-        $this->db->query('DELETE FROM dbo.RolePermissions WHERE permission_id = :id');
-        $this->db->bind(':id', $id);
-        $this->db->execute();
-        
-        // Then remove all user-permission associations
-        $this->db->query('DELETE FROM dbo.UserPermissions WHERE permission_id = :id');
-        $this->db->bind(':id', $id);
-        $this->db->execute();
-        
-        // Finally delete the permission
-        $this->db->query('DELETE FROM dbo.Permissions WHERE id = :id');
-        $this->db->bind(':id', $id);
-        
-        return $this->db->execute();
+        try {
+            // First remove all role-permission associations
+            $this->db->remove('DELETE FROM dbo.RolePermissions WHERE permission_id = ?', [$id]);
+            
+            // Then remove all user-permission associations
+            $this->db->remove('DELETE FROM dbo.UserPermissions WHERE permission_id = ?', [$id]);
+            
+            // Finally delete the permission
+            $this->db->remove('DELETE FROM dbo.Permissions WHERE id = ?', [$id]);
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('DeletePermission Error: ' . $e->getMessage());
+            return false;
+        }
     }
     
     // Check if user has permission
@@ -138,82 +147,123 @@ class Permission {
     
     // Get user's permissions
     public function getUserPermissions($userId) {
-        // Get permissions from role
-        $this->db->query('SELECT DISTINCT p.* 
-                         FROM dbo.Permissions p
-                         INNER JOIN dbo.RolePermissions rp ON p.id = rp.permission_id
-                         INNER JOIN dbo.Roles r ON rp.role_id = r.id
-                         INNER JOIN dbo.Users u ON r.id = u.role_id
-                         WHERE u.id = :user_id AND r.is_active = 1 AND p.is_active = 1
-                         
-                         UNION
-                         
-                         SELECT DISTINCT p.*
-                         FROM dbo.Permissions p
-                         INNER JOIN dbo.UserPermissions up ON p.id = up.permission_id
-                         WHERE up.user_id = :user_id AND up.granted = 1 AND p.is_active = 1
-                         
-                         ORDER BY module, action, display_name');
-        $this->db->bind(':user_id', $userId);
-        return $this->db->resultSet();
+        try {
+            // Get permissions from both role and direct user assignments
+            $query = 'SELECT DISTINCT p.id, p.name, p.display_name, p.description, p.module, p.action, p.is_active, p.created_at
+                     FROM dbo.Permissions p
+                     INNER JOIN dbo.RolePermissions rp ON p.id = rp.permission_id
+                     INNER JOIN dbo.Roles r ON rp.role_id = r.id
+                     INNER JOIN dbo.Users u ON r.id = u.role_id
+                     WHERE u.id = ? AND r.is_active = 1 AND p.is_active = 1
+                     
+                     UNION
+                     
+                     SELECT DISTINCT p.id, p.name, p.display_name, p.description, p.module, p.action, p.is_active, p.created_at
+                     FROM dbo.Permissions p
+                     INNER JOIN dbo.UserPermissions up ON p.id = up.permission_id
+                     WHERE up.user_id = ? AND up.granted = 1 AND p.is_active = 1
+                     
+                     ORDER BY module, action, display_name';
+            
+            return $this->db->select($query, [$userId, $userId]) ?: [];
+        } catch (Exception $e) {
+            error_log('GetUserPermissions Error: ' . $e->getMessage());
+            error_log('GetUserPermissions Query: ' . $query);
+            error_log('GetUserPermissions UserId: ' . $userId);
+            return [];
+        }
     }
     
     // Get modules available for permissions
     public function getAvailableModules() {
-        $this->db->query('SELECT DISTINCT module FROM dbo.Permissions ORDER BY module');
-        $results = $this->db->resultSet();
-        return array_column($results, 'module');
+        try {
+            $query = 'SELECT DISTINCT module FROM dbo.Permissions ORDER BY module';
+            $results = $this->db->select($query);
+            return array_column($results ?: [], 'module');
+        } catch (Exception $e) {
+            error_log('GetAvailableModules Error: ' . $e->getMessage());
+            return [];
+        }
     }
     
     // Get actions available for permissions
     public function getAvailableActions() {
-        $this->db->query('SELECT DISTINCT action FROM dbo.Permissions ORDER BY action');
-        $results = $this->db->resultSet();
-        return array_column($results, 'action');
+        try {
+            $query = 'SELECT DISTINCT action FROM dbo.Permissions ORDER BY action';
+            $results = $this->db->select($query);
+            return array_column($results ?: [], 'action');
+        } catch (Exception $e) {
+            error_log('GetAvailableActions Error: ' . $e->getMessage());
+            return [];
+        }
     }
     
     // Grant permission to user
     public function grantPermissionToUser($userId, $permissionId) {
-        $this->db->query('INSERT INTO dbo.UserPermissions (user_id, permission_id, granted) 
-                         VALUES (:user_id, :permission_id, 1)
-                         ON DUPLICATE KEY UPDATE granted = 1');
-        $this->db->bind(':user_id', $userId);
-        $this->db->bind(':permission_id', $permissionId);
-        return $this->db->execute();
+        try {
+            // Check if permission already exists
+            $existing = $this->db->select('SELECT id FROM dbo.UserPermissions WHERE user_id = ? AND permission_id = ?', [$userId, $permissionId]);
+            
+            if (empty($existing)) {
+                // Insert new permission
+                $this->db->insert('INSERT INTO dbo.UserPermissions (user_id, permission_id, granted) VALUES (?, ?, 1)', [$userId, $permissionId]);
+            } else {
+                // Update existing permission
+                $this->db->update('UPDATE dbo.UserPermissions SET granted = 1 WHERE user_id = ? AND permission_id = ?', [$userId, $permissionId]);
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('GrantPermissionToUser Error: ' . $e->getMessage());
+            return false;
+        }
     }
     
     // Revoke permission from user
     public function revokePermissionFromUser($userId, $permissionId) {
-        $this->db->query('DELETE FROM dbo.UserPermissions 
-                         WHERE user_id = :user_id AND permission_id = :permission_id');
-        $this->db->bind(':user_id', $userId);
-        $this->db->bind(':permission_id', $permissionId);
-        return $this->db->execute();
+        try {
+            $this->db->remove('DELETE FROM dbo.UserPermissions WHERE user_id = ? AND permission_id = ?', [$userId, $permissionId]);
+            return true;
+        } catch (Exception $e) {
+            error_log('RevokePermissionFromUser Error: ' . $e->getMessage());
+            return false;
+        }
     }
     
     // Sync user permissions (bulk update)
     public function syncUserPermissions($userId, $permissionIds) {
-        // First remove all existing permissions for this user
-        $this->db->query('DELETE FROM dbo.UserPermissions WHERE user_id = :user_id');
-        $this->db->bind(':user_id', $userId);
-        $this->db->execute();
-        
-        // Then add the new permissions
-        if (!empty($permissionIds)) {
-            $placeholders = str_repeat('(?,?,1),', count($permissionIds));
-            $placeholders = rtrim($placeholders, ',');
+        try {
+            // Start transaction for data consistency
+            $this->db->beginTransaction();
             
-            $this->db->query("INSERT INTO dbo.UserPermissions (user_id, permission_id, granted) VALUES $placeholders");
+            // First remove all existing permissions for this user
+            $this->db->remove('DELETE FROM dbo.UserPermissions WHERE user_id = ?', [$userId]);
             
-            $bindIndex = 1;
-            foreach ($permissionIds as $permissionId) {
-                $this->db->bind($bindIndex++, $userId);
-                $this->db->bind($bindIndex++, $permissionId);
+            // Then add the new permissions
+            if (!empty($permissionIds)) {
+                foreach ($permissionIds as $permissionId) {
+                    // Validate permission ID is numeric
+                    if (!is_numeric($permissionId)) {
+                        error_log("SyncUserPermissions: Invalid permission ID: $permissionId");
+                        continue;
+                    }
+                    
+                    // Insert new permission
+                    $this->db->insert('INSERT INTO dbo.UserPermissions (user_id, permission_id, granted) VALUES (?, ?, 1)', [$userId, $permissionId]);
+                }
             }
             
-            return $this->db->execute();
+            // Commit transaction
+            $this->db->commitTransaction();
+            
+            return true;
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            if ($this->db->inTransaction()) {
+                $this->db->rollbackTransaction();
+            }
+            error_log('SyncUserPermissions Error: ' . $e->getMessage());
+            return false;
         }
-        
-        return true;
     }
 } 

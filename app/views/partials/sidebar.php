@@ -1,3 +1,11 @@
+<?php
+// Include PermissionHelper for menu access control
+require_once __DIR__ . '/../../core/PermissionHelper.php';
+
+// Get accessible menu items based on user permissions
+$menuItems = PermissionHelper::getAccessibleMenuItems();
+?>
+
 <!-- Sidebar structure based on modern dashboard design -->
 <div class="sidebar">
     <!-- Logo/Brand Section -->
@@ -13,125 +21,28 @@
         <!-- Main Menu -->
         <div class="menu-category">Menu</div>
         <ul class="nav flex-column">
+            <?php foreach ($menuItems['main'] as $item): ?>
             <li class="nav-item">
-                <a href="/dashboard" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/dashboard' || $_SERVER['REQUEST_URI'] === '/dashboard/' ? 'active' : '' ?>">
-                    <i class="bi bi-grid-1x2"></i>
-                    <span>Dashboard</span>
+                <a href="<?= $item['url'] ?>" class="nav-link <?= ($_SERVER['REQUEST_URI'] === $item['url'] || $_SERVER['REQUEST_URI'] === $item['url'] . '/' || strpos($_SERVER['REQUEST_URI'], $item['url'] . '/') === 0) ? 'active' : '' ?>">
+                    <i class="<?= $item['icon'] ?>"></i>
+                    <span><?= $item['title'] ?></span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="/projects" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/projects' || $_SERVER['REQUEST_URI'] === '/projects/' || strpos($_SERVER['REQUEST_URI'], '/projects/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-kanban"></i>
-                    <span>Projects</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/tasks" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/tasks' || $_SERVER['REQUEST_URI'] === '/tasks/' || strpos($_SERVER['REQUEST_URI'], '/tasks/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-check2-square"></i>
-                    <span>Tasks</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/notes" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/notes' || $_SERVER['REQUEST_URI'] === '/notes/' || strpos($_SERVER['REQUEST_URI'], '/notes/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-journal-text"></i>
-                    <span>Notes</span>
-                </a>
-            </li>
-            
+            <?php endforeach; ?>
         </ul>
         
-            <li class="nav-item">
-                <a href="/time" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/time' || $_SERVER['REQUEST_URI'] === '/time/' || strpos($_SERVER['REQUEST_URI'], '/time/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-stopwatch"></i>
-                    <span>Time Tracking</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/invoices" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/invoices' || $_SERVER['REQUEST_URI'] === '/invoices/' || strpos($_SERVER['REQUEST_URI'], '/invoices/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-receipt"></i>
-                    <span>Invoices</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/suppliers" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/suppliers' || $_SERVER['REQUEST_URI'] === '/suppliers/' || strpos($_SERVER['REQUEST_URI'], '/suppliers/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-shop"></i>
-                    <span>Suppliers</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/departments" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/departments' || $_SERVER['REQUEST_URI'] === '/departments/' || strpos($_SERVER['REQUEST_URI'], '/departments/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-building"></i>
-                    <span>Departments</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/sites" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/sites' || $_SERVER['REQUEST_URI'] === '/sites/' || strpos($_SERVER['REQUEST_URI'], '/sites/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-geo-alt"></i>
-                    <span>Sites</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/dashboard/calendar" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/dashboard/calendar' || $_SERVER['REQUEST_URI'] === '/dashboard/calendar/' ? 'active' : '' ?>">
-                    <i class="bi bi-calendar3"></i>
-                    <span>Calendar</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/dashboard/gantt" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/dashboard/gantt' || $_SERVER['REQUEST_URI'] === '/dashboard/gantt/' ? 'active' : '' ?>">
-                    <i class="bi bi-bar-chart"></i>
-                    <span>Gantt Chart</span>
-                </a>
-            </li>
-        </ul>
-        
-        <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+        <?php if (!empty($menuItems['admin'])): ?>
         <!-- Admin Menu -->
         <div class="menu-category">Admin</div>
         <ul class="nav flex-column">
-            <?php if ($_SESSION['role'] === 'admin'): ?>
+            <?php foreach ($menuItems['admin'] as $item): ?>
             <li class="nav-item">
-                <a href="/admin" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/admin' || $_SERVER['REQUEST_URI'] === '/admin/' ? 'active' : '' ?>">
-                    <i class="bi bi-shield-lock"></i>
-                    <span>Admin Panel</span>
+                <a href="<?= $item['url'] ?>" class="nav-link <?= ($_SERVER['REQUEST_URI'] === $item['url'] || $_SERVER['REQUEST_URI'] === $item['url'] . '/' || strpos($_SERVER['REQUEST_URI'], $item['url'] . '/') === 0) ? 'active' : '' ?>">
+                    <i class="<?= $item['icon'] ?>"></i>
+                    <span><?= $item['title'] ?></span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="/admin/users" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/admin/users' || $_SERVER['REQUEST_URI'] === '/admin/users/' ? 'active' : '' ?>">
-                    <i class="bi bi-people"></i>
-                    <span>Users</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin/settings" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/admin/settings' || $_SERVER['REQUEST_URI'] === '/admin/settings/' ? 'active' : '' ?>">
-                    <i class="bi bi-gear"></i>
-                    <span>Settings</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/permissions" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/permissions' || $_SERVER['REQUEST_URI'] === '/permissions/' || strpos($_SERVER['REQUEST_URI'], '/permissions/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-shield-check"></i>
-                    <span>Permissions</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/time/admin" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/time/admin' || strpos($_SERVER['REQUEST_URI'], '/time/admin') === 0 ? 'active' : '' ?>">
-                    <i class="fas fa-users-cog"></i>
-                    <span>Time Tracking Admin</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/time/analytics" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/time/analytics' || strpos($_SERVER['REQUEST_URI'], '/time/analytics') === 0 ? 'active' : '' ?>">
-                    <i class="fas fa-chart-pie"></i>
-                    <span>Time Analytics</span>
-                </a>
-            </li>
-            <?php endif; ?>
-            <li class="nav-item">
-                <a href="/employees" class="nav-link <?= $_SERVER['REQUEST_URI'] === '/employees' || $_SERVER['REQUEST_URI'] === '/employees/' || strpos($_SERVER['REQUEST_URI'], '/employees/') === 0 ? 'active' : '' ?>">
-                    <i class="bi bi-person-badge"></i>
-                    <span>Employee Management</span>
-                </a>
-            </li>
+            <?php endforeach; ?>
         </ul>
         <?php endif; ?>
     </div>
