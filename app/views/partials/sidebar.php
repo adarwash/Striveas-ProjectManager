@@ -11,8 +11,8 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
     <!-- Logo/Brand Section -->
     <div class="sidebar-header">
         <a href="/" class="sidebar-brand">
-            <i class="bi bi-kanban"></i>
-            <span>Hive IT Portal</span>
+            <i class="fas fa-th-large"></i>
+            <span>HiveIT Portal</span>
         </a>
     </div>
     
@@ -286,7 +286,7 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
 
 /* Modern Time Status Widget Styles */
 .time-tracking-widget {
-    margin: 1rem 0.75rem;
+    margin: 1rem 0;
     border-top: 1px solid rgba(0,0,0,0.08);
     padding-top: 1rem;
 }

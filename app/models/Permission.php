@@ -99,15 +99,15 @@ class Permission {
     // Delete permission
     public function deletePermission($id) {
         try {
-            // First remove all role-permission associations
+        // First remove all role-permission associations
             $this->db->remove('DELETE FROM dbo.RolePermissions WHERE permission_id = ?', [$id]);
-            
-            // Then remove all user-permission associations
+        
+        // Then remove all user-permission associations
             $this->db->remove('DELETE FROM dbo.UserPermissions WHERE permission_id = ?', [$id]);
-            
-            // Finally delete the permission
+        
+        // Finally delete the permission
             $this->db->remove('DELETE FROM dbo.Permissions WHERE id = ?', [$id]);
-            
+        
             return true;
         } catch (Exception $e) {
             error_log('DeletePermission Error: ' . $e->getMessage());
@@ -150,19 +150,19 @@ class Permission {
         try {
             // Get permissions from both role and direct user assignments
             $query = 'SELECT DISTINCT p.id, p.name, p.display_name, p.description, p.module, p.action, p.is_active, p.created_at
-                     FROM dbo.Permissions p
-                     INNER JOIN dbo.RolePermissions rp ON p.id = rp.permission_id
-                     INNER JOIN dbo.Roles r ON rp.role_id = r.id
-                     INNER JOIN dbo.Users u ON r.id = u.role_id
+                         FROM dbo.Permissions p
+                         INNER JOIN dbo.RolePermissions rp ON p.id = rp.permission_id
+                         INNER JOIN dbo.Roles r ON rp.role_id = r.id
+                         INNER JOIN dbo.Users u ON r.id = u.role_id
                      WHERE u.id = ? AND r.is_active = 1 AND p.is_active = 1
-                     
-                     UNION
-                     
+                         
+                         UNION
+                         
                      SELECT DISTINCT p.id, p.name, p.display_name, p.description, p.module, p.action, p.is_active, p.created_at
-                     FROM dbo.Permissions p
-                     INNER JOIN dbo.UserPermissions up ON p.id = up.permission_id
+                         FROM dbo.Permissions p
+                         INNER JOIN dbo.UserPermissions up ON p.id = up.permission_id
                      WHERE up.user_id = ? AND up.granted = 1 AND p.is_active = 1
-                     
+                         
                      ORDER BY module, action, display_name';
             
             return $this->db->select($query, [$userId, $userId]) ?: [];
@@ -236,11 +236,11 @@ class Permission {
             // Start transaction for data consistency
             $this->db->beginTransaction();
             
-            // First remove all existing permissions for this user
+        // First remove all existing permissions for this user
             $this->db->remove('DELETE FROM dbo.UserPermissions WHERE user_id = ?', [$userId]);
-            
-            // Then add the new permissions
-            if (!empty($permissionIds)) {
+        
+        // Then add the new permissions
+        if (!empty($permissionIds)) {
                 foreach ($permissionIds as $permissionId) {
                     // Validate permission ID is numeric
                     if (!is_numeric($permissionId)) {

@@ -65,19 +65,19 @@ class Role {
     // Delete role
     public function deleteRole($id) {
         try {
-            // First check if any users are assigned to this role
+        // First check if any users are assigned to this role
             $result = $this->db->select('SELECT COUNT(*) as user_count FROM dbo.Users WHERE role_id = ?', [$id]);
-            
+        
             if (!empty($result) && $result[0]['user_count'] > 0) {
-                return false; // Cannot delete role with assigned users
-            }
-            
-            // Remove all role-permission associations
+            return false; // Cannot delete role with assigned users
+        }
+        
+        // Remove all role-permission associations
             $this->db->remove('DELETE FROM dbo.RolePermissions WHERE role_id = ?', [$id]);
-            
-            // Delete the role
+        
+        // Delete the role
             $this->db->remove('DELETE FROM dbo.Roles WHERE id = ?', [$id]);
-            
+        
             return true;
         } catch (Exception $e) {
             error_log('DeleteRole Error: ' . $e->getMessage());
@@ -89,8 +89,8 @@ class Role {
     public function getRolePermissions($roleId) {
         try {
             $query = 'SELECT p.* 
-                     FROM dbo.Permissions p
-                     INNER JOIN dbo.RolePermissions rp ON p.id = rp.permission_id
+                         FROM dbo.Permissions p
+                         INNER JOIN dbo.RolePermissions rp ON p.id = rp.permission_id
                      WHERE rp.role_id = ? AND p.is_active = 1
                      ORDER BY p.module, p.action, p.display_name';
             return $this->db->select($query, [$roleId]) ?: [];
@@ -172,18 +172,18 @@ class Role {
     // Get role statistics
     public function getRoleStats($roleId) {
         try {
-            // Get user count
+        // Get user count
             $userResult = $this->db->select('SELECT COUNT(*) as user_count FROM dbo.Users WHERE role_id = ?', [$roleId]);
             $userCount = !empty($userResult) ? $userResult[0]['user_count'] : 0;
-            
-            // Get permission count
+        
+        // Get permission count
             $permResult = $this->db->select('SELECT COUNT(*) as permission_count FROM dbo.RolePermissions WHERE role_id = ?', [$roleId]);
             $permissionCount = !empty($permResult) ? $permResult[0]['permission_count'] : 0;
-            
-            return [
-                'user_count' => $userCount,
-                'permission_count' => $permissionCount
-            ];
+        
+        return [
+            'user_count' => $userCount,
+            'permission_count' => $permissionCount
+        ];
         } catch (Exception $e) {
             error_log('GetRoleStats Error: ' . $e->getMessage());
             return ['user_count' => 0, 'permission_count' => 0];
@@ -208,8 +208,8 @@ class Role {
     public function roleHasPermission($roleId, $permissionName) {
         try {
             $query = 'SELECT COUNT(*) as count
-                     FROM dbo.RolePermissions rp
-                     INNER JOIN dbo.Permissions p ON rp.permission_id = p.id
+                         FROM dbo.RolePermissions rp
+                         INNER JOIN dbo.Permissions p ON rp.permission_id = p.id
                      WHERE rp.role_id = ? AND p.name = ? AND p.is_active = 1';
             $result = $this->db->select($query, [$roleId, $permissionName]);
             return !empty($result) && $result[0]['count'] > 0;
@@ -222,7 +222,7 @@ class Role {
     // Get permission IDs for a role (helper for forms)
     public function getRolePermissionIds($roleId) {
         try {
-            $query = 'SELECT permission_id FROM dbo.RolePermissions WHERE role_id = ?';
+        $query = 'SELECT permission_id FROM dbo.RolePermissions WHERE role_id = ?';
             $results = $this->db->select($query, [$roleId]);
             return array_column($results ?: [], 'permission_id');
         } catch (Exception $e) {

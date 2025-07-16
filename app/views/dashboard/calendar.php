@@ -57,8 +57,8 @@
                                         <span class="d-flex align-items-center">
                                             <?php if ($calendar['source'] === 'google'): ?>
                                                 <i class="bi bi-google me-2 text-primary"></i> Google Calendar
-                                            <?php elseif ($calendar['source'] === 'outlook'): ?>
-                                                <i class="bi bi-microsoft me-2 text-info"></i> Microsoft Outlook
+                                            <?php elseif ($calendar['source'] === 'outlook' || $calendar['source'] === 'microsoft365'): ?>
+                                                <i class="bi bi-microsoft me-2 text-info"></i> Microsoft 365
                                             <?php elseif ($calendar['source'] === 'ical'): ?>
                                                 <i class="bi bi-calendar-event me-2 text-success"></i> iCal Feed
                                             <?php endif; ?>
@@ -157,17 +157,23 @@
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             // Reset button
             button.innerHTML = originalContent;
             button.disabled = false;
             
             if (data.success) {
-                showToast('Success', 'Calendar synced successfully', 'success');
+                showToast('Success', 'Calendar synced successfully - Refreshing calendar...', 'success');
                 // Reload the page to reflect changes
-                setTimeout(() => window.location.reload(), 1500);
+                setTimeout(() => window.location.reload(), 2000);
             } else {
+                console.error('Sync failed:', data.message);
                 showToast('Error', data.message || 'Failed to sync calendar', 'danger');
             }
         })
@@ -175,8 +181,8 @@
             // Reset button
             button.innerHTML = originalContent;
             button.disabled = false;
-            showToast('Error', 'An error occurred while syncing', 'danger');
-            console.error(error);
+            console.error('Sync error:', error);
+            showToast('Error', `Sync failed: ${error.message}`, 'danger');
         });
     }
     
@@ -190,11 +196,18 @@
         if (confirm('Are you sure you want to remove this calendar? All associated events will be deleted.')) {
             // Make the fetch request
             fetch(`/dashboard/removeCalendar/${calendarId}`, {
+                method: 'POST',
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showToast('Success', 'Calendar removed successfully', 'success');
@@ -205,8 +218,8 @@
                 }
             })
             .catch(error => {
-                showToast('Error', 'An error occurred while removing the calendar', 'danger');
-                console.error(error);
+                console.error('Calendar removal error:', error);
+                showToast('Error', `An error occurred while removing the calendar: ${error.message}`, 'danger');
             });
         }
     }
@@ -253,6 +266,120 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize calendar
         var calendarEl = document.getElementById('calendar');
+        
+        // Debug: Check if calendar element exists
+        console.log('Calendar element found:', calendarEl);
+        
+        // Build events array safely
+        var calendarEvents = [];
+        
+        // Add task events
+        <?php if (!empty($tasks)): ?>
+        <?php foreach ($tasks as $task): ?>
+        <?php if (!empty($task->title) && !empty($task->due_date)): ?>
+        calendarEvents.push({
+            id: '<?= $task->id ?>',
+            title: '<?= htmlspecialchars(addslashes($task->title)) ?>',
+            start: '<?= $task->due_date ?>',
+            url: '/tasks/show/<?= $task->id ?>',
+            <?php 
+                // Set colors based on priority and status
+                $color = '#6c757d'; // Default color (gray)
+                if (isset($task->priority) && $task->priority === 'High') $color = '#ffc107';
+                if (isset($task->priority) && $task->priority === 'Critical') $color = '#dc3545';
+                if (isset($task->status) && $task->status === 'Completed') $color = '#28a745';
+            ?>
+            backgroundColor: '<?= $color ?>',
+            borderColor: '<?= $color ?>',
+            <?php if (isset($task->status) && $task->status === 'Completed'): ?>
+            textColor: '#fff',
+            <?php endif; ?>
+            extendedProps: {
+                type: 'task',
+                status: '<?= $task->status ?? '' ?>',
+                priority: '<?= $task->priority ?? '' ?>',
+                project: '<?= htmlspecialchars(addslashes($task->project_title ?? '')) ?>',
+                assignedTo: '<?= htmlspecialchars(addslashes($task->assigned_to ?? '')) ?>'
+            }
+        });
+        <?php endif; ?>
+        <?php endforeach; ?>
+        <?php endif; ?>
+        
+        // Add external calendar events
+        <?php 
+        // Debug: Log the shared events
+        if (isset($shared_events)) {
+            error_log("Shared events count: " . count($shared_events));
+            if (!empty($shared_events)) {
+                error_log("First event: " . print_r($shared_events[0], true));
+            }
+        }
+        ?>
+        <?php if (isset($shared_events) && !empty($shared_events)): ?>
+        <?php foreach ($shared_events as $event): ?>
+        <?php if (!empty($event['title']) && !empty($event['start_time'])): ?>
+        calendarEvents.push({
+            id: 'ext-<?= $event['id'] ?>',
+            title: '<?= htmlspecialchars(addslashes($event['title'])) ?>',
+            start: '<?= $event['start_time'] ?>',
+            <?php if (!empty($event['end_time'])): ?>
+            end: '<?= $event['end_time'] ?>',
+            <?php endif; ?>
+            <?php if (!empty($event['all_day']) && $event['all_day']): ?>
+            allDay: true,
+            <?php endif; ?>
+            backgroundColor: '<?= $event['calendar_color'] ?? '#039be5' ?>',
+            borderColor: '<?= $event['calendar_color'] ?? '#039be5' ?>',
+            extendedProps: {
+                type: 'external',
+                source: '<?= htmlspecialchars(addslashes($event['calendar_name'] ?? '')) ?>',
+                location: '<?= htmlspecialchars(addslashes($event['location'] ?? '')) ?>',
+                description: '<?= htmlspecialchars(addslashes($event['description'] ?? '')) ?>'
+            }
+        });
+        <?php endif; ?>
+        <?php endforeach; ?>
+        <?php endif; ?>
+        
+        // Debug: Log events array
+        console.log('Total events for calendar:', calendarEvents.length);
+        console.log('Calendar events:', calendarEvents);
+        
+        // Debug: Validate events structure
+        var validEvents = 0;
+        var invalidEvents = [];
+        calendarEvents.forEach(function(event, index) {
+            if (event.title && event.start) {
+                validEvents++;
+            } else {
+                invalidEvents.push({index: index, event: event});
+            }
+        });
+        
+        console.log('Valid events:', validEvents, 'Invalid events:', invalidEvents.length);
+        if (invalidEvents.length > 0) {
+            console.warn('Invalid events found:', invalidEvents);
+        }
+        
+        // Debug: Show events count in UI
+        var debugDiv = document.createElement('div');
+        debugDiv.style.cssText = 'background:#f8f9fa;padding:10px;margin:10px;border:1px solid #dee2e6;border-radius:5px;';
+        debugDiv.innerHTML = `<strong>Debug Info:</strong> Loading ${calendarEvents.length} events (Tasks: <?= count($tasks ?? []) ?>, External: <?= count($shared_events ?? []) ?>) - Valid: ${validEvents}, Invalid: ${invalidEvents.length}`;
+        document.getElementById('calendar').parentNode.insertBefore(debugDiv, document.getElementById('calendar'));
+        
+        // Ensure we have a valid events array
+        if (!Array.isArray(calendarEvents)) {
+            console.error('Calendar events is not an array:', calendarEvents);
+            calendarEvents = [];
+        }
+        
+        // Filter out any invalid events
+        calendarEvents = calendarEvents.filter(function(event) {
+            return event && typeof event === 'object' && event.title && event.start;
+        });
+        
+        // Create FullCalendar instance with error handling
         var calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             headerToolbar: {
@@ -260,65 +387,37 @@
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
             },
-            events: [
-                <?php if (!empty($tasks)): foreach ($tasks as $task): ?>
-                {
-                    id: '<?= $task->id ?>',
-                    title: '<?= htmlspecialchars(addslashes($task->title)) ?>',
-                    start: '<?= $task->due_date ?>',
-                    url: '/tasks/show/<?= $task->id ?>',
-                    <?php 
-                        // Set colors based on priority and status
-                        $color = '#6c757d'; // Default color (gray)
-                        if ($task->priority === 'High') $color = '#ffc107';
-                        if ($task->priority === 'Critical') $color = '#dc3545';
-                        if ($task->status === 'Completed') $color = '#28a745';
-                    ?>
-                    backgroundColor: '<?= $color ?>',
-                    borderColor: '<?= $color ?>',
-                    <?php if ($task->status === 'Completed'): ?>
-                    textColor: '#fff',
-                    <?php endif; ?>
-                    extendedProps: {
-                        status: '<?= $task->status ?>',
-                        priority: '<?= $task->priority ?>',
-                        project: '<?= htmlspecialchars(addslashes($task->project_title ?? '')) ?>',
-                        assignedTo: '<?= htmlspecialchars(addslashes($task->assigned_to ?? '')) ?>'
-                    }
-                },
-                <?php endforeach; endif; ?>
-                
-                // Load shared calendar events if available
-                <?php if (isset($shared_events) && !empty($shared_events)): foreach ($shared_events as $event): ?>
-                {
-                    id: 'ext-<?= $event['id'] ?>',
-                    title: '<?= htmlspecialchars(addslashes($event['title'])) ?>',
-                    start: '<?= $event['start_date'] ?? $event['start_time'] ?>',
-                    <?php if (!empty($event['end_date']) || !empty($event['end_time'])): ?>
-                    end: '<?= $event['end_date'] ?? $event['end_time'] ?>',
-                    <?php endif; ?>
-                    url: '<?= $event['url'] ?? 'javascript:void(0)' ?>',
-                    backgroundColor: '<?= $event['color'] ?? $event['calendar_color'] ?>',
-                    borderColor: '<?= $event['color'] ?? $event['calendar_color'] ?>',
-                    extendedProps: {
-                        type: 'external',
-                        source: '<?= $event['source_name'] ?? $event['calendar_name'] ?>',
-                        location: '<?= htmlspecialchars(addslashes($event['location'] ?? '')) ?>',
-                        description: '<?= htmlspecialchars(addslashes($event['description'] ?? '')) ?>'
-                    }
-                },
-                <?php endforeach; endif; ?>
-            ],
+            events: calendarEvents,
+            eventDataTransform: function(eventData) {
+                // Ensure all required properties exist
+                if (!eventData.title) eventData.title = 'Untitled Event';
+                if (!eventData.start) eventData.start = new Date().toISOString();
+                return eventData;
+            },
             eventDidMount: function(info) {
-                // Add tooltips to events
-                $(info.el).tooltip({
-                    title: info.event.extendedProps.project ? 
-                           info.event.extendedProps.project + ' - ' + info.event.title + ' (' + info.event.extendedProps.status + ')' :
-                           info.event.title + (info.event.extendedProps.source ? ' (' + info.event.extendedProps.source + ')' : ''),
-                    placement: 'top',
-                    trigger: 'hover',
-                    container: 'body'
-                });
+                // Add tooltips to events using Bootstrap 5
+                try {
+                    var tooltipText = '';
+                    if (info.event.extendedProps.project) {
+                        tooltipText = info.event.extendedProps.project + ' - ' + info.event.title + ' (' + info.event.extendedProps.status + ')';
+                    } else if (info.event.extendedProps.source) {
+                        tooltipText = info.event.title + ' (' + info.event.extendedProps.source + ')';
+                    } else {
+                        tooltipText = info.event.title;
+                    }
+                    
+                    // Set Bootstrap tooltip attributes
+                    info.el.setAttribute('data-bs-toggle', 'tooltip');
+                    info.el.setAttribute('data-bs-placement', 'top');
+                    info.el.setAttribute('data-bs-title', tooltipText);
+                    
+                    // Initialize Bootstrap tooltip if available
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                        new bootstrap.Tooltip(info.el);
+                    }
+                } catch (error) {
+                    console.warn('Error setting up tooltip:', error);
+                }
             },
             eventClick: function(info) {
                 if (info.event.extendedProps.type === 'task') {
@@ -341,10 +440,115 @@
             }
         });
         
-        calendar.render();
+        // Debug: Log calendar instance
+        console.log('FullCalendar instance created:', calendar);
+        
+        try {
+            calendar.render();
+            console.log('Calendar rendered successfully');
+            
+            // Initialize any existing tooltips after calendar renders
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
+        } catch (error) {
+            console.error('Error rendering calendar:', error);
+            
+            // Show user-friendly error message
+            var errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger mt-3';
+            errorDiv.innerHTML = '<h6>Calendar Error</h6><p>There was an issue loading the calendar. Please refresh the page or contact support if the problem persists.</p>';
+            document.getElementById('calendar').appendChild(errorDiv);
+        }
+        
+        // Debug: Check if tabs are working
+        console.log('Calendar page loaded');
+        console.log('Bootstrap tabs:', typeof bootstrap !== 'undefined' ? 'Available' : 'Missing');
+        
+        // Test tab functionality
+        const outlookTab = document.getElementById('outlook-tab');
+        if (outlookTab) {
+            console.log('Microsoft 365 tab found');
+            outlookTab.addEventListener('click', function() {
+                console.log('Microsoft 365 tab clicked');
+            });
+        } else {
+            console.error('Microsoft 365 tab not found');
+        }
         
         // Find schedule overlaps
         findScheduleOverlaps();
+        
+        // Handle Microsoft 365 form submission (only if configured)
+        const microsoft365Form = document.getElementById('microsoft365Form');
+        if (microsoft365Form) {
+            microsoft365Form.addEventListener('submit', function(e) {
+                // Show loading state
+                const btn = document.getElementById('microsoftConnectBtn');
+                const buttonText = btn.querySelector('.button-text');
+                const buttonLoading = btn.querySelector('.button-loading');
+                const infoAlert = document.getElementById('microsoft365Info');
+                
+                // Ensure all elements exist before manipulating them
+                if (btn && buttonText && buttonLoading && infoAlert) {
+                    // Update button state
+                    buttonText.classList.add('d-none');
+                    buttonLoading.classList.remove('d-none');
+                    btn.disabled = true;
+                    
+                    // Show info message
+                    infoAlert.classList.remove('d-none');
+                }
+                
+                // Allow form to submit normally (which will redirect to Microsoft OAuth)
+                // No preventDefault() here because we want the OAuth redirect to happen
+            });
+        }
+        
+        // Handle Google form submission
+        const googleForm = document.getElementById('googleForm');
+        if (googleForm) {
+            googleForm.addEventListener('submit', function(e) {
+                // Show loading state
+                const btn = document.getElementById('googleConnectBtn');
+                const buttonText = btn.querySelector('.button-text');
+                const buttonLoading = btn.querySelector('.button-loading');
+                const infoAlert = document.getElementById('googleInfo');
+                
+                // Update button state
+                buttonText.classList.add('d-none');
+                buttonLoading.classList.remove('d-none');
+                btn.disabled = true;
+                
+                // Show info message
+                infoAlert.classList.remove('d-none');
+                
+                // Allow form to submit normally (which will redirect to Google OAuth)
+                // No preventDefault() here because we want the OAuth redirect to happen
+            });
+        }
+        
+        // Handle iCal form submission
+        const icalForm = document.getElementById('icalForm');
+        if (icalForm) {
+            icalForm.addEventListener('submit', function(e) {
+                // Show loading state
+                const btn = document.getElementById('icalConnectBtn');
+                const buttonText = btn.querySelector('.button-text');
+                const buttonLoading = btn.querySelector('.button-loading');
+                
+                // Update button state
+                buttonText.classList.add('d-none');
+                buttonLoading.classList.remove('d-none');
+                btn.disabled = true;
+                
+                // Allow form to submit normally
+                // No preventDefault() here because we want the form submission to happen
+            });
+        }
         
         function findScheduleOverlaps() {
             const tasks = [
@@ -443,6 +647,90 @@
             overlapsContainer.innerHTML = html;
         }
     });
+    
+    // Function to switch to iCal tab from Microsoft 365 tab
+    function switchToIcalTab() {
+        // Activate the iCal tab
+        const icalTab = document.getElementById('ical-tab');
+        const icalTabPane = document.getElementById('ical-content');
+        const microsoftTab = document.getElementById('outlook-tab');
+        const microsoftTabPane = document.getElementById('outlook-content');
+        
+        if (icalTab && icalTabPane && microsoftTab && microsoftTabPane) {
+            // Remove active class from Microsoft tab
+            microsoftTab.classList.remove('active');
+            microsoftTab.setAttribute('aria-selected', 'false');
+            microsoftTabPane.classList.remove('show', 'active');
+            
+            // Add active class to iCal tab
+            icalTab.classList.add('active');
+            icalTab.setAttribute('aria-selected', 'true');
+            icalTabPane.classList.add('show', 'active');
+            
+            // Focus on the calendar URL input field
+            const urlInput = document.getElementById('calendar_url');
+            if (urlInput) {
+                setTimeout(() => {
+                    urlInput.focus();
+                    urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 150);
+            }
+        }
+    }
+    
+    // Function to test iCal URL
+    function testIcalUrl() {
+        const urlInput = document.getElementById('calendar_url');
+        const testBtn = document.getElementById('testUrlBtn');
+        const resultDiv = document.getElementById('urlTestResult');
+        
+        if (!urlInput || !urlInput.value.trim()) {
+            resultDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Please enter a URL first</div>';
+            return;
+        }
+        
+        const url = urlInput.value.trim();
+        
+        // Basic URL validation
+        try {
+            new URL(url);
+        } catch (e) {
+            resultDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Invalid URL format</div>';
+            return;
+        }
+        
+        // Update button state
+        const originalContent = testBtn.innerHTML;
+        testBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Testing...';
+        testBtn.disabled = true;
+        
+        // Test the URL by trying to fetch it
+        fetch('/dashboard/connectCalendar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ url: url })
+        })
+        .then(response => response.json())
+        .then(data => {
+            testBtn.innerHTML = originalContent;
+            testBtn.disabled = false;
+            
+            if (data.success) {
+                resultDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle"></i> ${data.message}</div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> ${data.message}</div>`;
+            }
+        })
+        .catch(error => {
+            testBtn.innerHTML = originalContent;
+            testBtn.disabled = false;
+            resultDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Error testing URL. Please try again.</div>';
+            console.error('URL test error:', error);
+        });
+    }
 </script>
 
 <style>
@@ -469,6 +757,27 @@
     .tab-content {
         min-height: 300px;
     }
+    
+    /* Fix tab visibility in modal */
+    .modal .nav-tabs .nav-link {
+        color: #495057;
+        border: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        margin-right: 2px;
+    }
+    
+    .modal .nav-tabs .nav-link:hover {
+        color: #0056b3;
+        border-color: #b4d7ff #b4d7ff #dee2e6;
+        background-color: #e9ecef;
+    }
+    
+    .modal .nav-tabs .nav-link.active {
+        color: #495057;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+        border-bottom: 1px solid #fff;
+    }
 </style>
 
 <!-- Add Modal for Linking Shared Calendars -->
@@ -488,7 +797,7 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="outlook-tab" data-bs-toggle="tab" data-bs-target="#outlook-content" type="button" role="tab" aria-controls="outlook-content" aria-selected="false">
-                            <i class="bi bi-microsoft me-2"></i>Microsoft Outlook
+                            <i class="bi bi-microsoft me-2"></i>Microsoft 365
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -505,27 +814,122 @@
                             <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" alt="Google Calendar" width="64" class="mb-3">
                             <h5>Connect with Google Calendar</h5>
                             <p class="text-muted">Import events from your Google Calendar into HiveITPortal</p>
-                            <form action="/dashboard/connectCalendar" method="post">
+                            <form action="/dashboard/connectCalendar" method="post" id="googleForm">
                                 <input type="hidden" name="calendar_type" value="google">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-google me-2"></i> Connect with Google
+                                <button type="submit" class="btn btn-primary" id="googleConnectBtn">
+                                    <span class="button-text">
+                                        <i class="bi bi-google me-2"></i> Connect with Google
+                                    </span>
+                                    <span class="button-loading d-none">
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Redirecting to Google...
+                                    </span>
                                 </button>
+                                
+                                <div class="mt-3 d-none" id="googleInfo">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <strong>Redirecting to Google...</strong><br>
+                                        You'll be taken to Google's sign-in page to authorize calendar access. After authorization, you'll be redirected back here.
+                                    </div>
+                                </div>
                             </form>
                         </div>
                     </div>
                     
-                    <!-- Microsoft Outlook Content -->
+                    <!-- Microsoft 365 Content -->
                     <div class="tab-pane fade" id="outlook-content" role="tabpanel" aria-labelledby="outlook-tab">
                         <div class="text-center py-4">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg" alt="Microsoft Outlook" width="64" class="mb-3">
-                            <h5>Connect with Microsoft Outlook</h5>
-                            <p class="text-muted">Import events from your Outlook Calendar into HiveITPortal</p>
-                            <form action="/dashboard/connectCalendar" method="post">
-                                <input type="hidden" name="calendar_type" value="outlook">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-microsoft me-2"></i> Connect with Microsoft
-                                </button>
-                            </form>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg" alt="Microsoft 365" width="64" class="mb-3">
+                            <h5>Connect with Microsoft 365</h5>
+                            <p class="text-muted">Import events from your Microsoft 365 Calendar into your dashboard</p>
+                            
+                            <?php if ($microsoft365_configured): ?>
+                                <form action="/dashboard/connectCalendar" method="post" id="microsoft365Form">
+                                    <input type="hidden" name="calendar_type" value="microsoft365">
+                                    
+                                    <div class="mb-3">
+                                        <label for="microsoft_calendar_name" class="form-label">Calendar Name</label>
+                                        <input type="text" class="form-control" id="microsoft_calendar_name" name="calendar_name" 
+                                               value="Microsoft 365 Calendar" required placeholder="My Work Calendar">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="microsoft_calendar_color" class="form-label">Display Color</label>
+                                        <input type="color" class="form-control form-control-color" id="microsoft_calendar_color" 
+                                               name="calendar_color" value="#0078d4">
+                                    </div>
+                                    
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="microsoft_auto_refresh" name="auto_refresh" checked>
+                                        <label class="form-check-label" for="microsoft_auto_refresh">Auto-refresh daily</label>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary" id="microsoftConnectBtn">
+                                        <span class="button-text">
+                                            <i class="bi bi-microsoft me-2"></i> Connect with Microsoft 365
+                                        </span>
+                                        <span class="button-loading d-none">
+                                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                            Redirecting to Microsoft...
+                                        </span>
+                                    </button>
+                                    
+                                    <div class="mt-3 d-none" id="microsoft365Info">
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            <strong>Redirecting to Microsoft...</strong><br>
+                                            You'll be taken to Microsoft's sign-in page to authorize calendar access. After authorization, you'll be redirected back here.
+                                        </div>
+                                    </div>
+                                </form>
+                            <?php else: ?>
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Alternative: Use iCal URL Method</strong><br>
+                                    You can still connect your Microsoft calendar using the iCal/URL method below!
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <h6 class="text-primary">How to get your Microsoft calendar iCal URL:</h6>
+                                    <ol class="small text-start">
+                                        <li>Go to <a href="https://outlook.live.com/calendar" target="_blank" class="text-decoration-none">Outlook.com</a> or <a href="https://outlook.office.com/calendar" target="_blank" class="text-decoration-none">Outlook 365</a></li>
+                                        <li>Click the Settings gear icon → <strong>View all Outlook settings</strong></li>
+                                        <li>Go to <strong>Calendar</strong> → <strong>Shared calendars</strong></li>
+                                        <li>Under "Publish a calendar", select your calendar</li>
+                                        <li>Choose <strong>"Can view all details"</strong> permission level</li>
+                                        <li>Click <strong>"Publish"</strong> and copy the <strong>ICS link</strong></li>
+                                        <li>Use this link in the <strong>"iCal/URL"</strong> tab below</li>
+                                    </ol>
+                                    
+                                    <div class="alert alert-light mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-lightbulb me-1"></i>
+                                            <strong>Tip:</strong> Once you have the iCal URL, 
+                                            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" onclick="switchToIcalTab()">
+                                                switch to the "iCal/URL" tab
+                                            </button> 
+                                            and paste it there. This works for both Outlook.com and Microsoft 365 calendars!
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 pt-3 border-top">
+                                    <details class="small">
+                                        <summary class="text-muted" style="cursor: pointer;">
+                                            <i class="bi bi-gear me-1"></i> Advanced: OAuth Setup for Administrators
+                                        </summary>
+                                        <div class="mt-2 text-muted">
+                                            <p><strong>For full OAuth integration, administrators need to:</strong></p>
+                                            <ul>
+                                                <li>Register an app in Azure Active Directory</li>
+                                                <li>Add Microsoft Graph calendar permissions</li>
+                                                <li>Configure MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET</li>
+                                            </ul>
+                                        </div>
+                                    </details>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     
@@ -533,8 +937,31 @@
                     <div class="tab-pane fade" id="ical-content" role="tabpanel" aria-labelledby="ical-tab">
                         <div class="py-4">
                             <h5 class="mb-3">Connect using iCal URL</h5>
-                            <p class="text-muted">Paste an iCal URL from any calendar service that supports iCal format</p>
-                            <form action="/dashboard/connectCalendar" method="post">
+                            <p class="text-muted">Connect calendars from Microsoft 365, Outlook.com, Google Calendar, Apple iCloud, or any service that provides iCal URLs</p>
+                            
+                            <div class="alert alert-light mb-3">
+                                <div class="row text-start">
+                                    <div class="col-md-6">
+                                        <strong class="text-primary">📅 Microsoft/Outlook:</strong>
+                                        <small class="d-block">Outlook.com → Settings → Calendar → Shared calendars → Publish → Copy <strong>ICS link</strong> (not download link)</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong class="text-success">📱 Google Calendar:</strong>
+                                        <small class="d-block">Calendar Settings → Export → Calendar → Copy Secret Address</small>
+                                    </div>
+                                </div>
+                                <div class="row text-start mt-2">
+                                    <div class="col-md-6">
+                                        <strong class="text-info">🍎 Apple iCloud:</strong>
+                                        <small class="d-block">iCloud.com → Calendar → Share Calendar → Public Calendar</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong class="text-secondary">🔗 Other Services:</strong>
+                                        <small class="d-block">Look for "Export", "Share", or "iCal" options</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <form action="/dashboard/connectCalendar" method="post" id="icalForm">
                                 <input type="hidden" name="calendar_type" value="ical">
                                 
                                 <div class="mb-3">
@@ -544,8 +971,14 @@
                                 
                                 <div class="mb-3">
                                     <label for="calendar_url" class="form-label">iCal URL</label>
-                                    <input type="url" class="form-control" id="calendar_url" name="calendar_url" required placeholder="https://example.com/calendar.ics">
+                                    <div class="input-group">
+                                        <input type="url" class="form-control" id="calendar_url" name="calendar_url" required placeholder="https://example.com/calendar.ics">
+                                        <button type="button" class="btn btn-outline-info" onclick="testIcalUrl()" id="testUrlBtn">
+                                            <i class="bi bi-check-circle"></i> Test URL
+                                        </button>
+                                    </div>
                                     <div class="form-text">Enter the URL to your calendar's iCal feed</div>
+                                    <div id="urlTestResult" class="mt-2"></div>
                                 </div>
                                 
                                 <div class="mb-3">
@@ -558,8 +991,14 @@
                                     <label class="form-check-label" for="calendar_refresh">Auto-refresh daily</label>
                                 </div>
                                 
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-plus-lg me-2"></i> Add Calendar
+                                <button type="submit" class="btn btn-primary" id="icalConnectBtn">
+                                    <span class="button-text">
+                                        <i class="bi bi-plus-lg me-2"></i> Add Calendar
+                                    </span>
+                                    <span class="button-loading d-none">
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Adding Calendar...
+                                    </span>
                                 </button>
                             </form>
                         </div>
@@ -571,4 +1010,5 @@
             </div>
         </div>
     </div>
+</div> 
 </div> 

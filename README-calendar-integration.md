@@ -4,10 +4,12 @@ This feature allows users to link their external calendars (Google Calendar, Mic
 
 ## Features
 
-- Link multiple external calendars
+- Link multiple external calendars (Google Calendar, Microsoft 365, iCal feeds)
 - Display events from external calendars alongside project tasks
 - Color-code events by calendar source
 - Automatic or manual syncing of calendar events
+- Secure OAuth 2.0 authentication for Microsoft 365 and Google Calendar
+- Automatic token refresh for seamless integration
 - Edit or remove linked calendars
 
 ## Setup Instructions
@@ -32,14 +34,16 @@ For Google Calendar integration to work properly, you need to:
 4. Set authorized redirect URIs to `https://your-domain.com/dashboard/googleCallback`
 5. Add your client ID and client secret to your environment configuration
 
-### 3. Microsoft Outlook Integration (OAuth Setup - Optional)
+### 3. Microsoft 365 Integration (OAuth Setup - Recommended)
 
-For Microsoft Outlook integration to work properly, you need to:
+For Microsoft 365 calendar integration to work properly, you need to:
 
 1. Register an application in the [Microsoft Azure Portal](https://portal.azure.com/)
-2. Add Microsoft Graph API permissions for Calendars.Read
-3. Configure redirect URI to `https://your-domain.com/dashboard/outlookCallback`
+2. Add Microsoft Graph API permissions for Calendars.Read and offline_access
+3. Configure redirect URI to `https://your-domain.com/dashboard/microsoftCallback`
 4. Add your client ID and client secret to your environment configuration
+
+**For detailed setup instructions, see: `microsoft365_setup_guide.md`**
 
 ### 4. iCal/URL Integration
 

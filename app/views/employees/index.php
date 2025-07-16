@@ -198,9 +198,9 @@
             <a href="/employees/performance" class="btn btn-sm btn-info">
                 <i class="bi bi-graph-up-arrow"></i> Performance Dashboard
             </a>
-            <a href="/employees/create" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus"></i> Add New
-            </a>
+        <a href="/employees/create" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus"></i> Add New
+        </a>
         </div>
     </div>
     <div class="card-body p-0">

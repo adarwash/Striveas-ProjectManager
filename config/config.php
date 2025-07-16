@@ -21,4 +21,19 @@
         'user'   => 'ProjectTracker',      // Username for the database
         'pass'   => 'Password'             // Password for the database
     ]);
+    
+    // Microsoft 365 / Azure OAuth Configuration
+    // To enable Microsoft 365 calendar integration, uncomment and configure these:
+    // 1. Register an app in Azure Active Directory
+    // 2. Add Microsoft Graph API permissions: Calendars.Read, offline_access
+    // 3. Set redirect URI to: http://yourdomain.com/dashboard/microsoftCallback
+    // 4. Get the Application (client) ID and create a client secret
+    // 5. Uncomment and set these values:
+    
+    // define('MICROSOFT_CLIENT_ID', 'your-azure-app-client-id');
+    // define('MICROSOFT_CLIENT_SECRET', 'your-azure-app-client-secret');
+    
+    // Alternative: You can also set these as environment variables:
+    // - MICROSOFT_CLIENT_ID
+    // - MICROSOFT_CLIENT_SECRET
 ?>

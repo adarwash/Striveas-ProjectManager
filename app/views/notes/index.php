@@ -1,59 +1,144 @@
 <?php include_once VIEWSPATH . '/inc/header.php'; ?>
 
-<div class="container-fluid py-4">
-    <!-- Page Header with Background -->
-    <div class="bg-light rounded-3 p-4 mb-4">
+<!-- Main Content Container -->
+<div class="container-fluid px-4 py-3">
+    
+    <!-- Page Header -->
+    <div class="page-header mb-4">
         <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="h3 mb-1"><?= $data['title'] ?></h1>
-                <p class="text-muted">Your collection of thoughts, ideas, and important information</p>
+            <div class="header-text">
+                <h1 class="page-title">
+                    <i class="fas fa-sticky-note"></i>
+                    <?= $data['title'] ?>
+                </h1>
+                <p class="mb-0">Your collection of thoughts, ideas, and important information</p>
             </div>
-            <a href="/notes/add" class="btn btn-primary">
-                <i class="bi bi-plus-lg"></i> Add Note
-            </a>
+            <div class="header-actions">
+                <a href="/notes/add" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add New Note
+                </a>
+            </div>
         </div>
     </div>
     
     <!-- Flash messages -->
     <?php flash('note_success'); ?>
     <?php flash('note_error'); ?>
-    
+
     <?php if (!empty($data['notes'])): ?>
-        <!-- Search and Filter Options -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-lg-5 col-md-6">
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">
-                                <i class="bi bi-search"></i>
-                            </span>
-                            <input type="text" id="noteSearch" class="form-control border-start-0" placeholder="Search notes...">
+        <!-- Notes Statistics Overview -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-icon bg-primary">
+                        <i class="fas fa-sticky-note"></i>
+                    </div>
+                    <div class="stats-content">
+                        <h3 class="stats-number"><?= count($data['notes']) ?></h3>
+                        <p class="stats-label">Total Notes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-icon bg-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stats-content">
+                        <h3 class="stats-number"><?= count(array_filter($data['notes'], fn($note) => $note['type'] === 'task')) ?></h3>
+                        <p class="stats-label">Task Notes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-icon bg-info">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="stats-content">
+                        <h3 class="stats-number"><?= count(array_filter($data['notes'], fn($note) => $note['type'] === 'project')) ?></h3>
+                        <p class="stats-label">Project Notes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-icon bg-warning">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="stats-content">
+                        <h3 class="stats-number"><?= count(array_filter($data['notes'], fn($note) => $note['type'] === 'personal')) ?></h3>
+                        <p class="stats-label">Personal Notes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Search and Filter Panel -->
+        <div class="filter-panel-card mb-4">
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="filter-header-info">
+                        <h6 class="filter-title">
+                            <i class="fas fa-search me-2"></i>Search & Filter Notes
+                        </h6>
+                        <small class="filter-subtitle">Find and organize your notes efficiently</small>
+                    </div>
+                    <div class="filter-summary">
+                        <span class="results-badge">
+                            <i class="fas fa-chart-pie me-1"></i>
+                            <?= count($data['notes']) ?> Total
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body" style="padding: 20px;">
+                <div class="row align-items-center g-3">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="search-section">
+                            <label class="search-label">Search Notes</label>
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" class="form-control search-input" id="noteSearch" 
+                                       placeholder="Search by title or content..." aria-label="Search notes">
+                                <button class="search-clear" id="clearSearch" style="display: none;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-md-3">
-                        <select id="noteTypeFilter" class="form-select">
-                            <option value="all">All Types</option>
-                            <option value="project">Projects</option>
-                            <option value="task">Tasks</option>
-                            <option value="personal">Personal</option>
-                        </select>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="filter-section">
+                            <label class="filter-label">Filter by Type</label>
+                            <select id="noteTypeFilter" class="form-select modern-select">
+                                <option value="all">All Types</option>
+                                <option value="project">Project Notes</option>
+                                <option value="task">Task Notes</option>
+                                <option value="personal">Personal Notes</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-lg-3 col-md-3">
-                        <select id="noteSortOrder" class="form-select">
-                            <option value="newest">Newest First</option>
-                            <option value="oldest">Oldest First</option>
-                            <option value="title">Title (A-Z)</option>
-                        </select>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="sort-section">
+                            <label class="sort-label">Sort by</label>
+                            <select id="noteSortOrder" class="form-select modern-select">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="title">Title (A-Z)</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-lg-1 col-md-12 text-end">
-                        <div class="btn-group" role="group">
-                            <button type="button" id="viewGrid" class="btn btn-outline-secondary active" title="Grid View">
-                                <i class="bi bi-grid-3x3-gap-fill"></i>
-                            </button>
-                            <button type="button" id="viewList" class="btn btn-outline-secondary" title="List View">
-                                <i class="bi bi-list-ul"></i>
-                            </button>
+                    <div class="col-lg-2 col-md-6">
+                        <div class="view-section">
+                            <label class="view-label">View</label>
+                            <div class="view-toggle-group">
+                                <button type="button" id="viewGrid" class="view-toggle active" title="Grid View">
+                                    <i class="fas fa-th-large"></i>
+                                </button>
+                                <button type="button" id="viewList" class="view-toggle" title="List View">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -61,48 +146,41 @@
         </div>
 
         <!-- Notes Grid View (Default) -->
-        <div id="gridView" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+        <div id="gridView" class="row g-4">
             <?php foreach ($data['notes'] as $note): ?>
-                <div class="col note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>">
-                    <div class="card h-100 note-card border-0 shadow-sm">
-                        <!-- Color Bar by Type -->
-                        <div class="card-color-bar 
-                            <?= $note['type'] === 'project' ? 'bg-primary' : 
-                               ($note['type'] === 'task' ? 'bg-success' : 'bg-info') ?>">
-                        </div>
-                        
-                        <!-- Note Type Badge -->
-                        <div class="card-header d-flex justify-content-between align-items-center bg-white border-bottom-0 pb-1 pt-3">
-                            <span class="badge rounded-pill 
-                                <?= $note['type'] === 'project' ? 'text-bg-primary' : 
-                                   ($note['type'] === 'task' ? 'text-bg-success' : 'text-bg-info') ?>">
-                                <i class="bi <?= $note['type'] === 'project' ? 'bi-kanban' : 
-                                             ($note['type'] === 'task' ? 'bi-check2-square' : 'bi-journal-text') ?>"></i>
+                <div class="col-xl-4 col-lg-6 col-md-6 note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>">
+                    <div class="modern-note-card">
+                        <div class="note-header">
+                            <div class="note-type-badge note-type-<?= $note['type'] ?>">
+                                <i class="fas <?= $note['type'] === 'project' ? 'fa-project-diagram' : 
+                                               ($note['type'] === 'task' ? 'fa-check-circle' : 'fa-user') ?>"></i>
                                 <?= ucfirst($note['type']) ?>
-                            </span>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-icon dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" href="/notes/edit/<?= $note['id'] ?>">
-                                            <i class="bi bi-pencil-square me-2 text-primary"></i>Edit Note
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <button type="button" class="dropdown-item text-danger" 
-                                                data-bs-toggle="modal" data-bs-target="#deleteModal<?= $note['id'] ?>" data-note-id="<?= $note['id'] ?>">
-                                            <i class="bi bi-trash me-2"></i>Delete Note
-                                        </button>
-                                    </li>
-                                </ul>
+                            </div>
+                            <div class="note-actions">
+                                <div class="dropdown">
+                                    <button class="note-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="/notes/edit/<?= $note['id'] ?>">
+                                                <i class="fas fa-edit me-2"></i>Edit Note
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item text-danger" 
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal<?= $note['id'] ?>" data-note-id="<?= $note['id'] ?>">
+                                                <i class="fas fa-trash me-2"></i>Delete Note
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="card-body pt-2">
-                            <h5 class="card-title"><?= htmlspecialchars($note['title']) ?></h5>
-                            <div class="note-content note-preview" data-id="<?= $note['id'] ?>">
+                        <div class="note-content">
+                            <h5 class="note-title"><?= htmlspecialchars($note['title']) ?></h5>
+                            <div class="note-preview">
                                 <div class="note-text">
                                     <?= nl2br(htmlspecialchars(substr($note['content'], 0, 150))) ?>
                                     <?php if (strlen($note['content']) > 150): ?>
@@ -112,15 +190,15 @@
                             </div>
                         </div>
                         
-                        <div class="card-footer bg-white border-top-0">
-                            <div class="d-flex justify-content-between align-items-center small text-muted">
-                                <div>
-                                    <i class="bi bi-calendar3"></i> <?= date('M j, Y', strtotime($note['created_at'])) ?>
-                                </div>
-                                <button class="btn btn-sm btn-link p-0" data-bs-toggle="modal" data-bs-target="#noteModal<?= $note['id'] ?>">
-                                    Read More
-                                </button>
+                        <div class="note-footer">
+                            <div class="note-date">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                <?= date('M j, Y', strtotime($note['created_at'])) ?>
                             </div>
+                            <button class="btn-read-more" data-bs-toggle="modal" data-bs-target="#noteModal<?= $note['id'] ?>">
+                                <i class="fas fa-eye me-1"></i>
+                                Read More
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -128,28 +206,28 @@
                 <!-- Delete Confirmation Modal -->
                 <div class="modal fade" id="deleteModal<?= $note['id'] ?>" tabindex="-1" aria-hidden="true" data-note-id="<?= $note['id'] ?>">
                     <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header bg-danger text-white">
+                        <div class="modal-content modern-modal">
+                            <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                    Delete Note
+                                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                                    Confirm Deletion
                                 </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
                                 <p>Are you sure you want to delete the note "<strong><?= htmlspecialchars($note['title']) ?></strong>"?</p>
                                 <div class="alert alert-warning">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
                                     <strong>Warning:</strong> This action cannot be undone. The note will be permanently deleted.
                                 </div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                    <i class="bi bi-x-lg me-1"></i> Cancel
+                                    <i class="fas fa-times me-1"></i> Cancel
                                 </button>
                                 <form action="/notes/delete/<?= $note['id'] ?>" method="POST" class="d-inline">
                                     <button type="submit" class="btn btn-danger">
-                                        <i class="bi bi-trash me-1"></i> Delete Note
+                                        <i class="fas fa-trash me-1"></i> Delete Note
                                     </button>
                                 </form>
                             </div>
@@ -160,7 +238,7 @@
                 <!-- Note Detail Modal -->
                 <div class="modal fade" id="noteModal<?= $note['id'] ?>" tabindex="-1">
                     <div class="modal-dialog modal-dialog-centered modal-lg">
-                        <div class="modal-content">
+                        <div class="modal-content modern-modal">
                             <div class="modal-header">
                                 <h5 class="modal-title"><?= htmlspecialchars($note['title']) ?></h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -169,29 +247,33 @@
                                 <div class="mb-3 note-full-content">
                                     <?= nl2br(htmlspecialchars($note['content'])) ?>
                                 </div>
-                                <div class="d-flex justify-content-between text-muted small">
+                                <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <span class="badge rounded-pill 
-                                            <?= $note['type'] === 'project' ? 'text-bg-primary' : 
-                                                ($note['type'] === 'task' ? 'text-bg-success' : 'text-bg-info') ?>">
+                                        <span class="note-type-badge note-type-<?= $note['type'] ?>">
+                                            <i class="fas <?= $note['type'] === 'project' ? 'fa-project-diagram' : 
+                                                           ($note['type'] === 'task' ? 'fa-check-circle' : 'fa-user') ?>"></i>
                                             <?= ucfirst($note['type']) ?>
                                         </span>
                                         <?php if (!empty($note['reference_title'])): ?>
-                                        <a href="<?= $note['type'] === 'project' ? '/projects/show/' . $note['reference_id'] : '/tasks/show/' . $note['reference_id'] ?>" class="ms-2">
+                                        <a href="<?= $note['type'] === 'project' ? '/projects/show/' . $note['reference_id'] : '/tasks/show/' . $note['reference_id'] ?>" class="ms-2 text-decoration-none">
+                                            <i class="fas fa-link me-1"></i>
                                             <?= htmlspecialchars($note['reference_title'] ?? 'Unknown') ?>
                                         </a>
                                         <?php endif; ?>
                                     </div>
-                                    <div>
-                                        <i class="bi bi-calendar3"></i> <?= date('M j, Y', strtotime($note['created_at'])) ?>
+                                    <div class="text-muted">
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        <?= date('M j, Y', strtotime($note['created_at'])) ?>
                                     </div>
                                 </div>
                             </div>
                             <div class="modal-footer">
                                 <a href="/notes/edit/<?= $note['id'] ?>" class="btn btn-primary">
-                                    <i class="bi bi-pencil me-1"></i> Edit
+                                    <i class="fas fa-edit me-1"></i> Edit Note
                                 </a>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i> Close
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -201,10 +283,10 @@
 
         <!-- Notes List View (Hidden by Default) -->
         <div id="listView" class="d-none">
-            <div class="card border-0 shadow-sm">
+            <div class="modern-table-card">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+                    <table class="table table-hover modern-table">
+                        <thead>
                             <tr>
                                 <th>Title</th>
                                 <th>Type</th>
@@ -217,29 +299,34 @@
                             <?php foreach ($data['notes'] as $note): ?>
                                 <tr class="note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>">
                                     <td>
-                                        <a href="#" class="fw-semibold text-decoration-none" data-bs-toggle="modal" data-bs-target="#noteModal<?= $note['id'] ?>">
+                                        <a href="#" class="note-title-link" data-bs-toggle="modal" data-bs-target="#noteModal<?= $note['id'] ?>">
                                             <?= htmlspecialchars($note['title']) ?>
                                         </a>
                                     </td>
                                     <td>
-                                        <span class="badge rounded-pill 
-                                            <?= $note['type'] === 'project' ? 'text-bg-primary' : 
-                                               ($note['type'] === 'task' ? 'text-bg-success' : 'text-bg-info') ?>">
+                                        <span class="note-type-badge note-type-<?= $note['type'] ?>">
+                                            <i class="fas <?= $note['type'] === 'project' ? 'fa-project-diagram' : 
+                                                           ($note['type'] === 'task' ? 'fa-check-circle' : 'fa-user') ?>"></i>
                                             <?= ucfirst($note['type']) ?>
                                         </span>
                                     </td>
-                                    <td class="text-truncate" style="max-width: 300px;"><?= htmlspecialchars(substr($note['content'], 0, 100)) ?><?= strlen($note['content']) > 100 ? '...' : '' ?></td>
+                                    <td class="note-preview-cell">
+                                        <span class="note-preview-text">
+                                            <?= htmlspecialchars(substr($note['content'], 0, 100)) ?>
+                                            <?= strlen($note['content']) > 100 ? '...' : '' ?>
+                                        </span>
+                                    </td>
                                     <td><?= date('M j, Y', strtotime($note['created_at'])) ?></td>
                                     <td class="text-end">
-                                        <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-falcon-default" data-bs-toggle="modal" data-bs-target="#noteModal<?= $note['id'] ?>" title="View">
-                                                <i class="bi bi-eye"></i>
+                                        <div class="table-actions">
+                                            <button type="button" class="table-action-btn" data-bs-toggle="modal" data-bs-target="#noteModal<?= $note['id'] ?>" title="View">
+                                                <i class="fas fa-eye"></i>
                                             </button>
-                                            <a href="/notes/edit/<?= $note['id'] ?>" class="btn btn-falcon-default" title="Edit">
-                                                <i class="bi bi-pencil"></i>
+                                            <a href="/notes/edit/<?= $note['id'] ?>" class="table-action-btn" title="Edit">
+                                                <i class="fas fa-edit"></i>
                                             </a>
-                                            <button type="button" class="btn btn-falcon-default text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal<?= $note['id'] ?>" title="Delete">
-                                                <i class="bi bi-trash"></i>
+                                            <button type="button" class="table-action-btn text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal<?= $note['id'] ?>" title="Delete">
+                                                <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -251,81 +338,546 @@
             </div>
         </div>
     <?php else: ?>
-        <!-- Empty State -->
-        <div class="text-center py-5 my-5">
-            <div class="empty-state mb-4">
-                <i class="bi bi-journal-text text-muted"></i>
+        <!-- Enhanced Empty State -->
+        <div class="empty-state-container">
+            <div class="empty-state-content">
+                <div class="empty-state-icon">
+                    <i class="fas fa-sticky-note"></i>
+                </div>
+                <h3 class="empty-state-title">No Notes Yet</h3>
+                <p class="empty-state-subtitle">
+                    Create your first note to keep track of important information, ideas, and thoughts
+                </p>
+                <a href="/notes/add" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>
+                    Create Your First Note
+                </a>
             </div>
-            <h3>No notes yet</h3>
-            <p class="text-muted mb-4 lead">Create your first note to keep track of important information</p>
-            <a href="/notes/add" class="btn btn-primary btn-lg">
-                <i class="bi bi-plus-lg me-1"></i> Create your first note
-            </a>
         </div>
     <?php endif; ?>
-</div>
+    
+</div> <!-- End Main Content Container -->
 
 <style>
-.card-color-bar {
-    height: 5px;
-    width: 100%;
-    border-top-left-radius: 0.375rem;
-    border-top-right-radius: 0.375rem;
+/* Stats Cards */
+.stats-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-.note-card {
-    border-radius: 0.5rem;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    overflow: hidden;
-}
-.note-card:hover {
+
+.stats-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
-.note-preview {
-    max-height: 100px;
-    overflow: hidden;
-    position: relative;
-}
-.empty-state {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background-color: #f5f5f5;
+
+.stats-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
+    font-size: 1.5rem;
+    color: white;
+    margin-right: 1rem;
 }
-.empty-state i {
-    font-size: 3rem;
+
+.stats-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
 }
-.btn-icon {
-    background: transparent;
+
+.stats-label {
+    color: #718096;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+/* Enhanced Filter Panel */
+.filter-panel-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.filter-panel-card .card-header {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.5rem;
+}
+
+.filter-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.filter-subtitle {
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.results-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.search-label, .filter-label, .sort-label, .view-label {
+    display: block;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-input {
+    padding-left: 2.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+    z-index: 3;
+}
+
+.search-clear {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
     border: none;
-    color: #6c757d;
-    padding: 0.25rem 0.5rem;
-}
-.btn-icon:hover {
-    color: #343a40;
-    background-color: rgba(0,0,0,0.05);
-    border-radius: 4px;
-}
-.note-full-content {
-    white-space: pre-line;
-}
-.btn-falcon-default {
-    background-color: #fff;
-    border-color: #e3e6ed;
-}
-.btn-falcon-default:hover {
-    background-color: #f9fafd;
+    color: #a0aec0;
+    cursor: pointer;
+    z-index: 3;
 }
 
+.modern-select {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+}
 
+.modern-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.view-toggle-group {
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.view-toggle {
+    background: white;
+    border: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+}
+
+.view-toggle:hover {
+    background: #f7fafc;
+}
+
+.view-toggle.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+/* Modern Note Cards */
+.modern-note-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.modern-note-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+}
+
+.note-header {
+    padding: 1.5rem 1.5rem 1rem;
+    display: flex;
+    justify-content: between;
+    align-items: flex-start;
+}
+
+.note-type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: white;
+}
+
+.note-type-project {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.note-type-task {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+.note-type-personal {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+}
+
+.note-menu-btn {
+    background: none;
+    border: none;
+    color: #a0aec0;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.note-menu-btn:hover {
+    background: #f7fafc;
+    color: #4a5568;
+}
+
+.note-content {
+    padding: 0 1.5rem;
+    flex: 1;
+}
+
+.note-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.note-preview {
+    color: #4a5568;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.note-footer {
+    padding: 1rem 1.5rem;
+    background: #f7fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #e2e8f0;
+}
+
+.note-date {
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.btn-read-more {
+    background: none;
+    border: none;
+    color: #667eea;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-read-more:hover {
+    color: #5a67d8;
+}
+
+/* Modern Table */
+.modern-table-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.modern-table {
+    margin-bottom: 0;
+}
+
+.modern-table thead th {
+    background: #f7fafc;
+    border-bottom: 2px solid #e2e8f0;
+    color: #4a5568;
+    font-weight: 600;
+    padding: 1rem;
+}
+
+.modern-table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.modern-table tbody tr:hover {
+    background: #f7fafc;
+}
+
+.modern-table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.note-title-link {
+    color: #2d3748;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.note-title-link:hover {
+    color: #667eea;
+}
+
+.note-preview-cell {
+    max-width: 300px;
+}
+
+.note-preview-text {
+    color: #4a5568;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.table-action-btn {
+    background: none;
+    border: none;
+    color: #a0aec0;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.table-action-btn:hover {
+    background: #f7fafc;
+    color: #4a5568;
+}
+
+.table-action-btn.text-danger:hover {
+    background: #fed7d7;
+    color: #e53e3e;
+}
+
+/* Enhanced Empty State */
+.empty-state-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 3rem 0;
+}
+
+.empty-state-content {
+    text-align: center;
+    max-width: 500px;
+}
+
+.empty-state-icon {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    font-size: 3rem;
+    color: white;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.empty-state-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 1rem;
+}
+
+.empty-state-subtitle {
+    font-size: 1.1rem;
+    color: #718096;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+/* Modern Modals */
+.modern-modal {
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    border: none;
+}
+
+.modern-modal .modal-header {
+    background: #f7fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.5rem;
+}
+
+.modern-modal .modal-body {
+    padding: 1.5rem;
+}
+
+.modern-modal .modal-footer {
+    background: #f7fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 1rem 1.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .filter-panel-card .card-body {
+        padding: 1rem !important;
+    }
+    
+    .note-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .note-type-badge {
+        margin-bottom: 0.5rem;
+    }
+    
+    .note-menu-btn {
+        align-self: flex-end;
+        margin-top: -2.5rem;
+    }
+    
+    .view-toggle-group {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+}
+
+/* Animation Effects */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modern-note-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.stats-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.filter-panel-card {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* Enhanced Hover Effects */
+.modern-note-card:hover .note-type-badge {
+    transform: scale(1.05);
+}
+
+.modern-note-card:hover .note-title {
+    color: #667eea;
+}
+
+.stats-card:hover .stats-icon {
+    transform: scale(1.1);
+}
+
+.stats-card:hover .stats-number {
+    color: #667eea;
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced placeholder rotation for search
+    const searchInput = document.getElementById('noteSearch');
+    const placeholders = [
+        'Search by title or content...',
+        'Find your project notes...',
+        'Search for task reminders...',
+        'Look for personal notes...'
+    ];
+    let currentPlaceholder = 0;
+    
+    if (searchInput) {
+        setInterval(() => {
+            currentPlaceholder = (currentPlaceholder + 1) % placeholders.length;
+            searchInput.placeholder = placeholders[currentPlaceholder];
+        }, 3000);
+    }
+    
+    // Search clear functionality
+    const clearSearch = document.getElementById('clearSearch');
+    if (searchInput && clearSearch) {
+        searchInput.addEventListener('input', function() {
+            clearSearch.style.display = this.value ? 'block' : 'none';
+        });
+        
+        clearSearch.addEventListener('click', function() {
+            searchInput.value = '';
+            this.style.display = 'none';
+            filterNotes();
+        });
+    }
+    
     // Utility function to clean up modal artifacts
     function cleanupModal() {
         const backdrop = document.querySelector('.modal-backdrop');
@@ -412,13 +964,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Search functionality
-    const searchInput = document.getElementById('noteSearch');
     if (searchInput) {
         searchInput.addEventListener('input', filterNotes);
     }
     
     // Make sure delete buttons work in both views
-    const allDeleteButtons = document.querySelectorAll('.dropdown-item.text-danger, .btn-falcon-default.text-danger');
+    const allDeleteButtons = document.querySelectorAll('.dropdown-item.text-danger, .table-action-btn.text-danger');
     allDeleteButtons.forEach(button => {
         // Make sure every delete button has the note-id attribute
         if (!button.getAttribute('data-note-id')) {
@@ -497,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Reset button
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="bi bi-trash me-1"></i> Delete Note';
+                submitBtn.innerHTML = '<i class="fas fa-trash me-1"></i> Delete Note';
                 
                 // Ensure backdrop is removed
                 setTimeout(() => {
@@ -519,8 +1070,9 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         
         // Find container and insert alert at the top
-        const container = document.querySelector('.container-fluid');
-        container.insertBefore(alertEl, container.querySelector('.bg-light.rounded-3').nextSibling);
+        const container = document.querySelector('.container-fluid.px-4');
+        const firstChild = container.firstElementChild;
+        container.insertBefore(alertEl, firstChild);
         
         // Auto dismiss after 4 seconds
         setTimeout(() => {
@@ -570,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Helper function to filter notes
     function filterNotes() {
-        const searchTerm = searchInput.value.toLowerCase();
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
         const typeFilter = document.getElementById('noteTypeFilter').value;
         const noteItems = document.querySelectorAll('.note-item');
         let visibleCount = 0;
@@ -597,12 +1149,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (visibleCount === 0 && noteItems.length > 0) {
             if (!noResultsMsg) {
-                const container = document.getElementById('gridView').parentNode;
+                const container = document.querySelector('.container-fluid.px-4');
                 const message = document.createElement('div');
                 message.id = 'noResultsMessage';
                 message.className = 'alert alert-info text-center mt-4';
                 message.innerHTML = `
-                    <i class="bi bi-search me-2"></i>
+                    <i class="fas fa-search me-2"></i>
                     No notes found matching "<strong>${searchTerm}</strong>"
                     ${typeFilter !== 'all' ? ` with type "<strong>${typeFilter}</strong>"` : ''}
                 `;
@@ -659,6 +1211,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Bootstrap tooltips
     document.querySelectorAll('[title]').forEach(function(element) {
         new bootstrap.Tooltip(element);
+    });
+    
+    // Add smooth scrolling for better UX
+    document.documentElement.style.scrollBehavior = 'smooth';
+    
+    // Initialize animations on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+    
+    // Observe all note cards for scroll animation
+    document.querySelectorAll('.modern-note-card').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
     });
 });
 </script>
