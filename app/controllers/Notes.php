@@ -35,6 +35,55 @@ class Notes extends Controller {
     }
     
     /**
+     * View a specific note
+     */
+    public function show($id = null) {
+        if (!$id) {
+            redirect('notes');
+        }
+        
+        $userId = $_SESSION['user_id'];
+        $note = $this->noteModel->getNoteById($id);
+        
+        if (!$note || $note['created_by'] != $userId) {
+            flash('note_message', 'Note not found or you do not have permission to view it.', 'alert-danger');
+            redirect('notes');
+        }
+        
+        // Get related project or task info if applicable
+        $relatedInfo = null;
+        if ($note['type'] === 'project' && $note['reference_id']) {
+            try {
+                $projectObj = $this->projectModel->getProjectById($note['reference_id']);
+                if ($projectObj) {
+                    $relatedInfo = (array)$projectObj;
+                    $relatedInfo['type'] = 'project';
+                }
+            } catch (Exception $e) {
+                // Project might not exist anymore
+            }
+        } elseif ($note['type'] === 'task' && $note['reference_id']) {
+            try {
+                $taskObj = $this->taskModel->getTaskById($note['reference_id']);
+                if ($taskObj) {
+                    $relatedInfo = (array)$taskObj;
+                    $relatedInfo['type'] = 'task';
+                }
+            } catch (Exception $e) {
+                // Task might not exist anymore
+            }
+        }
+        
+        $data = [
+            'title' => 'View Note - ' . $note['title'],
+            'note' => $note,
+            'related_info' => $relatedInfo
+        ];
+        
+        $this->view('notes/show', $data);
+    }
+    
+    /**
      * Add a new note
      */
     public function add() {

@@ -65,6 +65,44 @@ class Task {
         return !empty($result) ? (object)$result[0] : null;
     }
     
+    /**
+     * Search tasks by title, description, or project name
+     */
+    public function searchTasks($searchQuery, $limit = 10) {
+        try {
+            $query = "SELECT t.*, p.title as project_title, u1.username as assigned_to_name, u2.username as created_by_name
+                     FROM [tasks] t
+                     LEFT JOIN [projects] p ON t.project_id = p.id
+                     LEFT JOIN [users] u1 ON t.assigned_to = u1.id
+                     LEFT JOIN [users] u2 ON t.created_by = u2.id
+                     WHERE (t.title LIKE ? OR t.description LIKE ? OR p.title LIKE ?)
+                     ORDER BY 
+                         CASE 
+                             WHEN t.title LIKE ? THEN 1
+                             WHEN t.description LIKE ? THEN 2
+                             WHEN p.title LIKE ? THEN 3
+                             ELSE 4
+                         END,
+                         t.due_date ASC, t.priority DESC";
+            
+            $params = [
+                $searchQuery, $searchQuery, $searchQuery,
+                $searchQuery, $searchQuery, $searchQuery
+            ];
+            
+            // SQL Server uses TOP instead of LIMIT
+            if ($limit > 0) {
+                $query = str_replace("SELECT t.*", "SELECT TOP $limit t.*", $query);
+            }
+            
+            $results = $this->db->select($query, $params);
+            return $results ?: [];
+        } catch (Exception $e) {
+            error_log('Task search error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
     // Create new task
     public function create($data) {
         $query = "INSERT INTO tasks (project_id, title, description, status, priority, due_date, assigned_to, created_by, created_at) 

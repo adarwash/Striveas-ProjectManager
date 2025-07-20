@@ -251,4 +251,40 @@ class Client {
             return 0;
         }
     }
+    
+    /**
+     * Search clients by name, contact person, email, or industry
+     */
+    public function searchClients($searchQuery, $limit = 10) {
+        try {
+            $query = "SELECT * FROM [Clients]
+                     WHERE (name LIKE ? OR contact_person LIKE ? OR email LIKE ? OR industry LIKE ?)
+                     AND status = 'Active'
+                     ORDER BY 
+                         CASE 
+                             WHEN name LIKE ? THEN 1
+                             WHEN contact_person LIKE ? THEN 2
+                             WHEN email LIKE ? THEN 3
+                             WHEN industry LIKE ? THEN 4
+                             ELSE 5
+                         END,
+                         name ASC";
+            
+            $params = [
+                $searchQuery, $searchQuery, $searchQuery, $searchQuery,
+                $searchQuery, $searchQuery, $searchQuery, $searchQuery
+            ];
+            
+            // SQL Server uses TOP instead of LIMIT
+            if ($limit > 0) {
+                $query = str_replace("SELECT *", "SELECT TOP $limit *", $query);
+            }
+            
+            $results = $this->db->select($query, $params);
+            return $results ?: [];
+        } catch (Exception $e) {
+            error_log('Client search error: ' . $e->getMessage());
+            return [];
+        }
+    }
 } 

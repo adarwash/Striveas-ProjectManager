@@ -163,6 +163,11 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li>
+                                            <a class="dropdown-item" href="/notes/show/<?= $note['id'] ?>">
+                                                <i class="fas fa-eye me-2"></i>View Note
+                                            </a>
+                                        </li>
+                                        <li>
                                             <a class="dropdown-item" href="/notes/edit/<?= $note['id'] ?>">
                                                 <i class="fas fa-edit me-2"></i>Edit Note
                                             </a>
@@ -179,7 +184,11 @@
                         </div>
                         
                         <div class="note-content">
-                            <h5 class="note-title"><?= htmlspecialchars($note['title']) ?></h5>
+                            <h5 class="note-title">
+                                <a href="/notes/show/<?= $note['id'] ?>" class="text-decoration-none text-dark">
+                                    <?= htmlspecialchars($note['title']) ?>
+                                </a>
+                            </h5>
                             <div class="note-preview">
                                 <div class="note-text">
                                     <?= nl2br(htmlspecialchars(substr($note['content'], 0, 150))) ?>
@@ -195,10 +204,10 @@
                                 <i class="fas fa-calendar-alt me-1"></i>
                                 <?= date('M j, Y', strtotime($note['created_at'])) ?>
                             </div>
-                            <button class="btn-read-more" data-bs-toggle="modal" data-bs-target="#noteModal<?= $note['id'] ?>">
+                            <a href="/notes/show/<?= $note['id'] ?>" class="btn-read-more">
                                 <i class="fas fa-eye me-1"></i>
                                 Read More
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -294,6 +294,41 @@ class Note {
     }
     
     /**
+     * Search notes by title or content
+     */
+    public function searchNotes($searchQuery, $limit = 10) {
+        try {
+            $query = "SELECT n.*, u.username as author_name
+                     FROM [Notes] n
+                     LEFT JOIN [Users] u ON n.created_by = u.id
+                     WHERE (n.title LIKE ? OR n.content LIKE ?)
+                     ORDER BY 
+                         CASE 
+                             WHEN n.title LIKE ? THEN 1
+                             WHEN n.content LIKE ? THEN 2
+                             ELSE 3
+                         END,
+                         n.created_at DESC";
+            
+            $params = [
+                $searchQuery, $searchQuery,
+                $searchQuery, $searchQuery
+            ];
+            
+            // SQL Server uses TOP instead of LIMIT
+            if ($limit > 0) {
+                $query = str_replace("SELECT n.*", "SELECT TOP $limit n.*", $query);
+            }
+            
+            $results = $this->db->select($query, $params);
+            return $results ?: [];
+        } catch (Exception $e) {
+            error_log('Note search error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
      * Create the Notes table if it doesn't exist
      * 
      * @return bool True if successful, false otherwise

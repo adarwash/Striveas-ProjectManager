@@ -54,6 +54,47 @@ class Project {
         return $projects;
     }
     
+    /**
+     * Search projects by title, description, or client name
+     */
+    public function searchProjects($searchQuery, $limit = 10) {
+        try {
+            $query = "SELECT p.*, u.username as created_by, d.name as department_name,
+                     c.name as client_name,
+                     (SELECT COUNT(*) FROM [tasks] WHERE project_id = p.id) as task_count,
+                     (SELECT COUNT(*) FROM [tasks] WHERE project_id = p.id AND status = 'Completed') as completed_tasks
+                     FROM [projects] p
+                     LEFT JOIN [users] u ON p.user_id = u.id
+                     LEFT JOIN [departments] d ON p.department_id = d.id
+                     LEFT JOIN [clients] c ON p.client_id = c.id
+                     WHERE (p.title LIKE ? OR p.description LIKE ? OR c.name LIKE ?)
+                     ORDER BY 
+                         CASE 
+                             WHEN p.title LIKE ? THEN 1
+                             WHEN p.description LIKE ? THEN 2
+                             WHEN c.name LIKE ? THEN 3
+                             ELSE 4
+                         END,
+                         p.created_at DESC";
+            
+            $params = [
+                $searchQuery, $searchQuery, $searchQuery,
+                $searchQuery, $searchQuery, $searchQuery
+            ];
+            
+            // SQL Server uses TOP instead of LIMIT
+            if ($limit > 0) {
+                $query = str_replace("SELECT p.*", "SELECT TOP $limit p.*", $query);
+            }
+            
+            $results = $this->db->select($query, $params);
+            return $results ?: [];
+        } catch (Exception $e) {
+            error_log('Project search error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
     // Get project by ID
     public function getProjectById($id) {
         $query = "SELECT p.*, u.username as created_by, d.name as department_name, d.budget as department_budget

@@ -1,0 +1,12 @@
+RewriteEngine On
+
+# Handle Angular and other front-end router, API routes
+RewriteCond %{REQUEST_URI} ^(?!.*/)
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule (.*) index.php [QSA,L]
+
+# Redirect everything to index.php unless it's a file that exists
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L] 

@@ -873,6 +873,386 @@
             background-color: rgba(14, 165, 233, 0.1);
             color: var(--info-color);
         }
+        
+        /* Universal Search Styles */
+        .search-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-bottom: none;
+            padding: 0.75rem 1rem;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+            margin: -20px;
+            margin-bottom: 10px;
+        }
+        
+        .search-container {
+            max-width: 100%;
+            margin: 0;
+            position: relative;
+            overflow: visible;
+        }
+        
+        .universal-search {
+            position: relative;
+            width: 100%;
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .search-input-wrapper:focus-within {
+            border-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+            background: white;
+            transform: translateY(-1px);
+        }
+        
+        .search-icon {
+            color: #667eea;
+            font-size: 1.25rem;
+            margin: 0 1rem;
+            transition: all 0.2s ease;
+            opacity: 0.7;
+        }
+        
+        .search-input-wrapper:focus-within .search-icon {
+            color: #6366f1;
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        
+        .search-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 0.75rem 0;
+            font-size: 1rem;
+            color: #1e293b;
+            outline: none;
+            font-weight: 400;
+            font-family: inherit;
+        }
+        
+        .search-input::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+        
+        .search-filters {
+            border-left: 1px solid rgba(102, 126, 234, 0.15);
+            padding-left: 1rem;
+            margin-right: 0.75rem;
+        }
+        
+        .search-type-select {
+            border: none;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            font-weight: 500;
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .search-type-select:hover {
+            background: rgba(102, 126, 234, 0.2);
+            color: #6366f1;
+        }
+        
+        .search-loading {
+            padding: 0 1rem;
+            color: #667eea;
+        }
+        
+        .search-loading-state .spinner-border {
+            width: 2rem;
+            height: 2rem;
+            border-width: 3px;
+            color: #667eea !important;
+        }
+        
+        .search-pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25%;
+            min-width: 350px;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            max-height: 450px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 0.25rem;
+            backdrop-filter: blur(12px);
+        }
+        
+        .search-results-content {
+            padding: 1rem 0;
+        }
+        
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #f7fafc;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .search-result-item:hover {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
+        }
+        
+        .search-result-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .search-result-item:hover::before {
+            transform: scaleY(1);
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-icon {
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .search-result-icon.type-project {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .search-result-icon.type-task {
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+        
+        .search-result-icon.type-user {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            box-shadow: 0 4px 15px rgba(252, 182, 159, 0.3);
+            color: #8b4513 !important;
+        }
+        
+        .search-result-icon.type-client {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            box-shadow: 0 4px 15px rgba(168, 237, 234, 0.3);
+            color: #2d3748 !important;
+        }
+        
+        .search-result-icon.type-note {
+            background: linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%);
+            box-shadow: 0 4px 15px rgba(250, 208, 196, 0.3);
+            color: #553c9a !important;
+        }
+        
+        .search-result-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .search-result-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .search-result-description {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .search-result-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        
+        .search-result-status {
+            background: #e2e8f0;
+            color: #64748b;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        
+        .search-no-results {
+            padding: 2rem;
+            text-align: center;
+            color: #94a3b8;
+        }
+        
+        .search-no-results i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Keyboard shortcuts */
+        .search-shortcuts {
+            padding: 0.5rem 1.25rem;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.75rem;
+            color: #64748b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .search-shortcut-key {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 0.125rem 0.375rem;
+            font-family: monospace;
+            font-size: 0.625rem;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .search-header {
+                padding: 0.5rem 0.75rem;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: -10px;
+                margin-bottom: 8px;
+            }
+            
+            .search-container {
+                max-width: none;
+            }
+            
+            .search-input-wrapper {
+                border-radius: 10px;
+                margin: 0 0.25rem;
+            }
+            
+            .search-input {
+                font-size: 0.9rem;
+                padding: 0.625rem 0;
+            }
+            
+            .search-icon {
+                font-size: 1.1rem;
+                margin: 0 0.75rem;
+            }
+            
+            .search-filters {
+                display: none;
+            }
+            
+            .search-results {
+                left: 50%;
+                transform: translateX(-50%);
+                width: 90%;
+                min-width: 280px;
+                margin-top: 0.25rem;
+                border-radius: 10px;
+            }
+            
+            .search-result-item {
+                padding: 1rem;
+            }
+            
+            .search-result-icon {
+                width: 2rem;
+                height: 2rem;
+                font-size: 1.25rem;
+            }
+        }
+        
+        /* Fallback for browsers that don't support gradients */
+        @supports not (background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)) {
+            .search-header {
+                background: #667eea;
+            }
+            
+            .search-type-select {
+                background: #667eea;
+            }
+            
+            .search-result-icon.type-project {
+                background: #6366f1;
+            }
+            
+            .search-result-icon.type-task {
+                background: #10b981;
+            }
+            
+            .search-result-icon.type-user {
+                background: #f59e0b;
+            }
+            
+            .search-result-icon.type-client {
+                background: #ef4444;
+            }
+            
+            .search-result-icon.type-note {
+                background: #06b6d4;
+            }
+        }
     </style>
 </head>
 <body>
@@ -882,6 +1262,46 @@
         
         <!-- Main Content -->
         <div class="main-content">
+            <!-- Universal Search Bar -->
+            <div class="search-header">
+                <div class="search-container">
+                    <div class="universal-search">
+                        <div class="search-input-wrapper">
+                            <i class="bi bi-search search-icon"></i>
+                            <input type="text" id="universalSearch" class="search-input" placeholder="Search projects, tasks, users, clients... (Ctrl+K)" autocomplete="off">
+                            <div class="search-filters">
+                                <select id="searchType" class="search-type-select">
+                                    <option value="all">All</option>
+                                    <option value="projects">Projects</option>
+                                    <option value="tasks">Tasks</option>
+                                    <option value="users">Users</option>
+                                    <option value="clients">Clients</option>
+                                    <option value="notes">Notes</option>
+                                </select>
+                            </div>
+                            <div class="search-loading" id="searchLoading" style="display: none;">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Searching...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Search Results Dropdown -->
+                        <div class="search-results" id="searchResults" style="display: none;">
+                            <div class="search-results-content">
+                                <div class="search-placeholder">
+                                    <div class="search-no-results">
+                                        <i class="bi bi-search"></i>
+                                        <div>Start typing to search...</div>
+                                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">Search across projects, tasks, users, clients, and notes</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="content-wrapper">
                 <!-- Flash Messages -->
                 <?php if (isset($_SESSION['flash_message'])) : ?>
@@ -941,6 +1361,273 @@
             // Mark as initialized to prevent duplicate execution
             var flashMessagesInitialized = true;
         }
+        
+        // Universal Search Functionality
+        let searchTimeout;
+        let currentSearchQuery = '';
+        
+        const searchInput = document.getElementById('universalSearch');
+        const searchType = document.getElementById('searchType');
+        const searchResults = document.getElementById('searchResults');
+        const searchLoading = document.getElementById('searchLoading');
+        
+        if (searchInput) {
+            // Handle search input
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                currentSearchQuery = query;
+                
+                // Clear previous timeout
+                clearTimeout(searchTimeout);
+                
+                if (query.length < 2) {
+                    hideSearchResults();
+                    return;
+                }
+                
+                // Show loading state
+                showSearchLoading();
+                
+                // Debounce search
+                searchTimeout = setTimeout(() => {
+                    performSearch(query, searchType.value);
+                }, 300);
+            });
+            
+            // Handle search type change
+            searchType.addEventListener('change', function() {
+                if (currentSearchQuery.length >= 2) {
+                    showSearchLoading();
+                    performSearch(currentSearchQuery, this.value);
+                }
+            });
+            
+            // Handle keyboard navigation
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideSearchResults();
+                    this.blur();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    focusNextResult();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    focusPrevResult();
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clickFocusedResult();
+                }
+            });
+            
+            // Handle focus events
+            searchInput.addEventListener('focus', function() {
+                if (currentSearchQuery.length >= 2) {
+                    showSearchResults();
+                } else {
+                    showSearchPlaceholder();
+                }
+            });
+        }
+        
+        // Close search results when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchContainer = document.querySelector('.search-container');
+            if (searchContainer && !searchContainer.contains(event.target)) {
+                hideSearchResults();
+            }
+        });
+        
+        // Search functionality
+        function performSearch(query, type) {
+            const searchUrl = `/search?q=${encodeURIComponent(query)}&type=${encodeURIComponent(type)}&limit=10`;
+            console.log('Performing search:', { query, type, url: searchUrl });
+            
+            fetch(searchUrl)
+                .then(response => {
+                    console.log('Search response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Search response data:', data);
+                    hideSearchLoading();
+                    if (data.success) {
+                        displaySearchResults(data.results);
+                    } else {
+                        displaySearchError(data.message || 'Search failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    hideSearchLoading();
+                    displaySearchError(`Network error: ${error.message}`);
+                });
+        }
+        
+        function displaySearchResults(results) {
+            const resultsContent = searchResults.querySelector('.search-results-content');
+            
+            if (results.length === 0) {
+                resultsContent.innerHTML = `
+                    <div class="search-no-results">
+                        <i class="bi bi-search"></i>
+                        <div>No results found</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">Try different keywords or filters</div>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                results.forEach(result => {
+                    const metaItems = Object.entries(result.meta || {})
+                        .map(([key, value]) => `<span>${key}: ${value}</span>`)
+                        .join('');
+                    
+                    html += `
+                        <div class="search-result-item" onclick="navigateToResult('${result.url}')">
+                            <div class="search-result-icon type-${result.type}">
+                                <i class="${result.icon}"></i>
+                            </div>
+                            <div class="search-result-content">
+                                <div class="search-result-title">${escapeHtml(result.title)}</div>
+                                ${result.description ? `<div class="search-result-description">${escapeHtml(result.description)}</div>` : ''}
+                                ${metaItems ? `<div class="search-result-meta">${metaItems}</div>` : ''}
+                            </div>
+                            <div class="search-result-status">${result.status}</div>
+                        </div>
+                    `;
+                });
+                
+                // Add keyboard shortcuts hint
+                html += `
+                    <div class="search-shortcuts">
+                        <span>Use <span class="search-shortcut-key">↑</span> <span class="search-shortcut-key">↓</span> to navigate, <span class="search-shortcut-key">Enter</span> to select</span>
+                        <span><span class="search-shortcut-key">Esc</span> to close</span>
+                    </div>
+                `;
+                
+                resultsContent.innerHTML = html;
+            }
+            
+            showSearchResults();
+        }
+        
+        function displaySearchError(message) {
+            const resultsContent = searchResults.querySelector('.search-results-content');
+            resultsContent.innerHTML = `
+                <div class="search-no-results">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <div>Search Error</div>
+                    <div style="font-size: 0.75rem; margin-top: 0.5rem;">${escapeHtml(message)}</div>
+                </div>
+            `;
+            showSearchResults();
+        }
+        
+        function showSearchResults() {
+            searchResults.style.display = 'block';
+        }
+        
+        function hideSearchResults() {
+            searchResults.style.display = 'none';
+        }
+        
+        function showSearchPlaceholder() {
+            const resultsContent = searchResults.querySelector('.search-results-content');
+            resultsContent.innerHTML = `
+                <div class="search-placeholder">
+                    <div class="search-no-results">
+                        <i class="bi bi-search"></i>
+                        <div>Start typing to search...</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">Search across projects, tasks, users, clients, and notes</div>
+                    </div>
+                </div>
+            `;
+            showSearchResults();
+        }
+        
+        function showSearchLoading() {
+            searchLoading.style.display = 'block';
+            const resultsContent = searchResults.querySelector('.search-results-content');
+            resultsContent.innerHTML = `
+                <div class="search-loading-state" style="padding: 2rem; text-align: center;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Searching...</span>
+                    </div>
+                    <div style="margin-top: 1rem; color: #64748b;">Searching...</div>
+                </div>
+            `;
+            showSearchResults();
+        }
+        
+        function hideSearchLoading() {
+            searchLoading.style.display = 'none';
+        }
+        
+        function navigateToResult(url) {
+            window.location.href = url;
+        }
+        
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+        
+        // Keyboard navigation for search results
+        let focusedResultIndex = -1;
+        
+        function focusNextResult() {
+            const items = searchResults.querySelectorAll('.search-result-item');
+            if (items.length === 0) return;
+            
+            focusedResultIndex = Math.min(focusedResultIndex + 1, items.length - 1);
+            updateFocusedResult(items);
+        }
+        
+        function focusPrevResult() {
+            const items = searchResults.querySelectorAll('.search-result-item');
+            if (items.length === 0) return;
+            
+            focusedResultIndex = Math.max(focusedResultIndex - 1, 0);
+            updateFocusedResult(items);
+        }
+        
+        function updateFocusedResult(items) {
+            items.forEach((item, index) => {
+                if (index === focusedResultIndex) {
+                    item.style.background = '#f8fafc';
+                    item.style.transform = 'translateX(4px)';
+                } else {
+                    item.style.background = '';
+                    item.style.transform = '';
+                }
+            });
+        }
+        
+        function clickFocusedResult() {
+            const items = searchResults.querySelectorAll('.search-result-item');
+            if (items[focusedResultIndex]) {
+                items[focusedResultIndex].click();
+            }
+        }
+        
+        // Global keyboard shortcut (Ctrl+K or Cmd+K)
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+        });
     </script>
 </body>
 </html> 

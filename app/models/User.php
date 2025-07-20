@@ -150,6 +150,42 @@ class User {
     }
     
     /**
+     * Search users by name, username, or email
+     */
+    public function searchUsers($searchQuery, $limit = 10) {
+        try {
+            $query = "SELECT id, username, name, email, role, is_active
+                     FROM [Users]
+                     WHERE (name LIKE ? OR username LIKE ? OR email LIKE ?)
+                     AND is_active = 1
+                     ORDER BY 
+                         CASE 
+                             WHEN name LIKE ? THEN 1
+                             WHEN username LIKE ? THEN 2
+                             WHEN email LIKE ? THEN 3
+                             ELSE 4
+                         END,
+                         name ASC";
+            
+            $params = [
+                $searchQuery, $searchQuery, $searchQuery,
+                $searchQuery, $searchQuery, $searchQuery
+            ];
+            
+            // SQL Server uses TOP instead of LIMIT
+            if ($limit > 0) {
+                $query = str_replace("SELECT id,", "SELECT TOP $limit id,", $query);
+            }
+            
+            $results = $this->db->select($query, $params);
+            return $results ?: [];
+        } catch (Exception $e) {
+            error_log('User search error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
      * Update user's password
      *
      * @param int $userId The user ID
