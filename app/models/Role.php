@@ -161,8 +161,14 @@ class Role {
     // Get users with specific role
     public function getUsersByRole($roleId) {
         try {
-            $query = 'SELECT u.* FROM dbo.Users u WHERE u.role_id = ?';
-            return $this->db->select($query, [$roleId]) ?: [];
+            // Get role details for backwards compatibility
+            $role = $this->getRoleById($roleId);
+            if (!$role) {
+                return [];
+            }
+            
+            $query = 'SELECT u.* FROM dbo.Users u WHERE (u.role_id = ? OR u.role = ?) AND u.is_active = 1';
+            return $this->db->select($query, [$roleId, $role['name']]) ?: [];
         } catch (Exception $e) {
             error_log('GetUsersByRole Error: ' . $e->getMessage());
             return [];
@@ -172,18 +178,30 @@ class Role {
     // Get role statistics
     public function getRoleStats($roleId) {
         try {
-        // Get user count
-            $userResult = $this->db->select('SELECT COUNT(*) as user_count FROM dbo.Users WHERE role_id = ?', [$roleId]);
+            // Get the role details first
+            $role = $this->getRoleById($roleId);
+            if (!$role) {
+                return ['user_count' => 0, 'permission_count' => 0];
+            }
+            
+            // Get user count - check both new role_id field and old role field for backwards compatibility
+            $userResult = $this->db->select('
+                SELECT COUNT(*) as user_count 
+                FROM dbo.Users 
+                WHERE (role_id = ? OR role = ?) 
+                AND is_active = 1', 
+                [$roleId, $role['name']]
+            );
             $userCount = !empty($userResult) ? $userResult[0]['user_count'] : 0;
         
-        // Get permission count
+            // Get permission count
             $permResult = $this->db->select('SELECT COUNT(*) as permission_count FROM dbo.RolePermissions WHERE role_id = ?', [$roleId]);
             $permissionCount = !empty($permResult) ? $permResult[0]['permission_count'] : 0;
         
-        return [
-            'user_count' => $userCount,
-            'permission_count' => $permissionCount
-        ];
+            return [
+                'user_count' => $userCount,
+                'permission_count' => $permissionCount
+            ];
         } catch (Exception $e) {
             error_log('GetRoleStats Error: ' . $e->getMessage());
             return ['user_count' => 0, 'permission_count' => 0];
@@ -196,7 +214,7 @@ class Role {
                         COUNT(DISTINCT u.id) as user_count,
                         COUNT(DISTINCT rp.permission_id) as permission_count
                  FROM dbo.Roles r
-                 LEFT JOIN dbo.Users u ON r.id = u.role_id
+                 LEFT JOIN dbo.Users u ON (r.id = u.role_id OR r.name = u.role) AND u.is_active = 1
                  LEFT JOIN dbo.RolePermissions rp ON r.id = rp.role_id
                  WHERE r.is_active = 1
                  GROUP BY r.id, r.name, r.display_name, r.description, r.is_active, r.created_at, r.updated_at
@@ -247,6 +265,75 @@ class Role {
             if (!$existing) {
                 $this->createRole($roleData);
             }
+        }
+    }
+    
+    /**
+     * Migrate users from old role field to new role_id field
+     * This helps transition from string-based roles to ID-based roles
+     * 
+     * @return array Results of the migration
+     */
+    public function migrateUsersToRoleId() {
+        try {
+            $results = ['migrated' => 0, 'skipped' => 0, 'errors' => 0];
+            
+            // Get all users who have role but no role_id
+            $usersToMigrate = $this->db->select('
+                SELECT id, role 
+                FROM dbo.Users 
+                WHERE role IS NOT NULL 
+                AND role != \'\' 
+                AND (role_id IS NULL OR role_id = 0)
+                AND is_active = 1
+            ');
+            
+            foreach ($usersToMigrate as $user) {
+                // Find the corresponding role
+                $role = $this->getRoleByName($user['role']);
+                
+                if ($role) {
+                    // Update user with role_id
+                    $this->db->update('
+                        UPDATE dbo.Users 
+                        SET role_id = ? 
+                        WHERE id = ?
+                    ', [$role['id'], $user['id']]);
+                    
+                    $results['migrated']++;
+                } else {
+                    // Role not found, log this
+                    error_log("Role migration: Role '{$user['role']}' not found for user ID {$user['id']}");
+                    $results['skipped']++;
+                }
+            }
+            
+            return $results;
+        } catch (Exception $e) {
+            error_log('MigrateUsersToRoleId Error: ' . $e->getMessage());
+            return ['migrated' => 0, 'skipped' => 0, 'errors' => 1, 'error_message' => $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Get users who are using old role system (role field but no role_id)
+     * 
+     * @return array List of users who need migration
+     */
+    public function getUsersNeedingMigration() {
+        try {
+            return $this->db->select('
+                SELECT id, username, email, role 
+                FROM dbo.Users 
+                WHERE role IS NOT NULL 
+                AND role != \'\' 
+                AND (role_id IS NULL OR role_id = 0)
+                AND is_active = 1
+                ORDER BY username
+            ') ?: [];
+        } catch (Exception $e) {
+            error_log('GetUsersNeedingMigration Error: ' . $e->getMessage());
+            return [];
         }
     }
 } 

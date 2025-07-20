@@ -260,6 +260,20 @@ class Permissions extends Controller {
                         flash('permissions_message', 'Full permission setup completed successfully', 'alert alert-success');
                         break;
                         
+                    case 'migrate_users':
+                        $roleModel = $this->model('Role');
+                        $migrationResults = $roleModel->migrateUsersToRoleId();
+                        
+                        if ($migrationResults['errors'] > 0) {
+                            flash('permissions_message', 'Migration completed with errors: ' . ($migrationResults['error_message'] ?? 'Unknown error'), 'alert alert-warning');
+                        } else {
+                            $message = "User migration completed successfully! Migrated: {$migrationResults['migrated']}, Skipped: {$migrationResults['skipped']}";
+                            flash('permissions_message', $message, 'alert alert-success');
+                        }
+                        
+                        $results = ["Migration Results:", "- Migrated: {$migrationResults['migrated']} users", "- Skipped: {$migrationResults['skipped']} users", "- Errors: {$migrationResults['errors']} users"];
+                        break;
+                        
                     default:
                         flash('permissions_message', 'Invalid action specified', 'alert alert-danger');
                         break;
@@ -296,5 +310,63 @@ class Permissions extends Controller {
         ];
         
         $this->view('admin/permissions/setup', $data);
+    }
+    
+    /**
+     * Check users that need migration from old role system to new role_id system
+     * AJAX endpoint
+     */
+    public function checkMigration() {
+        // Set JSON header
+        header('Content-Type: application/json');
+        
+        try {
+            $roleModel = $this->model('Role');
+            $usersNeedingMigration = $roleModel->getUsersNeedingMigration();
+            
+            echo json_encode([
+                'success' => true,
+                'users' => $usersNeedingMigration,
+                'count' => count($usersNeedingMigration)
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error checking migration status: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+    
+    /**
+     * Debug permissions for troubleshooting
+     */
+    public function debug() {
+        // Basic access check
+        if (!isLoggedIn()) {
+            redirect('auth/login');
+        }
+        
+        $debug = [];
+        $testResults = [];
+        
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $testPermission = $_POST['test_permission'] ?? '';
+            
+            if ($testPermission) {
+                $testResults = testPermission($testPermission);
+            }
+        }
+        
+        // Get current user's debug info
+        $debug = debugUserPermissions();
+        
+        $data = [
+            'title' => 'Permission Debug',
+            'debug' => $debug,
+            'test_results' => $testResults
+        ];
+        
+        $this->view('admin/permissions/debug', $data);
     }
 } 

@@ -87,6 +87,48 @@
     </div>
     <?php endif; ?>
 
+    <!-- Role Migration Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-people-fill"></i> Role Migration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <strong>Migrate users from old role system to enhanced permission system.</strong><br>
+                        This will update users who are using string-based roles (admin, user) to use the new ID-based role system.
+                    </p>
+                    
+                    <div id="migration-status" class="mb-3">
+                        <!-- Migration status will be loaded here -->
+                    </div>
+                    
+                    <form action="<?= URLROOT ?>/permissions/setup" method="post" class="mb-3">
+                        <input type="hidden" name="action" value="migrate_users">
+                        <div class="d-flex gap-2">
+                            <button type="button" id="check-migration-btn" class="btn btn-info">
+                                <i class="bi bi-search"></i> Check Users Needing Migration
+                            </button>
+                            <button type="submit" id="migrate-users-btn" class="btn btn-warning" disabled>
+                                <i class="bi bi-arrow-right-circle"></i> Migrate Users to New System
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="alert alert-info mb-0">
+                        <small>
+                            <strong>Note:</strong> This migration is safe and can be run multiple times. 
+                            Users will keep their current permissions but will be able to use enhanced features.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Current Permissions Overview -->
     <div class="row mt-4">
         <div class="col-12">
@@ -162,5 +204,70 @@ pre {
     line-height: 1.4;
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkMigrationBtn = document.getElementById('check-migration-btn');
+    const migrateUsersBtn = document.getElementById('migrate-users-btn');
+    const migrationStatus = document.getElementById('migration-status');
+    
+    if (checkMigrationBtn) {
+        checkMigrationBtn.addEventListener('click', function() {
+            checkUsersNeedingMigration();
+        });
+    }
+    
+    function checkUsersNeedingMigration() {
+        checkMigrationBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Checking...';
+        checkMigrationBtn.disabled = true;
+        
+        fetch('<?= URLROOT ?>/permissions/checkMigration', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayMigrationStatus(data.users);
+            } else {
+                migrationStatus.innerHTML = '<div class="alert alert-danger">Error checking migration status: ' + (data.message || 'Unknown error') + '</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Migration check error:', error);
+            migrationStatus.innerHTML = '<div class="alert alert-danger">Error checking migration status.</div>';
+        })
+        .finally(() => {
+            checkMigrationBtn.innerHTML = '<i class="bi bi-search"></i> Check Users Needing Migration';
+            checkMigrationBtn.disabled = false;
+        });
+    }
+    
+    function displayMigrationStatus(users) {
+        if (users.length === 0) {
+            migrationStatus.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle"></i> All users are already using the enhanced permission system!</div>';
+            migrateUsersBtn.disabled = true;
+        } else {
+            let html = '<div class="alert alert-warning">';
+            html += '<h6><i class="bi bi-exclamation-triangle"></i> Users needing migration (' + users.length + '):</h6>';
+            html += '<div class="row">';
+            
+            users.forEach((user, index) => {
+                if (index > 0 && index % 3 === 0) html += '</div><div class="row">';
+                html += '<div class="col-md-4"><small><strong>' + user.username + '</strong> (' + user.role + ')</small></div>';
+            });
+            
+            html += '</div></div>';
+            migrationStatus.innerHTML = html;
+            migrateUsersBtn.disabled = false;
+        }
+    }
+    
+    // Auto-check migration status on page load
+    checkUsersNeedingMigration();
+});
+</script>
 
 <?php require VIEWSPATH . '/inc/footer.php'; ?> 

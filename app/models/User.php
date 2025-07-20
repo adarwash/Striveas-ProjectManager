@@ -758,13 +758,13 @@ class User {
                 return $result[0]['granted'] == 1;
             }
             
-            // Check role-based permissions
+            // Check role-based permissions - support both new role_id and old role field
             $query = "SELECT COUNT(*) as count
                      FROM [Users] u
-                     INNER JOIN [Roles] r ON u.role_id = r.id
+                     INNER JOIN [Roles] r ON (u.role_id = r.id OR u.role = r.name)
                      INNER JOIN [RolePermissions] rp ON r.id = rp.role_id
                      INNER JOIN [Permissions] p ON rp.permission_id = p.id
-                     WHERE u.id = ? AND p.name = ? AND r.is_active = 1 AND p.is_active = 1";
+                     WHERE u.id = ? AND p.name = ? AND r.is_active = 1 AND p.is_active = 1 AND u.is_active = 1";
             $result = $this->db->select($query, [$userId, $permissionName]);
             
             return !empty($result) && $result[0]['count'] > 0;
@@ -782,16 +782,16 @@ class User {
      */
     public function getUserPermissions(int $userId): array {
         try {
-            // Get permissions from role and direct assignments
+            // Get permissions from role and direct assignments - support both role_id and role field
             $query = "SELECT DISTINCT p.name 
                      FROM [Permissions] p
                      WHERE p.id IN (
-                         -- Role-based permissions
+                         -- Role-based permissions (support both new role_id and old role field)
                          SELECT rp.permission_id 
                          FROM [RolePermissions] rp
                          INNER JOIN [Roles] r ON rp.role_id = r.id
-                         INNER JOIN [Users] u ON r.id = u.role_id
-                         WHERE u.id = ? AND r.is_active = 1 AND p.is_active = 1
+                         INNER JOIN [Users] u ON (r.id = u.role_id OR r.name = u.role)
+                         WHERE u.id = ? AND r.is_active = 1 AND p.is_active = 1 AND u.is_active = 1
                          
                          UNION
                          

@@ -129,13 +129,13 @@ class Permission {
                 return $result[0]['granted'] == 1;
             }
             
-            // Check role-based permissions
+            // Check role-based permissions - support both new role_id and old role field
             $query = 'SELECT COUNT(*) as count
                      FROM dbo.Users u
-                     INNER JOIN dbo.Roles r ON u.role_id = r.id
+                     INNER JOIN dbo.Roles r ON (u.role_id = r.id OR u.role = r.name)
                      INNER JOIN dbo.RolePermissions rp ON r.id = rp.role_id
                      INNER JOIN dbo.Permissions p ON rp.permission_id = p.id
-                     WHERE u.id = ? AND p.name = ? AND r.is_active = 1 AND p.is_active = 1';
+                     WHERE u.id = ? AND p.name = ? AND r.is_active = 1 AND p.is_active = 1 AND u.is_active = 1';
             $result = $this->db->select($query, [$userId, $permissionName]);
             
             return !empty($result) && $result[0]['count'] > 0;
@@ -148,13 +148,13 @@ class Permission {
     // Get user's permissions
     public function getUserPermissions($userId) {
         try {
-            // Get permissions from both role and direct user assignments
+            // Get permissions from both role and direct user assignments - support both role_id and role field
             $query = 'SELECT DISTINCT p.id, p.name, p.display_name, p.description, p.module, p.action, p.is_active, p.created_at
                          FROM dbo.Permissions p
                          INNER JOIN dbo.RolePermissions rp ON p.id = rp.permission_id
                          INNER JOIN dbo.Roles r ON rp.role_id = r.id
-                         INNER JOIN dbo.Users u ON r.id = u.role_id
-                     WHERE u.id = ? AND r.is_active = 1 AND p.is_active = 1
+                         INNER JOIN dbo.Users u ON (r.id = u.role_id OR r.name = u.role)
+                     WHERE u.id = ? AND r.is_active = 1 AND p.is_active = 1 AND u.is_active = 1
                          
                          UNION
                          

@@ -131,6 +131,18 @@
                                 Permission Setup
                             </a>
                         </div>
+                        <div class="col-md-4">
+                            <a href="<?= URLROOT ?>/permissions/debug" class="btn btn-outline-warning w-100 py-3">
+                                <i class="bi bi-bug d-block fs-3 mb-2"></i>
+                                Debug Permissions
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="<?= URLROOT ?>/admin/users" class="btn btn-outline-info w-100 py-3">
+                                <i class="bi bi-people d-block fs-3 mb-2"></i>
+                                User Management
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

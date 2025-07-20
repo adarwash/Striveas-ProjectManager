@@ -78,4 +78,102 @@ function hasAllPermissions($permissions) {
     }
     return true;
 }
+
+/**
+ * Debug permission information for a user
+ * Useful for troubleshooting permission issues
+ * 
+ * @param int $userId User ID (optional, defaults to current user)
+ * @return array Debug information
+ */
+function debugUserPermissions($userId = null) {
+    if (!$userId && isset($_SESSION['user_id'])) {
+        $userId = $_SESSION['user_id'];
+    }
+    
+    if (!$userId) {
+        return ['error' => 'No user ID provided'];
+    }
+    
+    $userModel = new User();
+    $permissionModel = new Permission();
+    $roleModel = new Role();
+    
+    try {
+        // Get user details
+        $user = $userModel->getUserById($userId);
+        if (!$user) {
+            return ['error' => 'User not found'];
+        }
+        
+        // Get user's role information
+        $roleInfo = null;
+        if (!empty($user['role_id'])) {
+            $roleInfo = $roleModel->getRoleById($user['role_id']);
+        } elseif (!empty($user['role'])) {
+            $roleInfo = $roleModel->getRoleByName($user['role']);
+        }
+        
+        // Get user's effective permissions
+        $permissions = $userModel->getUserPermissions($userId);
+        
+        // Get role permissions if user has a role
+        $rolePermissions = [];
+        if ($roleInfo) {
+            $rolePermissions = $roleModel->getRolePermissions($roleInfo['id']);
+        }
+        
+        return [
+            'user' => [
+                'id' => $user['id'],
+                'username' => $user['username'] ?? $user['name'],
+                'email' => $user['email'],
+                'role_field' => $user['role'] ?? null,
+                'role_id_field' => $user['role_id'] ?? null,
+                'is_active' => $user['is_active'] ?? 1
+            ],
+            'role' => $roleInfo,
+            'permissions' => [
+                'count' => count($permissions),
+                'list' => $permissions
+            ],
+            'role_permissions' => [
+                'count' => count($rolePermissions),
+                'list' => array_column($rolePermissions, 'name')
+            ],
+            'migration_needed' => empty($user['role_id']) && !empty($user['role'])
+        ];
+    } catch (Exception $e) {
+        return ['error' => 'Debug failed: ' . $e->getMessage()];
+    }
+}
+
+/**
+ * Test if a specific permission is working for current user
+ * 
+ * @param string $permissionName Permission to test
+ * @return array Test results
+ */
+function testPermission($permissionName) {
+    if (!isset($_SESSION['user_id'])) {
+        return ['error' => 'No user logged in'];
+    }
+    
+    $userId = $_SESSION['user_id'];
+    $userModel = new User();
+    
+    try {
+        $hasPermission = $userModel->hasPermission($userId, $permissionName);
+        $debug = debugUserPermissions($userId);
+        
+        return [
+            'permission' => $permissionName,
+            'has_permission' => $hasPermission,
+            'user_id' => $userId,
+            'user_debug' => $debug
+        ];
+    } catch (Exception $e) {
+        return ['error' => 'Test failed: ' . $e->getMessage()];
+    }
+}
 ?> 
