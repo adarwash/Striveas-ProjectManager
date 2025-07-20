@@ -63,9 +63,30 @@ class Admin extends Controller {
     public function users() {
         $users = $this->userModel->getAllUsers();
         
+        // Load available roles for the dropdowns
+        $roleModel = $this->model('Role');
+        
+        // Try to create default roles if they don't exist
+        try {
+            $roleModel->createDefaultRolesIfNotExist();
+        } catch (Exception $e) {
+            error_log('Could not create default roles: ' . $e->getMessage());
+        }
+        
+        $availableRoles = $roleModel->getAllRoles();
+        
+        // If no roles exist, provide fallback basic roles
+        if (empty($availableRoles)) {
+            $availableRoles = [
+                ['id' => null, 'name' => 'user', 'display_name' => 'User', 'description' => 'Standard user access'],
+                ['id' => null, 'name' => 'admin', 'display_name' => 'Admin', 'description' => 'Administrator access']
+            ];
+        }
+        
         $data = [
             'title' => 'User Management',
-            'users' => $users
+            'users' => $users,
+            'available_roles' => $availableRoles
         ];
         
         $this->view('admin/users', $data);

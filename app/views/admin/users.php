@@ -15,6 +15,24 @@
     
     <?php flash('admin_message'); ?>
     
+    <!-- Enhanced Permissions Notice -->
+    <?php if (count($available_roles) > 2): ?>
+    <div class="alert alert-info border-0 shadow-sm mb-4">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-info-circle-fill me-3 text-info" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="alert-heading mb-1">Enhanced Permission System Active</h6>
+                <p class="mb-2">You're using the enhanced permission system with granular roles and permissions.</p>
+                <div class="small">
+                    <a href="/permissions" class="alert-link">Manage Permissions</a> • 
+                    <a href="/enhanced_permissions" class="alert-link">Advanced Settings</a> • 
+                    <a href="/permissions/setup" class="alert-link">System Setup</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+    
     <!-- User Management Card -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -49,11 +67,30 @@
                             </td>
                             <td><?= $user['email'] ?></td>
                             <td>
-                                <?php if($user['role'] === 'admin'): ?>
-                                    <span class="badge bg-primary">Admin</span>
-                                <?php else: ?>
-                                    <span class="badge bg-secondary">User</span>
-                                <?php endif; ?>
+                                <?php 
+                                // Find the role display name from available roles
+                                $roleDisplayName = $user['role'];
+                                $roleClass = 'bg-secondary';
+                                
+                                foreach($available_roles as $role) {
+                                    if ($role['name'] === $user['role']) {
+                                        $roleDisplayName = $role['display_name'];
+                                        break;
+                                    }
+                                }
+                                
+                                // Set badge color based on role
+                                switch(strtolower($user['role'])) {
+                                    case 'super_admin': $roleClass = 'bg-danger'; break;
+                                    case 'admin': $roleClass = 'bg-primary'; break;
+                                    case 'manager': $roleClass = 'bg-success'; break;
+                                    case 'employee': $roleClass = 'bg-info'; break;
+                                    case 'client': $roleClass = 'bg-warning text-dark'; break;
+                                    case 'viewer': $roleClass = 'bg-light text-dark'; break;
+                                    default: $roleClass = 'bg-secondary'; break;
+                                }
+                                ?>
+                                <span class="badge <?= $roleClass ?>"><?= htmlspecialchars($roleDisplayName) ?></span>
                             </td>
                             <td><?= formatDate($user['created_at']) ?></td>
                             <td>
@@ -113,8 +150,12 @@
                     <div class="mb-3">
                         <label for="role" class="form-label">Role</label>
                         <select class="form-select" id="role" name="role" required>
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
+                            <?php foreach($available_roles as $role): ?>
+                                <option value="<?= htmlspecialchars($role['name']) ?>" 
+                                        title="<?= htmlspecialchars($role['description']) ?>">
+                                    <?= htmlspecialchars($role['display_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                 </div>
@@ -153,8 +194,12 @@
                     <div class="mb-3">
                         <label for="edit_role" class="form-label">Role</label>
                         <select class="form-select" id="edit_role" name="role" required>
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
+                            <?php foreach($available_roles as $role): ?>
+                                <option value="<?= htmlspecialchars($role['name']) ?>" 
+                                        title="<?= htmlspecialchars($role['description']) ?>">
+                                    <?= htmlspecialchars($role['display_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                 </div>

@@ -237,7 +237,7 @@ class Permissions extends Controller {
     // Permission setup utility
     public function setup() {
         // Include the setup utility
-        require_once APPROOT . '/utils/setup_permissions.php';
+        require_once APPROOT . '/app/utils/setup_permissions.php';
         
         $results = [];
         $setupUtil = new PermissionSetup();

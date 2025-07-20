@@ -1,4 +1,4 @@
-<?php require_once APPROOT . '/views/partials/head.php'; ?>
+<?php require VIEWSPATH . '/inc/header.php'; ?>
 
 <div class="container-fluid">
     <!-- Page Header -->
@@ -163,4 +163,4 @@ pre {
 }
 </style>
 
-<?php require_once APPROOT . '/views/partials/footer.php'; ?> 
+<?php require VIEWSPATH . '/inc/footer.php'; ?> 
