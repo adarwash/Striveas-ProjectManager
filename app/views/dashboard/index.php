@@ -19,10 +19,10 @@ $title = 'Dashboard - HiveIT Portal';
 <!-- Modern Stats Overview -->
 <div class="row g-4 mb-5">
     <div class="col-lg-3 col-md-6">
-        <div class="stats-card purple">
+        <div class="stats-card purple clickable-card" data-href="/clients">
             <div class="d-flex align-items-center justify-content-between">
                     <div>
-                    <div class="stats-number">1</div>
+                    <div class="stats-number"><?= $stats['active_clients'] ?? 0 ?></div>
                     <div class="stats-label">Active Clients</div>
                 </div>
                 <div class="stats-icon">
@@ -32,10 +32,10 @@ $title = 'Dashboard - HiveIT Portal';
         </div>
                     </div>
     <div class="col-lg-3 col-md-6">
-        <div class="stats-card green">
+        <div class="stats-card green clickable-card" data-href="/users">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <div class="stats-number">2</div>
+                    <div class="stats-number"><?= $stats['total_users'] ?? 0 ?></div>
                     <div class="stats-label">Total Users</div>
                     </div>
                 <div class="stats-icon">
@@ -45,10 +45,10 @@ $title = 'Dashboard - HiveIT Portal';
         </div>
     </div>
     <div class="col-lg-3 col-md-6">
-        <div class="stats-card orange">
+        <div class="stats-card orange clickable-card" data-href="/users?role=technician">
             <div class="d-flex align-items-center justify-content-between">
                     <div>
-                    <div class="stats-number">1</div>
+                    <div class="stats-number"><?= $stats['technicians'] ?? 0 ?></div>
                     <div class="stats-label">Technicians</div>
                 </div>
                 <div class="stats-icon">
@@ -58,10 +58,10 @@ $title = 'Dashboard - HiveIT Portal';
         </div>
                     </div>
     <div class="col-lg-3 col-md-6">
-        <div class="stats-card blue">
+        <div class="stats-card blue clickable-card" data-href="/sites">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <div class="stats-number">1</div>
+                    <div class="stats-number"><?= $stats['active_sites'] ?? 0 ?></div>
                     <div class="stats-label">Active Sites</div>
                     </div>
                 <div class="stats-icon">
@@ -75,10 +75,10 @@ $title = 'Dashboard - HiveIT Portal';
 <!-- Additional Stats Row -->
 <div class="row g-4 mb-5">
     <div class="col-lg-3 col-md-6">
-        <div class="stats-card red">
+        <div class="stats-card red clickable-card" data-href="/tickets?status=open">
             <div class="d-flex align-items-center justify-content-between">
                     <div>
-                    <div class="stats-number">0</div>
+                    <div class="stats-number"><?= $stats['open_tickets'] ?? 0 ?></div>
                     <div class="stats-label">Open Tickets</div>
                 </div>
                 <div class="stats-icon">
@@ -88,10 +88,10 @@ $title = 'Dashboard - HiveIT Portal';
         </div>
                     </div>
     <div class="col-lg-3 col-md-6">
-        <div class="stats-card orange">
+        <div class="stats-card orange clickable-card" data-href="/tasks?status=open">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <div class="stats-number">0</div>
+                    <div class="stats-number"><?= $stats['open_tasks'] ?? 0 ?></div>
                     <div class="stats-label">Open Tasks</div>
                     </div>
                 <div class="stats-icon">
@@ -101,10 +101,10 @@ $title = 'Dashboard - HiveIT Portal';
         </div>
     </div>
     <div class="col-lg-3 col-md-6">
-        <div class="stats-card blue">
+        <div class="stats-card blue clickable-card" data-href="/requests?status=pending">
             <div class="d-flex align-items-center justify-content-between">
                     <div>
-                    <div class="stats-number">0</div>
+                    <div class="stats-number"><?= $stats['pending_requests'] ?? 0 ?></div>
                     <div class="stats-label">Pending Requests</div>
                 </div>
                 <div class="stats-icon">
@@ -114,10 +114,10 @@ $title = 'Dashboard - HiveIT Portal';
         </div>
                     </div>
     <div class="col-lg-3 col-md-6">
-        <div class="stats-card green">
+        <div class="stats-card green clickable-card" data-href="/time/dashboard">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <div class="stats-number">0</div>
+                    <div class="stats-number"><?= $stats['currently_working'] ?? 0 ?></div>
                     <div class="stats-label">Currently Working</div>
                     </div>
                 <div class="stats-icon">
@@ -215,6 +215,90 @@ $title = 'Dashboard - HiveIT Portal';
     </div>
 </div>
 
+<style>
+/* Clickable Card Styles */
+.clickable-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
 
+.clickable-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.clickable-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.clickable-card:hover::before {
+    left: 100%;
+}
+
+.clickable-card:active {
+    transform: translateY(-2px);
+    transition: transform 0.1s;
+}
+
+/* Add a subtle pointer cursor icon */
+.clickable-card .stats-icon {
+    transition: transform 0.3s ease;
+}
+
+.clickable-card:hover .stats-icon {
+    transform: scale(1.1);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Make cards clickable
+    const clickableCards = document.querySelectorAll('.clickable-card');
+    
+    clickableCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const href = this.getAttribute('data-href');
+            if (href) {
+                // Add a subtle animation before navigation
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    window.location.href = href;
+                }, 100);
+            }
+        });
+        
+        // Add keyboard accessibility
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        
+        card.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
+        
+        // Add hover effect for keyboard focus
+        card.addEventListener('focus', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+        });
+        
+        card.addEventListener('blur', function() {
+            this.style.transform = '';
+            this.style.boxShadow = '';
+        });
+    });
+});
+</script>
 
 <?php require VIEWSPATH . '/partials/footer.php'; ?> 

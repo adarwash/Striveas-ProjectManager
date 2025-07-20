@@ -526,10 +526,21 @@ class User {
     // Get total number of users
     public function getTotalUsers() {
         try {
-            $result = $this->db->select("SELECT COUNT(*) as total FROM [users]");
+            $result = $this->db->select("SELECT COUNT(*) as total FROM [users] WHERE is_active = 1");
             return $result[0]['total'] ?? 0;
         } catch (Exception $e) {
             error_log('GetTotalUsers Error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    // Get count of users by role
+    public function getUsersByRole($role) {
+        try {
+            $result = $this->db->select("SELECT COUNT(*) as total FROM [users] WHERE role = ? AND is_active = 1", [$role]);
+            return $result[0]['total'] ?? 0;
+        } catch (Exception $e) {
+            error_log('GetUsersByRole Error: ' . $e->getMessage());
             return 0;
         }
     }

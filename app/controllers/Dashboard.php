@@ -38,6 +38,9 @@ class Dashboard extends Controller {
         // Get projects assigned to the current user
         $userProjects = $this->projectModel->getProjectsCountByUser($userId);
         
+        // Get dashboard statistics
+        $dashboardStats = $this->getDashboardStats();
+        
         $data = [
             'title' => 'Dashboard',
             'projects' => $projects,
@@ -46,10 +49,70 @@ class Dashboard extends Controller {
             'departments' => $departments,
             'project_counts' => $projectCounts,
             'task_counts' => $taskCounts,
-            'user_projects' => $userProjects
+            'user_projects' => $userProjects,
+            'stats' => $dashboardStats
         ];
         
         $this->view('dashboard/index', $data);
+    }
+    
+    /**
+     * Get dashboard statistics
+     */
+    private function getDashboardStats() {
+        $stats = [];
+        
+        try {
+            // Get total users
+            $stats['total_users'] = $this->userModel->getTotalUsers() ?? 0;
+            
+            // Get technicians count
+            $stats['technicians'] = $this->userModel->getUsersByRole('technician') ?? 0;
+            
+            // Get active clients count
+            $clientModel = $this->model('Client');
+            $stats['active_clients'] = $clientModel->getActiveClientsCount() ?? 0;
+        } catch (Exception $e) {
+            // If clients table doesn't exist, default to 0
+            $stats['active_clients'] = 0;
+        }
+        
+        try {
+            // Get active sites count
+            $siteModel = $this->model('Site');
+            $stats['active_sites'] = $siteModel->getActiveSitesCount() ?? 0;
+        } catch (Exception $e) {
+            $stats['active_sites'] = 0;
+        }
+        
+        try {
+            // Get open tickets count
+            $ticketModel = $this->model('Ticket');
+            $stats['open_tickets'] = $ticketModel->getOpenTicketsCount() ?? 0;
+        } catch (Exception $e) {
+            $stats['open_tickets'] = 0;
+        }
+        
+        // Get open tasks count from existing task counts
+        $stats['open_tasks'] = $this->taskModel->getOpenTasksCount() ?? 0;
+        
+        try {
+            // Get pending requests count
+            $requestModel = $this->model('Request');
+            $stats['pending_requests'] = $requestModel->getPendingRequestsCount() ?? 0;
+        } catch (Exception $e) {
+            $stats['pending_requests'] = 0;
+        }
+        
+        try {
+            // Get currently working count (from time tracking)
+            $timeModel = $this->model('TimeTracking');
+            $stats['currently_working'] = $timeModel->getCurrentlyWorkingCount() ?? 0;
+        } catch (Exception $e) {
+            $stats['currently_working'] = 0;
+        }
+        
+        return $stats;
     }
     
     public function calendar() {

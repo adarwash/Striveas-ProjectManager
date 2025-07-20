@@ -1,25 +1,17 @@
-<div class="container-fluid">
-    <!-- Page Header with Background -->
-    <div class="bg-light rounded-3 p-4 mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-2">
-                <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none">Dashboard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Sites</li>
-            </ol>
-        </nav>
-        
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="h3 mb-1">Sites Management</h1>
-                <p class="text-muted">Manage all company locations and facilities</p>
-            </div>
-            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
-            <a href="/sites/create" class="btn btn-primary">
-                <i class="bi bi-plus-lg"></i> Add New Site
-            </a>
-            <?php endif; ?>
-        </div>
+<!-- Modern Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-map-marker-alt me-3"></i>Sites Management</h1>
+        <p class="mb-0">Manage all company locations and facilities</p>
     </div>
+    <div>
+        <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+        <a href="/sites/create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New Site
+        </a>
+        <?php endif; ?>
+    </div>
+</div>
     
     <!-- Flash Messages -->
     <?php flash('site_success'); ?>
@@ -31,7 +23,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center">
                     <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-geo-alt text-primary fs-4"></i>
+                        <i class="fas fa-map-marker-alt text-primary fs-4"></i>
                     </div>
                     <div>
                         <h6 class="card-title mb-0">Total Sites</h6>
@@ -45,7 +37,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center">
                     <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-check-circle text-success fs-4"></i>
+                        <i class="fas fa-check-circle text-success fs-4"></i>
                     </div>
                     <div>
                         <h6 class="card-title mb-0">Active Sites</h6>
@@ -67,7 +59,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center">
                     <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-building text-info fs-4"></i>
+                        <i class="fas fa-building text-info fs-4"></i>
                     </div>
                     <div>
                         <h6 class="card-title mb-0">Headquarters</h6>
@@ -89,7 +81,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center">
                     <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-people text-warning fs-4"></i>
+                        <i class="fas fa-users text-warning fs-4"></i>
                     </div>
                     <div>
                         <h6 class="card-title mb-0">Total Employees</h6>
@@ -111,7 +103,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">All Sites</h5>
                 <div class="form-group has-search position-relative">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
                     <input type="text" class="form-control ps-4" placeholder="Search sites..." id="siteSearch">
                 </div>
             </div>
@@ -137,7 +129,7 @@
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-icon rounded bg-light p-2 me-3">
-                                        <i class="bi bi-building text-primary"></i>
+                                        <i class="fas fa-building text-primary"></i>
                                     </div>
                                     <div>
                                         <a href="/sites/viewSite/<?= $site['id'] ?>" class="fw-semibold text-decoration-none">
@@ -216,7 +208,7 @@
                                     $employeeCount = 0; // This would come from the model
                                 ?>
                                 <span class="badge rounded-pill bg-light text-dark border">
-                                    <i class="bi bi-people me-1"></i>
+                                                                            <i class="fas fa-users me-1"></i>
                                     <?= $employeeCount ?>
                                 </span>
                             </td>
@@ -226,7 +218,7 @@
                                     $clientCount = 0; // This would come from the model
                                 ?>
                                 <span class="badge rounded-pill bg-light text-dark border">
-                                    <i class="bi bi-building me-1"></i>
+                                                                            <i class="fas fa-building me-1"></i>
                                     <?= $clientCount ?>
                                 </span>
                             </td>
@@ -234,20 +226,20 @@
                                 <div class="d-flex justify-content-end">
                                     <div class="btn-group btn-group-sm">
                                         <a href="/sites/viewSite/<?= $site['id'] ?>" class="btn btn-falcon-default" title="View">
-                                            <i class="bi bi-eye"></i>
+                                                                                            <i class="fas fa-eye"></i>
                                         </a>
                                         <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
                                         <a href="/sites/edit/<?= $site['id'] ?>" class="btn btn-falcon-default" title="Edit">
-                                            <i class="bi bi-pencil"></i>
+                                                                                            <i class="fas fa-edit"></i>
                                         </a>
                                         <a href="/sites/assignEmployees/<?= $site['id'] ?>" class="btn btn-falcon-default" title="Assign Employees">
-                                            <i class="bi bi-people"></i>
+                                                                                            <i class="fas fa-users"></i>
                                         </a>
                                         <?php endif; ?>
                                         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                                         <button type="button" class="btn btn-falcon-default text-danger" 
                                                 title="Delete" data-bs-toggle="modal" data-bs-target="#deleteSiteModal<?= $site['id'] ?>">
-                                            <i class="bi bi-trash"></i>
+                                                                                            <i class="fas fa-trash"></i>
                                         </button>
                                         <?php endif; ?>
                                     </div>
@@ -264,7 +256,7 @@
                                             </div>
                                             <div class="modal-body">
                                                 <p>Are you sure you want to delete <strong><?= $site['name'] ?></strong>?</p>
-                                                <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> This action cannot be undone.</p>
+                                                <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> This action cannot be undone.</p>
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -283,13 +275,13 @@
             <?php else: ?>
             <div class="p-5 text-center">
                 <div class="empty-state mb-3">
-                    <i class="bi bi-building fs-1 text-muted"></i>
+                    <i class="fas fa-building fs-1 text-muted"></i>
                 </div>
                 <h4>No sites found</h4>
                 <p class="text-muted">There are no sites in the system yet.</p>
                 <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
                 <a href="/sites/create" class="btn btn-primary">
-                    <i class="bi bi-plus-lg"></i> Add New Site
+                    <i class="fas fa-plus"></i> Add New Site
                 </a>
                 <?php endif; ?>
             </div>
@@ -299,6 +291,37 @@
 </div>
 
 <style>
+/* Page Header */
+.page-header {
+    background: #ffffff;
+    color: #333;
+    padding: 2rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e9ecef;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.page-title i {
+    color: #7c3aed;
+    margin-right: 0.75rem;
+}
+
+.page-header p {
+    color: #6c757d;
+    margin: 0;
+}
+
 .btn-falcon-default {
     border-color: #e3e6ed;
     background-color: #fff;
@@ -361,7 +384,7 @@ document.getElementById('siteSearch').addEventListener('keyup', function() {
             var noResultsRow = document.createElement('tr');
             noResultsRow.id = 'noResultsMessage';
             noResultsRow.innerHTML = '<td colspan="6" class="text-center py-4">' +
-                                     '<i class="bi bi-search fs-4 text-muted mb-2"></i>' +
+                                     '<i class="fas fa-search fs-4 text-muted mb-2"></i>' +
                                      '<p class="mb-0">No sites found matching <strong>"' + searchText + '"</strong></p>' +
                                      '<p class="text-muted">Try using different keywords</p>' +
                                      '</td>';

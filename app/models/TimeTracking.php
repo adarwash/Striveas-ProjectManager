@@ -419,6 +419,23 @@ class TimeTracking {
     }
     
     /**
+     * Get currently working users count
+     */
+    public function getCurrentlyWorkingCount() {
+        try {
+            $sql = "SELECT COUNT(DISTINCT te.user_id) as count
+                    FROM dbo.TimeEntries te
+                    WHERE te.status = 'active'";
+            
+            $result = $this->db->select($sql);
+            return $result[0]['count'] ?? 0;
+        } catch (Exception $e) {
+            error_log('GetCurrentlyWorkingCount Error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
      * Get overall statistics for admin dashboard
      */
     public function getOverallStatistics($startDate, $endDate) {

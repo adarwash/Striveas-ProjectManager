@@ -1,25 +1,18 @@
-<!-- Modern Time Tracking Dashboard -->
-<div class="container-fluid px-4 py-3">
-    <!-- Page Header -->
-    <div class="page-header mb-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="header-text">
-                <h1 class="page-title">
-                    <i class="fas fa-clock"></i>
-                    Time Tracking Dashboard
-                </h1>
-                <p class="mb-0">Manage your work time and track productivity</p>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-outline-primary" onclick="refreshData()">
-                    <i class="fas fa-sync-alt me-2"></i>Refresh
-                </button>
-                <a href="/time/history" class="btn btn-primary">
-                    <i class="fas fa-history me-2"></i>View History
-                </a>
-            </div>
-        </div>
+<!-- Modern Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-clock me-3"></i>Time Tracking Dashboard</h1>
+        <p class="mb-0">Manage your work time and track productivity</p>
     </div>
+    <div>
+        <button class="btn btn-secondary me-2" onclick="refreshData()">
+            <i class="fas fa-sync-alt me-2"></i>Refresh
+        </button>
+        <a href="/time/history" class="btn btn-primary">
+            <i class="fas fa-history me-2"></i>View History
+        </a>
+    </div>
+</div>
 
     <!-- Current Status Hero Section -->
     <div class="row mb-4">
@@ -423,49 +416,33 @@
 <style>
 /* Page Header */
 .page-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: #ffffff;
+    color: #333;
     padding: 2rem;
     border-radius: 1rem;
     margin-bottom: 2rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    position: relative;
-}
-
-.page-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.1);
-    border-radius: 1rem;
-    pointer-events: none;
-}
-
-.page-header > * {
-    position: relative;
-    z-index: 1;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e9ecef;
 }
 
 .page-title {
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    color: #ffffff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    color: #333;
 }
 
 .page-title i {
-    color: #ffffff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    color: #7c3aed;
     margin-right: 0.75rem;
 }
 
 .page-header p {
-    color: #ffffff;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    color: #6c757d;
+    margin: 0;
 }
 
 .header-text {

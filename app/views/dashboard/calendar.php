@@ -1,140 +1,676 @@
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h1>Calendar</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Calendar</li>
-            </ol>
-        </nav>
-    </div>
-    <div class="col-md-4 text-md-end">
-        <div class="btn-group">
-            <a href="/tasks/create" class="btn btn-success">
-                <i class="bi bi-plus-lg"></i> New Task
-            </a>
-            <a href="/dashboard/gantt" class="btn btn-primary">
-                <i class="bi bi-bar-chart"></i> Gantt View
-            </a>
-            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sharedCalendarModal">
-                <i class="bi bi-calendar-plus"></i> Link Calendar
-            </button>
+<!-- Clean Modern Calendar Styling -->
+<style>
+/* Modern Minimal Calendar Design */
+.calendar-page {
+    padding: 2rem 0;
+}
+
+.calendar-header {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+}
+
+.calendar-title {
+    color: #1a202c;
+    font-weight: 600;
+    font-size: 2.25rem;
+    margin: 0;
+    letter-spacing: -0.025em;
+}
+
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    margin: 0.75rem 0 0 0;
+}
+
+.breadcrumb-item a {
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: #3b82f6;
+}
+
+.breadcrumb-item.active {
+    color: #475569;
+    font-weight: 500;
+}
+
+/* Clean Button Styling */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-success {
+    background: #10b981;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-outline-secondary {
+    border: 1px solid #d1d5db;
+    color: #374151;
+    background: white;
+}
+
+.btn-outline-secondary:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    color: #111827;
+}
+
+/* Clean Card Styling */
+.card {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    transition: box-shadow 0.2s ease;
+    background: white;
+}
+
+.card:hover {
+    box-shadow: 0 4px 25px rgba(0,0,0,0.12);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.5rem;
+}
+
+/* Modern Compact Calendar Styling */
+#calendar {
+    background: white;
+    border-radius: 8px;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.fc-header-toolbar {
+    margin-bottom: 0 !important;
+    padding: 1rem 1.5rem !important;
+    border-bottom: 1px solid #f3f4f6;
+    background: #fafafa;
+    border-radius: 8px 8px 0 0;
+}
+
+.fc-button-primary {
+    background: white !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 4px !important;
+    font-weight: 400 !important;
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.875rem !important;
+    color: #374151 !important;
+    transition: all 0.15s ease !important;
+}
+
+.fc-button-primary:hover {
+    background: #f9fafb !important;
+    border-color: #9ca3af !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.fc-button-primary:not(:disabled):active,
+.fc-button-primary:not(:disabled).fc-button-active {
+    background: #f3f4f6 !important;
+    border-color: #6b7280 !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1) !important;
+    transform: none !important;
+}
+
+.fc-toolbar-title {
+    font-weight: 600 !important;
+    font-size: 1.125rem !important;
+    color: #111827 !important;
+    letter-spacing: 0 !important;
+}
+
+/* Compact Day Grid */
+.fc-daygrid {
+    border: none !important;
+}
+
+.fc-daygrid-day {
+    border: 1px solid #f3f4f6 !important;
+    min-height: 90px !important;
+    background: white;
+}
+
+.fc-daygrid-day:hover {
+    background-color: #fafafa !important;
+}
+
+.fc-day-today {
+    background: white !important;
+    border-color: #f3f4f6 !important;
+}
+
+.fc-day-today .fc-daygrid-day-number {
+    background: #3b82f6 !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 4px !important;
+    font-weight: 600 !important;
+}
+
+.fc-daygrid-day-number {
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    color: #374151 !important;
+    padding: 4px 6px !important;
+    text-align: left !important;
+}
+
+.fc-col-header-cell {
+    background: #fafafa !important;
+    font-weight: 500 !important;
+    color: #6b7280 !important;
+    border: 1px solid #f3f4f6 !important;
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+}
+
+.fc-scrollgrid {
+    border: none !important;
+}
+
+.fc-scrollgrid-section > * {
+    border: none !important;
+}
+
+/* Compact Event Styling */
+.fc-event {
+    border-radius: 3px !important;
+    border: none !important;
+    font-weight: 400 !important;
+    transition: none !important;
+    margin: 1px 2px !important;
+    padding: 1px 4px !important;
+    min-height: 16px !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+}
+
+.fc-event:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    opacity: 0.8 !important;
+}
+
+.fc-event-main-frame {
+    border-radius: 3px;
+    overflow: hidden;
+    padding: 0 !important;
+}
+
+.fc-event-time {
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    color: white !important;
+    display: inline !important;
+    margin-right: 2px !important;
+}
+
+.fc-event-title {
+    font-weight: 400 !important;
+    font-size: 10px !important;
+    color: white !important;
+    display: inline !important;
+}
+
+.fc-daygrid-event {
+    margin: 1px 2px !important;
+    padding: 2px 4px !important;
+    font-size: 10px !important;
+    border-radius: 3px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.fc-daygrid-event-harness {
+    margin: 1px 0 !important;
+}
+
+.fc-daygrid-day-events {
+    margin: 2px !important;
+}
+
+.fc-more-link {
+    font-size: 10px !important;
+    color: #6b7280 !important;
+    margin: 1px 2px !important;
+    padding: 1px 4px !important;
+    background: #f3f4f6 !important;
+    border-radius: 2px !important;
+    border: none !important;
+}
+
+/* Week and Day View Fixes */
+.fc-timegrid-event {
+    border-radius: 3px !important;
+    border: none !important;
+    font-size: 11px !important;
+    padding: 2px 4px !important;
+}
+
+.fc-timegrid-event .fc-event-main {
+    /* Keep main styling simple */
+}
+
+.fc-timegrid-event .fc-event-title {
+    font-size: 11px !important;
+    font-weight: 400 !important;
+}
+
+.fc-timegrid-event .fc-event-time {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    display: block !important;
+    margin-bottom: 1px !important;
+}
+
+.fc-timegrid-slot {
+    height: 2em !important;
+}
+
+.fc-timegrid-axis {
+    font-size: 11px !important;
+    color: #6b7280 !important;
+}
+
+/* Specific overflow fix for timegrid events */
+.fc-timegrid-event-harness {
+    max-width: 95% !important;
+    right: 2px !important;
+}
+
+.fc-timegrid-event-harness-inset {
+    right: 2px !important;
+    max-width: 95% !important;
+}
+
+/* Default timegrid event styling */
+.fc-timegrid-event .fc-event-main {
+    overflow: visible !important;
+    white-space: normal !important;
+    color: white !important;
+    padding: 2px 4px !important;
+}
+
+.fc-timegrid-event .fc-event-title {
+    color: white !important;
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    line-height: 1.2 !important;
+}
+
+.fc-timegrid-event .fc-event-time {
+    color: white !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+}
+
+/* Fix for FullCalendar overflow issue */
+.fc-view-harness {
+    overflow: scroll !important;
+}
+
+/* Ensure events don't overflow their containers */
+.fc-event-main-frame {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Specific event type styling */
+.calendar-event-normal {
+    background-color: #6b7280 !important;
+}
+
+.calendar-event-high {
+    background-color: #f59e0b !important;
+}
+
+.calendar-event-critical {
+    background-color: #ef4444 !important;
+}
+
+.calendar-event-completed {
+    background-color: #10b981 !important;
+}
+
+.calendar-event-external {
+    /* External calendar colors will be set dynamically */
+}
+
+/* Ensure colors override any theme conflicts */
+.fc-daygrid-event {
+    border: 2px solid !important;
+    border-radius: 6px !important;
+}
+
+.fc-event .fc-event-main {
+    color: white !important;
+}
+
+.fc-event .fc-event-title,
+.fc-event .fc-event-time {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* Override FullCalendar's default border styles */
+.fc-h-event {
+    border: none !important;
+}
+
+.fc-v-event {
+    border: none !important;
+}
+
+/* Clean Table Styling */
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    background: white;
+}
+
+.table thead th {
+    background: #f8fafc;
+    color: #374151;
+    font-weight: 600;
+    border: none;
+    padding: 1rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s ease;
+    border-top: 1px solid #f1f5f9;
+}
+
+.table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+/* Color Indicators */
+.color-dot {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+    margin-right: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .calendar-page {
+        padding: 1rem 0;
+    }
+    
+    .calendar-header {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .calendar-title {
+        font-size: 1.875rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+    
+    .fc-header-toolbar {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .fc-toolbar-title {
+        font-size: 1.25rem !important;
+    }
+    
+    #calendar {
+        padding: 1rem;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .calendar-header, .card, #calendar {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    
+    .calendar-title {
+        color: #f1f5f9;
+    }
+    
+    .fc-col-header-cell {
+        background: #334155 !important;
+        color: #cbd5e1 !important;
+    }
+    
+    .fc-day-today {
+        background: #1e40af !important;
+        border-color: #3b82f6 !important;
+    }
+    
+    .table thead th {
+        background: #334155;
+        color: #cbd5e1;
+    }
+}
+</style>
+
+<div class="calendar-page">
+    <div class="container-fluid">
+        <div class="calendar-header">
+        <div class="row mb-0">
+            <div class="col-md-8">
+                <h1 class="calendar-title">Calendar</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Calendar</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="btn-group">
+                    <a href="/tasks/create" class="btn btn-success">
+                        <i class="bi bi-plus-lg"></i> New Task
+                    </a>
+                    <a href="/dashboard/gantt" class="btn btn-primary">
+                        <i class="bi bi-bar-chart"></i> Gantt View
+                    </a>
+                    <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sharedCalendarModal">
+                        <i class="bi bi-calendar-plus"></i> Link Calendar
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Shared Calendars Section -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-calendar2-week me-2"></i>Linked Calendars
-                </h5>
-                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#sharedCalendarModal">
-                    <i class="bi bi-plus-lg"></i> Link New Calendar
-                </button>
-            </div>
-            <div class="card-body">
-                <?php if (isset($connected_calendars) && !empty($connected_calendars)): ?>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Calendar Name</th>
-                                    <th>Source</th>
-                                    <th>Color</th>
-                                    <th>Last Synced</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($connected_calendars as $calendar): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($calendar['name']) ?></td>
-                                    <td>
-                                        <span class="d-flex align-items-center">
-                                            <?php if ($calendar['source'] === 'google'): ?>
-                                                <i class="bi bi-google me-2 text-primary"></i> Google Calendar
-                                            <?php elseif ($calendar['source'] === 'outlook' || $calendar['source'] === 'microsoft365'): ?>
-                                                <i class="bi bi-microsoft me-2 text-info"></i> Microsoft 365
-                                            <?php elseif ($calendar['source'] === 'ical'): ?>
-                                                <i class="bi bi-calendar-event me-2 text-success"></i> iCal Feed
+    <!-- Shared Calendars Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calendar2-week me-2"></i>Linked Calendars
+                    </h5>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#sharedCalendarModal">
+                        <i class="bi bi-plus-lg"></i> Link New Calendar
+                    </button>
+                </div>
+                <div class="card-body">
+                    <?php if (isset($connected_calendars) && !empty($connected_calendars)): ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Calendar Name</th>
+                                        <th>Source</th>
+                                        <th>Color</th>
+                                        <th>Last Synced</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($connected_calendars as $calendar): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($calendar['name']) ?></td>
+                                        <td>
+                                            <span class="d-flex align-items-center">
+                                                <?php if ($calendar['source'] === 'google'): ?>
+                                                    <i class="bi bi-google me-2 text-primary"></i> Google Calendar
+                                                <?php elseif ($calendar['source'] === 'outlook' || $calendar['source'] === 'microsoft365'): ?>
+                                                    <i class="bi bi-microsoft me-2 text-info"></i> Microsoft 365
+                                                <?php elseif ($calendar['source'] === 'ical'): ?>
+                                                    <i class="bi bi-calendar-event me-2 text-success"></i> iCal Feed
+                                                <?php endif; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="color-dot" style="background-color: <?= $calendar['color'] ?? '#3b82f6' ?>"></span>
+                                            <span class="text-muted small"><?= $calendar['color'] ?? '#3b82f6' ?></span>
+                                        </td>
+                                        <td><?= isset($calendar['last_synced']) && $calendar['last_synced'] ? date('M j, Y g:i A', strtotime($calendar['last_synced'])) : 'Never' ?></td>
+                                        <td>
+                                            <?php if (isset($calendar['active']) && $calendar['active']): ?>
+                                                <span class="badge bg-success">Active</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning text-dark">Disconnected</span>
                                             <?php endif; ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="color-dot" style="background-color: <?= $calendar['color'] ?>"></span>
-                                    </td>
-                                    <td><?= isset($calendar['last_synced']) && $calendar['last_synced'] ? date('M j, Y g:i A', strtotime($calendar['last_synced'])) : 'Never' ?></td>
-                                    <td>
-                                        <?php if (isset($calendar['active']) && $calendar['active']): ?>
-                                            <span class="badge bg-success">Active</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-warning text-dark">Disconnected</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" onclick="syncCalendar(<?= $calendar['id'] ?>)">
-                                                <i class="bi bi-arrow-repeat"></i>
-                                            </button>
-                                            <button class="btn btn-outline-secondary" onclick="editCalendar(<?= $calendar['id'] ?>)">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button class="btn btn-outline-danger" onclick="removeCalendar(<?= $calendar['id'] ?>)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <div class="text-center py-4">
-                        <div class="mb-3">
-                            <i class="bi bi-calendar2-plus" style="font-size: 3rem; color: #ccc;"></i>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" onclick="syncCalendar(<?= $calendar['id'] ?>)">
+                                                    <i class="bi bi-arrow-repeat"></i>
+                                                </button>
+                                                <button class="btn btn-outline-secondary" onclick="editCalendar(<?= $calendar['id'] ?>)">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" onclick="removeCalendar(<?= $calendar['id'] ?>)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                        <h6 class="text-muted">No Calendars Connected</h6>
-                        <p class="text-muted">Link external calendars to view all your events in one place.</p>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sharedCalendarModal">
-                            <i class="bi bi-plus-lg me-1"></i> Link External Calendar
-                        </button>
+                    <?php else: ?>
+                        <div class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="bi bi-calendar2-plus" style="font-size: 3rem; color: #ccc;"></i>
+                            </div>
+                            <h6 class="text-muted">No Calendars Connected</h6>
+                            <p class="text-muted">Link external calendars to view all your events in one place.</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sharedCalendarModal">
+                                <i class="bi bi-plus-lg me-1"></i> Link External Calendar
+                            </button>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Calendar Section -->
+    <div class="row">
+        <div class="col-md-9">
+            <div id="calendar"></div>
+        </div>
+        <div class="col-md-3">
+            <!-- Schedule Overlaps -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Schedule Overlaps
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="overlaps-container">
+                        <!-- Will be populated by JavaScript -->
                     </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <div id="calendar"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Schedule Overlaps -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="card-title mb-0">Schedule Overlaps</h5>
-            </div>
-            <div class="card-body">
-                <div id="overlaps-container">
-                    <!-- Will be populated by JavaScript -->
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+
 
 <!-- Add FullCalendar CSS -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css" rel="stylesheet">
@@ -267,8 +803,7 @@
         // Initialize calendar
         var calendarEl = document.getElementById('calendar');
         
-        // Debug: Check if calendar element exists
-        console.log('Calendar element found:', calendarEl);
+        // Check if calendar element exists
         
         // Build events array safely
         var calendarEvents = [];
@@ -277,23 +812,43 @@
         <?php if (!empty($tasks)): ?>
         <?php foreach ($tasks as $task): ?>
         <?php if (!empty($task->title) && !empty($task->due_date)): ?>
+        <?php 
+            // Keep original title for proper FullCalendar rendering
+            $taskTitle = $task->title;
+            $taskStart = $task->due_date;
+            $taskAllDay = false;
+            
+            // Check if the due_date has time info (not just a date)
+            if (strlen($taskStart) <= 10 || strpos($taskStart, '00:00:00') !== false) {
+                // All day or date only
+                $taskAllDay = true;
+            }
+        ?>
         calendarEvents.push({
             id: '<?= $task->id ?>',
-            title: '<?= htmlspecialchars(addslashes($task->title)) ?>',
-            start: '<?= $task->due_date ?>',
+            title: '<?= htmlspecialchars(addslashes($taskTitle)) ?>',
+            start: '<?= $taskStart ?>',
+            <?php if ($taskAllDay): ?>
+            allDay: true,
+            <?php endif; ?>
             url: '/tasks/show/<?= $task->id ?>',
             <?php 
                 // Set colors based on priority and status
-                $color = '#6c757d'; // Default color (gray)
-                if (isset($task->priority) && $task->priority === 'High') $color = '#ffc107';
-                if (isset($task->priority) && $task->priority === 'Critical') $color = '#dc3545';
-                if (isset($task->status) && $task->status === 'Completed') $color = '#28a745';
+                $color = '#6b7280'; // Default color (gray)
+                if (isset($task->priority) && $task->priority === 'High') {
+                    $color = '#f59e0b';
+                }
+                if (isset($task->priority) && $task->priority === 'Critical') {
+                    $color = '#ef4444';
+                }
+                if (isset($task->status) && $task->status === 'Completed') {
+                    $color = '#10b981';
+                }
             ?>
             backgroundColor: '<?= $color ?>',
             borderColor: '<?= $color ?>',
-            <?php if (isset($task->status) && $task->status === 'Completed'): ?>
-            textColor: '#fff',
-            <?php endif; ?>
+            textColor: '#ffffff',
+            className: 'calendar-event-<?= $task->status === 'Completed' ? 'completed' : (isset($task->priority) ? strtolower($task->priority) : 'normal') ?>',
             extendedProps: {
                 type: 'task',
                 status: '<?= $task->status ?? '' ?>',
@@ -307,21 +862,17 @@
         <?php endif; ?>
         
         // Add external calendar events
-        <?php 
-        // Debug: Log the shared events
-        if (isset($shared_events)) {
-            error_log("Shared events count: " . count($shared_events));
-            if (!empty($shared_events)) {
-                error_log("First event: " . print_r($shared_events[0], true));
-            }
-        }
-        ?>
         <?php if (isset($shared_events) && !empty($shared_events)): ?>
         <?php foreach ($shared_events as $event): ?>
         <?php if (!empty($event['title']) && !empty($event['start_time'])): ?>
+        <?php 
+            // Keep original title for proper FullCalendar rendering
+            $eventTitle = $event['title'];
+            $isAllDay = !empty($event['all_day']) && $event['all_day'];
+        ?>
         calendarEvents.push({
             id: 'ext-<?= $event['id'] ?>',
-            title: '<?= htmlspecialchars(addslashes($event['title'])) ?>',
+            title: '<?= htmlspecialchars(addslashes($eventTitle)) ?>',
             start: '<?= $event['start_time'] ?>',
             <?php if (!empty($event['end_time'])): ?>
             end: '<?= $event['end_time'] ?>',
@@ -329,8 +880,13 @@
             <?php if (!empty($event['all_day']) && $event['all_day']): ?>
             allDay: true,
             <?php endif; ?>
-            backgroundColor: '<?= $event['calendar_color'] ?? '#039be5' ?>',
-            borderColor: '<?= $event['calendar_color'] ?? '#039be5' ?>',
+            <?php 
+                $calendarColor = $event['calendar_color'] ?? '#3b82f6';
+            ?>
+            backgroundColor: '<?= $calendarColor ?>',
+            borderColor: '<?= $calendarColor ?>',
+            textColor: '#ffffff',
+            className: 'calendar-event-external',
             extendedProps: {
                 type: 'external',
                 source: '<?= htmlspecialchars(addslashes($event['calendar_name'] ?? '')) ?>',
@@ -341,32 +897,6 @@
         <?php endif; ?>
         <?php endforeach; ?>
         <?php endif; ?>
-        
-        // Debug: Log events array
-        console.log('Total events for calendar:', calendarEvents.length);
-        console.log('Calendar events:', calendarEvents);
-        
-        // Debug: Validate events structure
-        var validEvents = 0;
-        var invalidEvents = [];
-        calendarEvents.forEach(function(event, index) {
-            if (event.title && event.start) {
-                validEvents++;
-            } else {
-                invalidEvents.push({index: index, event: event});
-            }
-        });
-        
-        console.log('Valid events:', validEvents, 'Invalid events:', invalidEvents.length);
-        if (invalidEvents.length > 0) {
-            console.warn('Invalid events found:', invalidEvents);
-        }
-        
-        // Debug: Show events count in UI
-        var debugDiv = document.createElement('div');
-        debugDiv.style.cssText = 'background:#f8f9fa;padding:10px;margin:10px;border:1px solid #dee2e6;border-radius:5px;';
-        debugDiv.innerHTML = `<strong>Debug Info:</strong> Loading ${calendarEvents.length} events (Tasks: <?= count($tasks ?? []) ?>, External: <?= count($shared_events ?? []) ?>) - Valid: ${validEvents}, Invalid: ${invalidEvents.length}`;
-        document.getElementById('calendar').parentNode.insertBefore(debugDiv, document.getElementById('calendar'));
         
         // Ensure we have a valid events array
         if (!Array.isArray(calendarEvents)) {
@@ -388,20 +918,149 @@
                 right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
             },
             events: calendarEvents,
+            dayMaxEvents: 4,
+            moreLinkClick: 'popover',
+            height: 'auto',
+            aspectRatio: 1.35,
             eventDataTransform: function(eventData) {
                 // Ensure all required properties exist
                 if (!eventData.title) eventData.title = 'Untitled Event';
                 if (!eventData.start) eventData.start = new Date().toISOString();
                 return eventData;
             },
+            eventContent: function(arg) {
+                // Different content for different views
+                var event = arg.event;
+                var view = arg.view;
+                
+                // For timegrid views (week/day), create simple text content
+                if (view.type === 'timeGridWeek' || view.type === 'timeGridDay') {
+                    var container = document.createElement('div');
+                    container.className = 'fc-event-main';
+                    container.style.padding = '2px 4px';
+                    container.style.color = 'white';
+                    container.style.fontSize = '11px';
+                    container.style.lineHeight = '1.2';
+                    
+                    var timeEl = document.createElement('div');
+                    timeEl.className = 'fc-event-time';
+                    timeEl.style.fontSize = '10px';
+                    timeEl.style.fontWeight = '600';
+                    timeEl.style.color = 'white';
+                    
+                    var titleEl = document.createElement('div');
+                    titleEl.className = 'fc-event-title';
+                    titleEl.style.fontSize = '11px';
+                    titleEl.style.fontWeight = '400';
+                    titleEl.style.color = 'white';
+                    titleEl.textContent = event.title;
+                    
+                    // Add time if not all day
+                    if (!event.allDay && event.start) {
+                        var timeText = new Date(event.start).toLocaleTimeString([], {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+                        timeEl.textContent = timeText;
+                        container.appendChild(timeEl);
+                    }
+                    
+                    container.appendChild(titleEl);
+                    
+                    return { domNodes: [container] };
+                }
+                
+                // For month view, use compact design
+                var container = document.createElement('div');
+                container.className = 'fc-event-main-frame';
+                container.style.whiteSpace = 'nowrap';
+                container.style.overflow = 'hidden';
+                container.style.textOverflow = 'ellipsis';
+                container.style.padding = '0';
+                container.style.fontSize = '10px';
+                container.style.lineHeight = '12px';
+                
+                var content = '';
+                var originalTitle = event.title;
+                
+                // Format time and title on same line for month view
+                if (event.allDay) {
+                    content = originalTitle;
+                } else if (event.start) {
+                    var startTime = new Date(event.start).toLocaleTimeString([], {
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                    content = startTime + ' ' + originalTitle;
+                }
+                
+                container.textContent = content;
+                
+                return { domNodes: [container] };
+            },
             eventDidMount: function(info) {
-                // Add tooltips to events using Bootstrap 5
+                // Ensure colors are applied at DOM level
                 try {
+                    // Force apply background colors
+                    if (info.event.backgroundColor) {
+                        info.el.style.setProperty('background-color', info.event.backgroundColor, 'important');
+                        info.el.style.setProperty('border', 'none', 'important');
+                    }
+                    
+                    // Also apply to any nested elements that might override
+                    var mainEl = info.el.querySelector('.fc-event-main');
+                    if (mainEl) {
+                        mainEl.style.setProperty('background-color', info.event.backgroundColor, 'important');
+                        mainEl.style.setProperty('border', 'none', 'important');
+                    }
+                    
+                    // Ensure text color is white
+                    var titleEl = info.el.querySelector('.fc-event-title');
+                    var timeEl = info.el.querySelector('.fc-event-time');
+                    if (titleEl) titleEl.style.setProperty('color', 'white', 'important');
+                    if (timeEl) timeEl.style.setProperty('color', 'white', 'important');
+                    
+                    // Add tooltips to events using Bootstrap 5
                     var tooltipText = '';
+                    
+                    // Build comprehensive tooltip with time information
                     if (info.event.extendedProps.project) {
-                        tooltipText = info.event.extendedProps.project + ' - ' + info.event.title + ' (' + info.event.extendedProps.status + ')';
+                        // Task event
+                        tooltipText = info.event.title + '\n';
+                        tooltipText += 'Project: ' + info.event.extendedProps.project + '\n';
+                        tooltipText += 'Status: ' + info.event.extendedProps.status;
+                        if (info.event.extendedProps.priority) {
+                            tooltipText += '\nPriority: ' + info.event.extendedProps.priority;
+                        }
+                        if (info.event.extendedProps.assignedTo) {
+                            tooltipText += '\nAssigned to: ' + info.event.extendedProps.assignedTo;
+                        }
                     } else if (info.event.extendedProps.source) {
-                        tooltipText = info.event.title + ' (' + info.event.extendedProps.source + ')';
+                        // External calendar event
+                        tooltipText = info.event.title + '\n';
+                        tooltipText += 'Calendar: ' + info.event.extendedProps.source;
+                        
+                        // Add time details
+                        if (info.event.allDay) {
+                            tooltipText += '\nTime: All Day';
+                        } else if (info.event.start) {
+                            var startTime = new Date(info.event.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                            if (info.event.end) {
+                                var endTime = new Date(info.event.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                tooltipText += '\nTime: ' + startTime + ' - ' + endTime;
+                            } else {
+                                tooltipText += '\nTime: ' + startTime;
+                            }
+                        }
+                        
+                        if (info.event.extendedProps.location) {
+                            tooltipText += '\nLocation: ' + info.event.extendedProps.location;
+                        }
+                        if (info.event.extendedProps.description) {
+                            tooltipText += '\nDescription: ' + info.event.extendedProps.description;
+                        }
                     } else {
                         tooltipText = info.event.title;
                     }
@@ -416,7 +1075,7 @@
                         new bootstrap.Tooltip(info.el);
                     }
                 } catch (error) {
-                    console.warn('Error setting up tooltip:', error);
+                    console.warn('Error setting up event styling or tooltip:', error);
                 }
             },
             eventClick: function(info) {
@@ -428,24 +1087,43 @@
                     // For external calendar events, show a modal with details
                     info.jsEvent.preventDefault();
                     
-                    // Here you would show a modal with the event details
-                    // For example:
-                    alert(
-                        'Event: ' + info.event.title + '\n' +
-                        'Calendar: ' + info.event.extendedProps.source + '\n' +
-                        (info.event.extendedProps.location ? 'Location: ' + info.event.extendedProps.location + '\n' : '') +
-                        (info.event.extendedProps.description ? 'Description: ' + info.event.extendedProps.description : '')
-                    );
+                    // Build detailed event information
+                    var eventDetails = 'Event: ' + info.event.title + '\n';
+                    eventDetails += 'Calendar: ' + info.event.extendedProps.source + '\n';
+                    
+                    // Add time information
+                    if (info.event.allDay) {
+                        eventDetails += 'Time: All Day Event\n';
+                    } else {
+                        var startDate = new Date(info.event.start);
+                        var dateStr = startDate.toLocaleDateString();
+                        var timeStr = startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        
+                        if (info.event.end) {
+                            var endDate = new Date(info.event.end);
+                            var endTimeStr = endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                            eventDetails += 'Date: ' + dateStr + '\n';
+                            eventDetails += 'Time: ' + timeStr + ' - ' + endTimeStr + '\n';
+                        } else {
+                            eventDetails += 'Date: ' + dateStr + '\n';
+                            eventDetails += 'Time: ' + timeStr + '\n';
+                        }
+                    }
+                    
+                    if (info.event.extendedProps.location) {
+                        eventDetails += 'Location: ' + info.event.extendedProps.location + '\n';
+                    }
+                    if (info.event.extendedProps.description) {
+                        eventDetails += 'Description: ' + info.event.extendedProps.description;
+                    }
+                    
+                    alert(eventDetails);
                 }
             }
         });
         
-        // Debug: Log calendar instance
-        console.log('FullCalendar instance created:', calendar);
-        
         try {
             calendar.render();
-            console.log('Calendar rendered successfully');
             
             // Initialize any existing tooltips after calendar renders
             if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
@@ -464,19 +1142,14 @@
             document.getElementById('calendar').appendChild(errorDiv);
         }
         
-        // Debug: Check if tabs are working
-        console.log('Calendar page loaded');
-        console.log('Bootstrap tabs:', typeof bootstrap !== 'undefined' ? 'Available' : 'Missing');
+
         
         // Test tab functionality
         const outlookTab = document.getElementById('outlook-tab');
         if (outlookTab) {
-            console.log('Microsoft 365 tab found');
             outlookTab.addEventListener('click', function() {
-                console.log('Microsoft 365 tab clicked');
+                // Tab clicked
             });
-        } else {
-            console.error('Microsoft 365 tab not found');
         }
         
         // Find schedule overlaps
@@ -1010,5 +1683,7 @@
             </div>
         </div>
     </div>
-</div> 
+</div>
+
+    </div>
 </div> 

@@ -1,17 +1,15 @@
-<div class="container-fluid px-4">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800"><?= $pageTitle ?></h1>
-        <a href="/invoices/add" class="d-none d-sm-inline-block btn btn-primary shadow-sm">
-            <i class="bi bi-plus-circle me-1"></i> Add New Invoice
+<!-- Modern Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-file-invoice me-3"></i><?= $pageTitle ?></h1>
+        <p class="mb-0">Manage invoices and billing information</p>
+    </div>
+    <div>
+        <a href="/invoices/add" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New Invoice
         </a>
     </div>
-    
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none">Dashboard</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Invoices</li>
-        </ol>
-    </nav>
+</div>
     
     <!-- Statistics Cards -->
     <div class="row mb-4">
@@ -27,7 +25,7 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-receipt fa-2x text-gray-300"></i>
+                            <i class="fas fa-file-invoice fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -45,13 +43,13 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-hourglass fa-2x text-gray-300"></i>
+                            <i class="fas fa-hourglass-half fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
                 <a href="/invoices?status=pending" class="card-footer bg-transparent text-decoration-none d-flex align-items-center justify-content-between">
                     <span class="small text-warning">View Pending</span>
-                    <i class="bi bi-chevron-right text-warning"></i>
+                    <i class="fas fa-chevron-right text-warning"></i>
                 </a>
             </div>
         </div>
@@ -67,13 +65,13 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
                 <a href="/invoices?status=paid" class="card-footer bg-transparent text-decoration-none d-flex align-items-center justify-content-between">
                     <span class="small text-success">View Paid</span>
-                    <i class="bi bi-chevron-right text-success"></i>
+                    <i class="fas fa-chevron-right text-success"></i>
                 </a>
             </div>
         </div>
@@ -89,13 +87,13 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="bi bi-x-circle fa-2x text-gray-300"></i>
+                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
                 <a href="/invoices?status=cancelled" class="card-footer bg-transparent text-decoration-none d-flex align-items-center justify-content-between">
                     <span class="small text-danger">View Cancelled</span>
-                    <i class="bi bi-chevron-right text-danger"></i>
+                    <i class="fas fa-chevron-right text-danger"></i>
                 </a>
             </div>
         </div>
@@ -118,7 +116,7 @@
                     <div class="input-group">
                         <input class="form-control" type="search" name="search" placeholder="Search invoices..." aria-label="Search" value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
                         <button class="btn btn-primary" type="submit">
-                            <i class="bi bi-search"></i>
+                            <i class="fas fa-search"></i>
                         </button>
                     </div>
                 </form>
@@ -228,10 +226,10 @@
                                     <td>
                                         <div class="btn-group">
                                             <a href="/invoices/viewDetail/<?= $invoice['id'] ?>" class="btn btn-sm btn-outline-primary" title="View">
-                                                <i class="bi bi-eye"></i>
+                                                <i class="fas fa-eye"></i>
                                             </a>
                                             <a href="/invoices/edit/<?= $invoice['id'] ?>" class="btn btn-sm btn-outline-secondary" title="Edit">
-                                                <i class="bi bi-pencil"></i>
+                                                <i class="fas fa-edit"></i>
                                             </a>
                                             <?php if ($invoice['status'] === 'pending'): ?>
                                                 <button type="button" class="btn btn-sm btn-outline-success mark-paid-btn" 
@@ -241,7 +239,7 @@
                                                     data-id="<?= $invoice['id'] ?>"
                                                     data-invoice="<?= htmlspecialchars($invoice['invoice_number']) ?>"
                                                     data-amount="<?= number_format($invoice['total_amount'], 2) ?>">
-                                                    <i class="bi bi-check-lg"></i>
+                                                    <i class="fas fa-check"></i>
                                                 </button>
                                             <?php endif; ?>
                                             <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
@@ -250,7 +248,7 @@
                                                 data-bs-target="#deleteModal" 
                                                 data-id="<?= $invoice['id'] ?>" 
                                                 data-invoice="<?= htmlspecialchars($invoice['invoice_number']) ?>">
-                                                <i class="bi bi-trash"></i>
+                                                <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -419,7 +417,42 @@ document.addEventListener("DOMContentLoaded", function() {
             console.log('Form action:', form.action);
         });
     });
-    
+<!-- Modern Page Header Styling -->
+<style>
+/* Page Header */
+.page-header {
+    background: #ffffff;
+    color: #333;
+    padding: 2rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e9ecef;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.page-title i {
+    color: #7c3aed;
+    margin-right: 0.75rem;
+}
+
+.page-header p {
+    color: #6c757d;
+    margin: 0;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
     // Add handler for the mark as paid form submission
     const markPaidForm = document.getElementById('markPaidForm');
     if (markPaidForm) {

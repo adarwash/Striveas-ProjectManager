@@ -502,6 +502,17 @@ class Task {
             return 0;
         }
     }
+    
+    // Get count of open tasks
+    public function getOpenTasksCount() {
+        try {
+            $result = $this->db->select("SELECT COUNT(*) as total FROM tasks WHERE status IN ('Pending', 'In Progress', 'Not Started')");
+            return $result[0]['total'] ?? 0;
+        } catch (Exception $e) {
+            error_log('GetOpenTasksCount Error: ' . $e->getMessage());
+            return 0;
+        }
+    }
 
     // Get tasks stats by status (for admin dashboard)
     public function getTaskStatsByStatus() {

@@ -1,16 +1,12 @@
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h1 class="h2 mb-1">Tasks Management</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="<?= URLROOT ?>/">Dashboard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Tasks</li>
-            </ol>
-        </nav>
+<!-- Modern Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-tasks me-3"></i>Tasks Management</h1>
+        <p class="mb-0">Manage and track tasks across all projects</p>
     </div>
-    <div class="col-md-4 text-md-end d-flex justify-content-md-end align-items-center">
-        <a href="<?= URLROOT ?>/tasks/create" class="btn btn-success btn-sm-block">
-            <i class="bi bi-plus-lg"></i> New Task
+    <div>
+        <a href="<?= URLROOT ?>/tasks/create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>New Task
         </a>
     </div>
 </div>
@@ -22,7 +18,7 @@
             <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Total Tasks</h5>
-                    <i class="bi bi-list-task fs-4 text-primary"></i>
+                    <i class="fas fa-tasks fs-4 text-primary"></i>
                 </div>
                 <h2 class="mt-3 mb-2"><?= count($tasks) ?></h2>
                 <p class="card-text text-muted mt-auto small">All tasks across projects</p>
@@ -34,7 +30,7 @@
             <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Completed</h5>
-                    <i class="bi bi-check-circle fs-4 text-success"></i>
+                    <i class="fas fa-check-circle fs-4 text-success"></i>
                 </div>
                 <h2 class="mt-3 mb-2"><?= count(array_filter($tasks, function($task) { return $task->status === 'Completed'; })) ?></h2>
                 <p class="card-text text-muted mt-auto small">Tasks with completed status</p>
@@ -46,7 +42,7 @@
             <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">In Progress</h5>
-                    <i class="bi bi-clock-history fs-4 text-warning"></i>
+                    <i class="fas fa-clock fs-4 text-warning"></i>
                 </div>
                 <h2 class="mt-3 mb-2"><?= count(array_filter($tasks, function($task) { return $task->status === 'In Progress'; })) ?></h2>
                 <p class="card-text text-muted mt-auto small">Tasks currently being worked on</p>
@@ -58,7 +54,7 @@
             <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">High Priority</h5>
-                    <i class="bi bi-exclamation-triangle fs-4 text-danger"></i>
+                    <i class="fas fa-exclamation-triangle fs-4 text-danger"></i>
                 </div>
                 <h2 class="mt-3 mb-2"><?= count(array_filter($tasks, function($task) { return $task->priority === 'High' || $task->priority === 'Critical'; })) ?></h2>
                 <p class="card-text text-muted mt-auto small">Tasks needing immediate attention</p>
@@ -398,6 +394,37 @@
 
 <!-- Add custom styles -->
 <style>
+/* Page Header */
+.page-header {
+    background: #ffffff;
+    color: #333;
+    padding: 2rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e9ecef;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.page-title i {
+    color: #7c3aed;
+    margin-right: 0.75rem;
+}
+
+.page-header p {
+    color: #6c757d;
+    margin: 0;
+}
+
 .avatar-circle {
     display: flex;
     align-items: center;

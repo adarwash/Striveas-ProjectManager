@@ -1,11 +1,13 @@
-<div class="row">
-    <div class="col-md-12 mb-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>Departments</h1>
-            <a href="/departments/create" class="btn btn-success">
-                <i class="bi bi-plus-lg"></i> New Department
-            </a>
-        </div>
+<!-- Modern Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-building me-3"></i>Departments</h1>
+        <p class="mb-0">Manage company departments and organizational structure</p>
+    </div>
+    <div>
+        <a href="/departments/create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>New Department
+        </a>
     </div>
 </div>
 
@@ -247,5 +249,40 @@ document.addEventListener('DOMContentLoaded', function() {
     currencySelector.addEventListener('change', function() {
         updateDisplayedAmounts(this.value);
     });
-});
+}
+</script>
+
+<!-- Modern Page Header Styling -->
+<style>
+/* Page Header */
+.page-header {
+    background: #ffffff;
+    color: #333;
+    padding: 2rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e9ecef;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.page-title i {
+    color: #7c3aed;
+    margin-right: 0.75rem;
+}
+
+.page-header p {
+    color: #6c757d;
+    margin: 0;
+}
+</style>);
 </script> 

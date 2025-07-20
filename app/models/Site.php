@@ -352,6 +352,23 @@ class Site {
     }
     
     /**
+     * Get active sites count (for dashboard/stats)
+     * 
+     * @return int Number of active sites
+     */
+    public function getActiveSitesCount() {
+        try {
+            $query = "SELECT COUNT(*) as count FROM Sites WHERE status = 'Active'";
+            $result = $this->db->select($query);
+            
+            return $result[0]['count'] ?? 0;
+        } catch (Exception $e) {
+            error_log('Error counting active sites: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
      * Get projects linked to a site
      * 
      * @param int $siteId Site ID

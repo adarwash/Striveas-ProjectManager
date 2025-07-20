@@ -235,4 +235,20 @@ class Client {
         $result = $this->db->select($query);
         return $result[0]['count'] ?? 0;
     }
+    
+    /**
+     * Get active clients count
+     * 
+     * @return int Number of active clients
+     */
+    public function getActiveClientsCount() {
+        try {
+            $query = "SELECT COUNT(*) as count FROM Clients WHERE status = 'Active'";
+            $result = $this->db->select($query);
+            return $result[0]['count'] ?? 0;
+        } catch (Exception $e) {
+            error_log('GetActiveClientsCount Error: ' . $e->getMessage());
+            return 0;
+        }
+    }
 } 

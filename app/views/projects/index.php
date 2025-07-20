@@ -1,28 +1,20 @@
 <?php include_once VIEWSPATH . '/inc/header.php'; ?>
 
-<!-- Modern Project Dashboard -->
-<div class="container-fluid px-4 py-3">
-    
-    <!-- Page Header -->
-    <div class="page-header mb-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="header-text">
-                <h1 class="page-title">
-                    <i class="fas fa-briefcase"></i>
-                    Project Dashboard
-                </h1>
-                <p class="mb-0">Manage and track all your projects in one place</p>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-outline-primary" onclick="refreshProjects()">
-                    <i class="fas fa-sync-alt me-2"></i>Refresh
-                </button>
-                <a href="/projects/create" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>New Project
-                </a>
-            </div>
-        </div>
+<!-- Modern Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-briefcase me-3"></i>Project Dashboard</h1>
+        <p class="mb-0">Manage and track all your projects in one place</p>
     </div>
+    <div>
+        <button class="btn btn-primary me-2" onclick="refreshProjects()">
+            <i class="fas fa-sync-alt me-2"></i>Refresh
+        </button>
+        <a href="/projects/create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>New Project
+        </a>
+    </div>
+</div>
 
     <!-- Project Statistics Overview -->
     <div class="row mb-4">
@@ -457,49 +449,33 @@
 <style>
 /* Page Header */
 .page-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: #ffffff;
+    color: #333;
     padding: 2rem;
     border-radius: 1rem;
     margin-bottom: 2rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    position: relative;
-}
-
-.page-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.1);
-    border-radius: 1rem;
-    pointer-events: none;
-}
-
-.page-header > * {
-    position: relative;
-    z-index: 1;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e9ecef;
 }
 
 .page-title {
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    color: #ffffff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    color: #333;
 }
 
 .page-title i {
-    color: #ffffff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    color: #7c3aed;
     margin-right: 0.75rem;
 }
 
 .page-header p {
-    color: #ffffff;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    color: #6c757d;
+    margin: 0;
 }
 
 .header-text {
@@ -513,39 +489,7 @@
     align-items: center;
 }
 
-.page-header .btn-outline-primary {
-    background: rgba(255,255,255,0.15);
-    border-color: rgba(255,255,255,0.3);
-    color: #ffffff;
-    backdrop-filter: blur(10px);
-    text-shadow: none;
-    font-weight: 600;
-}
 
-.page-header .btn-outline-primary:hover {
-    background: rgba(255,255,255,0.25);
-    border-color: rgba(255,255,255,0.5);
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-.page-header .btn-primary {
-    background: rgba(255,255,255,0.2);
-    border-color: rgba(255,255,255,0.4);
-    color: #ffffff;
-    backdrop-filter: blur(10px);
-    font-weight: 600;
-    text-shadow: none;
-}
-
-.page-header .btn-primary:hover {
-    background: rgba(255,255,255,0.3);
-    border-color: rgba(255,255,255,0.6);
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
 
 /* Modern Stats Cards */
 .modern-stats-card {

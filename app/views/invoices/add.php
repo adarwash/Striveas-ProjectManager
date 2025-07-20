@@ -1,17 +1,24 @@
-<div class="container-fluid px-4">
-    <h1 class="mt-4"><?= $pageTitle ?></h1>
-    
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/invoices">Invoices</a></li>
-        <li class="breadcrumb-item active">Add New Invoice</li>
-    </ol>
+<!-- Modern Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-plus me-3"></i><?= $pageTitle ?></h1>
+        <p class="mb-0">Create a new invoice for your supplier</p>
+    </div>
+    <div>
+        <a href="/invoices" class="btn btn-secondary me-2">
+            <i class="fas fa-arrow-left me-2"></i>Back to Invoices
+        </a>
+        <button type="submit" form="invoice-form" class="btn btn-primary">
+            <i class="fas fa-save me-2"></i>Save Invoice
+        </button>
+    </div>
+</div>
     
     <div class="row">
         <div class="col-lg-8">
             <div class="card mb-4">
                 <div class="card-header">
-                    <i class="fas fa-plus-circle me-1"></i>
+                    <i class="fas fa-plus me-1"></i>
                     Invoice Information
                 </div>
                 <div class="card-body">
@@ -23,7 +30,7 @@
                         <?php unset($_SESSION['error']); ?>
                     <?php endif; ?>
                     
-                    <form action="<?= $formAction ?>" method="POST">
+                    <form id="invoice-form" action="<?= $formAction ?>" method="POST">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="invoice_number" class="form-label">Invoice Number <span class="text-danger">*</span></label>
@@ -166,6 +173,40 @@
         </div>
     </div>
 </div>
+
+<!-- Modern Page Header Styling -->
+<style>
+/* Page Header */
+.page-header {
+    background: #ffffff;
+    color: #333;
+    padding: 2rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e9ecef;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.page-title i {
+    color: #7c3aed;
+    margin-right: 0.75rem;
+}
+
+.page-header p {
+    color: #6c757d;
+    margin: 0;
+}
+</style>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {

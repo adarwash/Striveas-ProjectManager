@@ -1,137 +1,142 @@
-<div class="container-fluid">
-    <!-- Page Header with Background -->
-    <div class="bg-light rounded-3 p-4 mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-2">
-                <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none">Dashboard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Clients</li>
-            </ol>
-        </nav>
-        
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="h3 mb-1">Client Management</h1>
-                <p class="text-muted">Manage all clients and their associated sites</p>
-            </div>
-            <?php if (hasPermission('clients.create')): ?>
-            <a href="/clients/create" class="btn btn-primary">
-                <i class="bi bi-plus-lg"></i> Add New Client
-            </a>
-            <?php endif; ?>
-        </div>
+<?php require VIEWSPATH . '/partials/header.php'; ?>
+
+<!-- Modern Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-building me-3"></i>Client Management</h1>
+        <p class="mb-0">Manage all clients and their associated sites</p>
     </div>
+    <div>
+        <?php if (hasPermission('clients.create')): ?>
+        <a href="/clients/create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New Client
+        </a>
+        <?php endif; ?>
+    </div>
+</div>
     
     <!-- Flash Messages -->
     <?php flash('client_success'); ?>
     <?php flash('client_error'); ?>
     
-    <!-- Clients Overview Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-people text-primary fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="card-title mb-0">Total Clients</h6>
-                        <h3 class="mt-2 mb-0"><?= count($clients) ?></h3>
-                    </div>
+<!-- Modern Stats Overview -->
+<div class="row g-4 mb-5">
+    <?php
+    $totalClients = count($clients);
+    $activeCount = 0;
+    $inactiveCount = 0;
+    foreach ($clients as $client) {
+        if ($client['status'] == 'Active') $activeCount++;
+        else $inactiveCount++;
+    }
+    $industries = array_unique(array_filter(array_column($clients, 'industry')));
+    $industriesCount = count($industries);
+    ?>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card purple">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stats-number"><?= $totalClients ?></div>
+                    <div class="stats-label">Total Clients</div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-check-circle text-success fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="card-title mb-0">Active Clients</h6>
-                        <h3 class="mt-2 mb-0">
-                            <?php 
-                                $activeCount = 0;
-                                foreach ($clients as $client) {
-                                    if ($client['status'] == 'Active') $activeCount++;
-                                }
-                                echo $activeCount;
-                            ?>
-                        </h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-building text-info fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="card-title mb-0">Industries</h6>
-                        <h3 class="mt-2 mb-0">
-                            <?php 
-                                $industries = array_unique(array_column($clients, 'industry'));
-                                echo count(array_filter($industries));
-                            ?>
-                        </h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-geo-alt text-warning fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="card-title mb-0">With Sites</h6>
-                        <h3 class="mt-2 mb-0">—</h3>
-                    </div>
+                <div class="stats-icon">
+                    <i class="fas fa-building"></i>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Clients List -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">All Clients</h5>
-                <div class="form-group has-search position-relative">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <input type="text" class="form-control ps-4" placeholder="Search clients..." id="clientSearch">
+
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card green">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stats-number"><?= $activeCount ?></div>
+                    <div class="stats-label">Active Clients</div>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-check-circle"></i>
                 </div>
             </div>
         </div>
-        <div class="card-body p-0">
-            <?php if (!empty($clients)): ?>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle" id="clientsTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Client Name</th>
-                            <th>Contact Person</th>
-                            <th>Industry</th>
-                            <th>Status</th>
-                            <th>Sites</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card blue">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stats-number"><?= $industriesCount ?></div>
+                    <div class="stats-label">Industries</div>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-industry"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card orange">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stats-number"><?= $inactiveCount ?></div>
+                    <div class="stats-label">Inactive Clients</div>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-pause-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    
+<!-- Modern Clients List -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="card-title mb-1">All Clients</h5>
+                <p class="text-muted mb-0">Manage your client relationships</p>
+            </div>
+            <div class="d-flex gap-3 align-items-center">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-control" placeholder="Search clients..." id="clientSearch">
+                </div>
+                <?php if (hasPermission('clients.create')): ?>
+                <a href="/clients/create" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Client
+                </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <?php if (!empty($clients)): ?>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="clientsTable">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 border-0">Client Name</th>
+                        <th class="border-0">Contact Person</th>
+                        <th class="border-0">Industry</th>
+                        <th class="border-0">Status</th>
+                        <th class="border-0">Sites</th>
+                        <th class="text-end pe-4 border-0">Actions</th>
+                    </tr>
+                </thead>
                     <tbody>
                         <?php foreach ($clients as $client): ?>
                         <tr>
-                            <td>
+                            <td class="ps-4">
                                 <div class="d-flex align-items-center">
-                                    <div class="avatar-icon rounded bg-light p-2 me-3">
-                                        <i class="bi bi-person-circle text-primary"></i>
+                                    <div class="avatar-sm me-3">
+                                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                            <?= strtoupper(substr($client['name'], 0, 2)) ?>
+                                        </div>
                                     </div>
                                     <div>
-                                        <a href="/clients/viewClient/<?= $client['id'] ?>" class="fw-semibold text-decoration-none">
+                                        <a href="/clients/viewClient/<?= $client['id'] ?>" class="fw-bold text-decoration-none">
                                             <?= htmlspecialchars($client['name']) ?>
                                         </a>
                                         <?php if(!empty($client['email'])): ?>
@@ -157,32 +162,32 @@
                                         $industryIcon = '';
                                         switch(strtolower($client['industry'])) {
                                             case 'technology':
-                                                $industryClass = 'text-bg-primary';
-                                                $industryIcon = 'bi-cpu';
+                                                $industryClass = 'bg-primary';
+                                                $industryIcon = 'fas fa-microchip';
                                                 break;
                                             case 'manufacturing':
-                                                $industryClass = 'text-bg-secondary';
-                                                $industryIcon = 'bi-gear';
+                                                $industryClass = 'bg-secondary';
+                                                $industryIcon = 'fas fa-cogs';
                                                 break;
                                             case 'healthcare':
-                                                $industryClass = 'text-bg-success';
-                                                $industryIcon = 'bi-heart-pulse';
+                                                $industryClass = 'bg-success';
+                                                $industryIcon = 'fas fa-heartbeat';
                                                 break;
                                             case 'finance':
-                                                $industryClass = 'text-bg-warning';
-                                                $industryIcon = 'bi-bank';
+                                                $industryClass = 'bg-warning';
+                                                $industryIcon = 'fas fa-university';
                                                 break;
                                             case 'retail':
-                                                $industryClass = 'text-bg-info';
-                                                $industryIcon = 'bi-shop';
+                                                $industryClass = 'bg-info';
+                                                $industryIcon = 'fas fa-shopping-cart';
                                                 break;
                                             default:
-                                                $industryClass = 'text-bg-light text-dark';
-                                                $industryIcon = 'bi-building';
+                                                $industryClass = 'bg-light text-dark';
+                                                $industryIcon = 'fas fa-building';
                                         }
                                     ?>
-                                    <span class="badge <?= $industryClass ?> rounded-pill">
-                                        <i class="bi <?= $industryIcon ?> me-1"></i>
+                                    <span class="badge <?= $industryClass ?> text-white rounded-pill">
+                                        <i class="<?= $industryIcon ?> me-1"></i>
                                         <?= htmlspecialchars($client['industry']) ?>
                                     </span>
                                 <?php else: ?>
@@ -192,42 +197,42 @@
                             <td>
                                 <?php 
                                     if ($client['status'] == 'Active') {
-                                        $statusClass = 'text-bg-success';
-                                        $statusIcon = 'bi-check-circle';
+                                        $statusClass = 'bg-success';
+                                        $statusIcon = 'fas fa-check-circle';
                                     } elseif ($client['status'] == 'Inactive') {
-                                        $statusClass = 'text-bg-danger';
-                                        $statusIcon = 'bi-x-circle';
+                                        $statusClass = 'bg-danger';
+                                        $statusIcon = 'fas fa-times-circle';
                                     } else {
-                                        $statusClass = 'text-bg-secondary';
-                                        $statusIcon = 'bi-dash-circle';
+                                        $statusClass = 'bg-secondary';
+                                        $statusIcon = 'fas fa-minus-circle';
                                     }
                                 ?>
-                                <span class="badge <?= $statusClass ?> rounded-pill">
-                                    <i class="bi <?= $statusIcon ?> me-1"></i>
+                                <span class="badge <?= $statusClass ?> text-white rounded-pill">
+                                    <i class="<?= $statusIcon ?> me-1"></i>
                                     <?= $client['status'] ?>
                                 </span>
                             </td>
                             <td>
                                 <span class="text-muted">—</span>
                             </td>
-                            <td>
+                            <td class="pe-4">
                                 <div class="d-flex justify-content-end gap-2">
                                     <a href="/clients/viewClient/<?= $client['id'] ?>" class="btn btn-sm btn-outline-primary" title="View Details">
-                                        <i class="bi bi-eye"></i>
+                                        <i class="fas fa-eye"></i>
                                     </a>
                                     <?php if (hasPermission('clients.assign_sites')): ?>
                                     <a href="/clients/assignSites/<?= $client['id'] ?>" class="btn btn-sm btn-outline-info" title="Assign Sites">
-                                        <i class="bi bi-geo-alt"></i>
+                                        <i class="fas fa-map-marker-alt"></i>
                                     </a>
                                     <?php endif; ?>
                                     <?php if (hasPermission('clients.update')): ?>
                                     <a href="/clients/edit/<?= $client['id'] ?>" class="btn btn-sm btn-outline-warning" title="Edit">
-                                        <i class="bi bi-pencil"></i>
+                                        <i class="fas fa-edit"></i>
                                     </a>
                                     <?php endif; ?>
                                     <?php if (hasPermission('clients.delete')): ?>
                                     <a href="/clients/delete/<?= $client['id'] ?>" class="btn btn-sm btn-outline-danger" title="Delete">
-                                        <i class="bi bi-trash"></i>
+                                        <i class="fas fa-trash"></i>
                                     </a>
                                     <?php endif; ?>
                                 </div>
@@ -237,27 +242,135 @@
                     </tbody>
                 </table>
             </div>
-            <?php else: ?>
-            <div class="text-center py-5">
-                <div class="mb-3">
-                    <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
-                </div>
-                <h5 class="text-muted">No Clients Found</h5>
-                <p class="text-muted">Get started by adding your first client</p>
-                <?php if (hasPermission('clients.create')): ?>
-                <a href="/clients/create" class="btn btn-primary">
-                    <i class="bi bi-plus-lg"></i> Add New Client
-                </a>
-                <?php endif; ?>
+        <?php else: ?>
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-building text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
             </div>
+            <h5 class="text-muted mt-3">No Clients Found</h5>
+            <p class="text-muted">Get started by adding your first client to manage relationships</p>
+            <?php if (hasPermission('clients.create')): ?>
+            <a href="/clients/create" class="btn btn-primary mt-3">
+                <i class="fas fa-plus me-2"></i>Add New Client
+            </a>
             <?php endif; ?>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 
+<style>
+/* Page Header */
+.page-header {
+    background: #ffffff;
+    color: #333;
+    padding: 2rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e9ecef;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.page-title i {
+    color: #7c3aed;
+    margin-right: 0.75rem;
+}
+
+.page-header p {
+    color: #6c757d;
+    margin: 0;
+}
+
+
+
+/* Modern Search Box */
+.search-box {
+    position: relative;
+    width: 250px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    z-index: 2;
+}
+
+.search-box input {
+    padding-left: 40px;
+    border: 1px solid #e3e6f0;
+    border-radius: 8px;
+    height: 40px;
+}
+
+.search-box input:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+/* Avatar Styling */
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Modern Card Styling */
+.card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+/* Table Styling */
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    border-color: #e3e6f0;
+    vertical-align: middle;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fc;
+}
+
+/* Badge Enhancements */
+.badge.text-white {
+    color: white !important;
+}
+
+.badge.bg-light.text-dark {
+    color: #5a5c69 !important;
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Search functionality
+    // Enhanced search functionality
     const searchInput = document.getElementById('clientSearch');
     const table = document.getElementById('clientsTable');
     
@@ -265,16 +378,40 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('keyup', function() {
             const searchTerm = this.value.toLowerCase();
             const rows = table.querySelectorAll('tbody tr');
+            let visibleCount = 0;
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 if (text.includes(searchTerm)) {
                     row.style.display = '';
+                    visibleCount++;
                 } else {
                     row.style.display = 'none';
                 }
             });
+            
+            // Update visible count in header
+            const cardTitle = document.querySelector('.card-title');
+            if (cardTitle) {
+                if (searchTerm) {
+                    cardTitle.textContent = `Clients (${visibleCount} found)`;
+                } else {
+                    cardTitle.textContent = 'All Clients';
+                }
+            }
+        });
+        
+        // Clear search when input is cleared
+        searchInput.addEventListener('input', function() {
+            if (this.value === '') {
+                const cardTitle = document.querySelector('.card-title');
+                if (cardTitle) {
+                    cardTitle.textContent = 'All Clients';
+                }
+            }
         });
     }
 });
-</script> 
+</script>
+
+<?php require VIEWSPATH . '/partials/footer.php'; ?> 
