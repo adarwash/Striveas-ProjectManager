@@ -189,15 +189,17 @@ class Task {
      * Get all tasks with project details
      */
     public function getAllTasksWithProjects($userId = null) {
-        $query = "SELECT t.*, p.title as project_title, p.id as project_id, u.username as created_by
+        $query = "SELECT t.*, p.title as project_title, p.id as project_id, 
+                  u1.username as created_by, u2.username as assigned_to_name
                   FROM tasks t
                   LEFT JOIN projects p ON t.project_id = p.id
-                  LEFT JOIN users u ON t.created_by = u.id";
+                  LEFT JOIN users u1 ON t.created_by = u1.id
+                  LEFT JOIN users u2 ON t.assigned_to = u2.id";
         
         $params = [];
         
         if($userId) {
-            $query .= " WHERE t.created_by = ? OR t.assigned_to = (SELECT username FROM users WHERE id = ?)";
+            $query .= " WHERE t.created_by = ? OR t.assigned_to = ?";
             $params = [$userId, $userId];
         }
         
