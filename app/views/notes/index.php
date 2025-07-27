@@ -19,8 +19,14 @@
     </div>
     
     <!-- Flash messages -->
-    <?php flash('note_success'); ?>
-    <?php flash('note_error'); ?>
+    <?php 
+// Clear any conflicting messages from other pages
+if (isset($_SESSION['flash']['note_message'])) {
+    unset($_SESSION['flash']['note_message']);
+}
+flash('note_success'); 
+flash('note_error'); 
+?>
 
     <?php if (!empty($data['notes'])): ?>
         <!-- Notes Statistics Overview -->
@@ -148,10 +154,35 @@
                 <div class="col-xl-4 col-lg-6 col-md-6 note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>">
                     <div class="modern-note-card">
                         <div class="note-header">
-                            <div class="note-type-badge note-type-<?= $note['type'] ?>">
-                                <i class="fas <?= $note['type'] === 'project' ? 'fa-project-diagram' : 
-                                               ($note['type'] === 'task' ? 'fa-check-circle' : 'fa-user') ?>"></i>
-                                <?= ucfirst($note['type']) ?>
+                            <div class="d-flex gap-2">
+                                <div class="note-type-badge note-type-<?= $note['type'] ?>">
+                                    <i class="fas <?= $note['type'] === 'project' ? 'fa-project-diagram' : 
+                                                   ($note['type'] === 'task' ? 'fa-check-circle' : 'fa-user') ?>"></i>
+                                    <?= ucfirst($note['type']) ?>
+                                </div>
+                                <?php if (isset($note['access_level'])): ?>
+                                    <?php if ($note['access_level'] === 'viewer'): ?>
+                                        <div class="note-type-badge" style="background: #17a2b8;" title="Shared with you (view only)">
+                                            <i class="fas fa-eye"></i>
+                                            Shared
+                                        </div>
+                                    <?php elseif ($note['access_level'] === 'editor'): ?>
+                                        <div class="note-type-badge" style="background: #28a745;" title="Shared with you (can edit)">
+                                            <i class="fas fa-edit"></i>
+                                            Shared
+                                        </div>
+                                    <?php elseif ($note['access_level'] === 'project_member'): ?>
+                                        <div class="note-type-badge" style="background: #6f42c1;" title="Visible to all project members">
+                                            <i class="fas fa-users"></i>
+                                            Project Note
+                                        </div>
+                                    <?php elseif ($note['access_level'] === 'task_member'): ?>
+                                        <div class="note-type-badge" style="background: #fd7e14;" title="Visible to task assignees">
+                                            <i class="fas fa-user-check"></i>
+                                            Task Note
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endif; ?>
                             </div>
                             <div class="note-actions">
                                 <div class="dropdown">
@@ -169,6 +200,16 @@
                                                 <i class="fas fa-edit me-2"></i>Edit Note
                                             </a>
                                         </li>
+                                        <?php if ($note['created_by'] == $_SESSION['user_id']): ?>
+                                        <li>
+                                            <button type="button" class="dropdown-item" 
+                                                    data-bs-toggle="modal" data-bs-target="#shareModal" 
+                                                    data-note-id="<?= $note['id'] ?>"
+                                                    data-note-title="<?= htmlspecialchars($note['title']) ?>">
+                                                <i class="fas fa-share-alt me-2"></i>Share Note
+                                            </button>
+                                        </li>
+                                        <?php endif; ?>
                                         <li>
                                             <button type="button" class="dropdown-item text-danger" 
                                                     data-bs-toggle="modal" data-bs-target="#deleteModal<?= $note['id'] ?>" data-note-id="<?= $note['id'] ?>">
@@ -1244,6 +1285,139 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(card);
     });
+});
+
+// Handle share modal
+const shareModal = document.getElementById('shareModal');
+if (shareModal) {
+    shareModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const noteId = button.getAttribute('data-note-id');
+        const noteTitle = button.getAttribute('data-note-title');
+        
+        document.getElementById('shareNoteId').value = noteId;
+        document.getElementById('shareNoteTitle').textContent = noteTitle;
+        
+        // Load current shared users
+        loadSharedUsers(noteId);
+    });
+}
+
+function loadSharedUsers(noteId) {
+    fetch(`/notes/getSharedUsers/${noteId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const container = document.getElementById('sharedUsersList');
+                container.innerHTML = '';
+                
+                if (data.users.length === 0) {
+                    container.innerHTML = '<p class="text-muted">This note is not shared with anyone yet.</p>';
+                } else {
+                    data.users.forEach(user => {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'shared-user-item d-flex justify-content-between align-items-center mb-2 p-2 border rounded';
+                        userDiv.innerHTML = `
+                            <div>
+                                <strong>${user.name || user.username}</strong>
+                                <span class="badge bg-${user.permission === 'edit' ? 'success' : 'info'} ms-2">
+                                    ${user.permission === 'edit' ? 'Can Edit' : 'View Only'}
+                                </span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeShare(${noteId}, ${user.shared_with_user_id})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        container.appendChild(userDiv);
+                    });
+                }
+            }
+        });
+}
+
+function removeShare(noteId, userId) {
+    if (confirm('Remove sharing access for this user?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/notes/unshare/${noteId}`;
+        
+        const userInput = document.createElement('input');
+        userInput.type = 'hidden';
+        userInput.name = 'user_id';
+        userInput.value = userId;
+        
+        form.appendChild(userInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+<!-- Share Note Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">
+                    <i class="fas fa-share-alt me-2"></i>Share Note: <span id="shareNoteTitle"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="/notes/share/" id="shareForm">
+                <div class="modal-body">
+                    <input type="hidden" id="shareNoteId" name="note_id">
+                    
+                    <div class="mb-4">
+                        <h6>Currently Shared With:</h6>
+                        <div id="sharedUsersList">
+                            <p class="text-muted">Loading...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="shareUserId" class="form-label">Share with User</label>
+                        <select class="form-select" id="shareUserId" name="user_id" required>
+                            <option value="">Select a user...</option>
+                            <?php
+                            // Get list of users to share with
+                            require_once __DIR__ . '/../../models/User.php';
+                            $userModel = new User();
+                            $users = $userModel->getAllUsers();
+                            foreach ($users as $user):
+                                if ($user['id'] != $_SESSION['user_id']):
+                            ?>
+                                <option value="<?= $user['id'] ?>"><?= htmlspecialchars($user['name'] ?? $user['username']) ?></option>
+                            <?php 
+                                endif;
+                            endforeach; 
+                            ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="sharePermission" class="form-label">Permission Level</label>
+                        <select class="form-select" id="sharePermission" name="permission" required>
+                            <option value="view">View Only</option>
+                            <option value="edit">Can Edit</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-share me-2"></i>Share Note
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update form action with note ID
+document.getElementById('shareForm').addEventListener('submit', function(e) {
+    const noteId = document.getElementById('shareNoteId').value;
+    this.action = `/notes/share/${noteId}`;
 });
 </script>
 

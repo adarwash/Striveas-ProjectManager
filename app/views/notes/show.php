@@ -1,6 +1,15 @@
 <?php require VIEWSPATH . '/inc/header.php'; ?>
 
-<?php flash('note_message'); ?>
+<?php 
+// Clear any conflicting messages from other pages
+if (isset($_SESSION['flash']['note_success'])) {
+    unset($_SESSION['flash']['note_success']);
+}
+if (isset($_SESSION['flash']['note_error'])) {
+    unset($_SESSION['flash']['note_error']);
+}
+flash('note_message'); 
+?>
 
 <?php if (!isset($note) || !$note): ?>
     <div class="container-fluid px-4 py-4">
@@ -62,6 +71,11 @@
                         <li><a class="dropdown-item" href="/notes/add?type=<?= $note['type'] ?><?= $note['reference_id'] ? '&reference_id=' . $note['reference_id'] : '' ?>">
                             <i class="bi bi-plus-circle me-2"></i>Add Similar Note
                         </a></li>
+                        <?php if ($note['created_by'] == $_SESSION['user_id']): ?>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#shareModal">
+                            <i class="bi bi-share me-2"></i>Share Note
+                        </a></li>
+                        <?php endif; ?>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="deleteNote(<?= $note['id'] ?>)">
                             <i class="bi bi-trash me-2"></i>Delete Note
@@ -98,6 +112,59 @@
         
         <!-- Sidebar -->
         <div class="col-lg-4">
+            <!-- Visibility Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-eye me-2"></i>Visibility
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <?php
+                    // Check if this is a project/task note
+                    $isProjectNote = $note['type'] === 'project' && $note['reference_id'];
+                    $isTaskNote = $note['type'] === 'task' && $note['reference_id'];
+                    $isOwner = $note['created_by'] == $_SESSION['user_id'];
+                    ?>
+                    
+                    <?php if ($isProjectNote): ?>
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Project Note:</strong> This note is automatically visible to all project team members.
+                        </div>
+                    <?php elseif ($isTaskNote): ?>
+                        <div class="alert alert-warning mb-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Task Note:</strong> This note is visible to the task creator and assignee.
+                        </div>
+                    <?php endif; ?>
+                    
+                    <?php if ($isOwner): ?>
+                        <?php if (!empty($shared_users)): ?>
+                            <h6 class="text-muted mb-2">Explicitly shared with:</h6>
+                            <ul class="list-unstyled">
+                                <?php foreach ($shared_users as $sharedUser): ?>
+                                    <li class="mb-1">
+                                        <i class="bi bi-person me-1"></i>
+                                        <?= htmlspecialchars($sharedUser['name'] ?? $sharedUser['username']) ?>
+                                        <span class="badge bg-<?= $sharedUser['permission'] === 'edit' ? 'success' : 'info' ?> ms-1">
+                                            <?= $sharedUser['permission'] === 'edit' ? 'Can Edit' : 'View Only' ?>
+                                        </span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                        
+                        <button class="btn btn-sm btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#shareModal">
+                            <i class="bi bi-share me-1"></i>Manage Sharing
+                        </button>
+                    <?php else: ?>
+                        <p class="text-muted mb-0">
+                            Created by <strong><?= htmlspecialchars($note['created_by_name'] ?? 'Unknown') ?></strong>
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
             <!-- Note Details -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-light">
@@ -466,6 +533,120 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+</script>
+
+<!-- Share Note Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">
+                    <i class="fas fa-share-alt me-2"></i>Share Note: <?= htmlspecialchars($note['title']) ?>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="/notes/share/<?= $note['id'] ?>">
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6>Currently Shared With:</h6>
+                        <div id="sharedUsersList">
+                            <p class="text-muted">Loading...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="shareUserId" class="form-label">Share with User</label>
+                        <select class="form-select" id="shareUserId" name="user_id" required>
+                            <option value="">Select a user...</option>
+                            <?php
+                            // Get list of users to share with
+                            require_once __DIR__ . '/../../models/User.php';
+                            $userModel = new User();
+                            $users = $userModel->getAllUsers();
+                            foreach ($users as $user):
+                                if ($user['id'] != $_SESSION['user_id']):
+                            ?>
+                                <option value="<?= $user['id'] ?>"><?= htmlspecialchars($user['name'] ?? $user['username']) ?></option>
+                            <?php 
+                                endif;
+                            endforeach; 
+                            ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="sharePermission" class="form-label">Permission Level</label>
+                        <select class="form-select" id="sharePermission" name="permission" required>
+                            <option value="view">View Only</option>
+                            <option value="edit">Can Edit</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-share me-2"></i>Share Note
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load shared users when modal opens
+document.getElementById('shareModal')?.addEventListener('show.bs.modal', function() {
+    loadSharedUsers(<?= $note['id'] ?>);
+});
+
+function loadSharedUsers(noteId) {
+    fetch(`/notes/getSharedUsers/${noteId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const container = document.getElementById('sharedUsersList');
+                container.innerHTML = '';
+                
+                if (data.users.length === 0) {
+                    container.innerHTML = '<p class="text-muted">This note is not shared with anyone yet.</p>';
+                } else {
+                    data.users.forEach(user => {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'shared-user-item d-flex justify-content-between align-items-center mb-2 p-2 border rounded';
+                        userDiv.innerHTML = `
+                            <div>
+                                <strong>${user.name || user.username}</strong>
+                                <span class="badge bg-${user.permission === 'edit' ? 'success' : 'info'} ms-2">
+                                    ${user.permission === 'edit' ? 'Can Edit' : 'View Only'}
+                                </span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeShare(${noteId}, ${user.shared_with_user_id})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        container.appendChild(userDiv);
+                    });
+                }
+            }
+        });
+}
+
+function removeShare(noteId, userId) {
+    if (confirm('Remove sharing access for this user?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/notes/unshare/${noteId}`;
+        
+        const userInput = document.createElement('input');
+        userInput.type = 'hidden';
+        userInput.name = 'user_id';
+        userInput.value = userId;
+        
+        form.appendChild(userInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 </script>
 
 <?php require VIEWSPATH . '/inc/footer.php'; ?> 

@@ -228,19 +228,33 @@ class Note {
      */
     public function getNotesByUser(int $userId): array {
         try {
-            $query = "SELECT n.*, u.username as created_by_name,
+            $query = "SELECT DISTINCT n.*, u.username as created_by_name,
                      CASE 
                          WHEN n.type = 'project' THEN p.title 
                          WHEN n.type = 'task' THEN t.title 
-                     END as reference_title
+                     END as reference_title,
+                     CASE
+                         WHEN n.created_by = ? THEN 'owner'
+                         WHEN ns.permission = 'edit' THEN 'editor'
+                         ELSE 'viewer'
+                     END as access_level,
+                     ns.shared_at,
+                     su.username as shared_by_name
                      FROM Notes n
                      LEFT JOIN Users u ON n.created_by = u.id
                      LEFT JOIN Projects p ON n.type = 'project' AND n.reference_id = p.id
                      LEFT JOIN Tasks t ON n.type = 'task' AND n.reference_id = t.id
-                     WHERE n.created_by = ?
+                     LEFT JOIN note_shares ns ON n.id = ns.note_id AND ns.shared_with_user_id = ?
+                     LEFT JOIN Users su ON ns.shared_by_user_id = su.id
+                     WHERE n.created_by = ? OR ns.shared_with_user_id = ?
                      ORDER BY n.created_at DESC";
             
-            $result = $this->db->select($query, [$userId]);
+            $result = $this->db->select($query, [
+                $userId, // for owner check in CASE
+                $userId, // for note_shares join
+                $userId, // for created_by WHERE
+                $userId  // for shared_with WHERE
+            ]);
             return $result ?: [];
         } catch (Exception $e) {
             error_log('Get User Notes Error: ' . $e->getMessage());
@@ -335,28 +349,28 @@ class Note {
      */
     public function searchNotesSecure($searchQuery, $userId, $hasFullAccess = false, $limit = 10) {
         try {
-            $whereClause = "(n.title LIKE ? OR n.content LIKE ?)";
-            $params = [$searchQuery, $searchQuery, $searchQuery, $searchQuery];
-            
-            // If user doesn't have full access, only show their own notes
-            if (!$hasFullAccess) {
-                $whereClause .= " AND n.created_by = ?";
-                $params[] = $userId;
+            if ($hasFullAccess) {
+                // Admin/Manager can see all notes
+                $query = "SELECT n.*, u.username as author_name
+                         FROM [Notes] n
+                         LEFT JOIN [Users] u ON n.created_by = u.id
+                         WHERE (n.title LIKE ? OR n.content LIKE ?)
+                         ORDER BY n.created_at DESC";
+                
+                $params = [$searchQuery, $searchQuery];
+            } else {
+                // Regular users: only their own notes for now (simplified)
+                $query = "SELECT n.*, u.username as author_name
+                         FROM [Notes] n
+                         LEFT JOIN [Users] u ON n.created_by = u.id
+                         WHERE (n.title LIKE ? OR n.content LIKE ?)
+                           AND n.created_by = ?
+                         ORDER BY n.created_at DESC";
+                
+                $params = [$searchQuery, $searchQuery, $userId];
             }
             
-            $query = "SELECT n.*, u.username as author_name
-                     FROM [Notes] n
-                     LEFT JOIN [Users] u ON n.created_by = u.id
-                     WHERE $whereClause
-                     ORDER BY 
-                         CASE 
-                             WHEN n.title LIKE ? THEN 1
-                             WHEN n.content LIKE ? THEN 2
-                             ELSE 3
-                         END,
-                         n.created_at DESC";
-            
-            // SQL Server uses TOP instead of LIMIT
+            // Apply limit if specified
             if ($limit > 0) {
                 $query = str_replace("SELECT n.*", "SELECT TOP $limit n.*", $query);
             }
@@ -464,6 +478,154 @@ class Note {
         } catch (Exception $e) {
             error_log('Create Notes Table Error: ' . $e->getMessage());
             error_log('Stack trace: ' . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    /**
+     * Share a note with another user
+     */
+    public function shareNote(int $noteId, int $ownerId, int $shareWithUserId, string $permission = 'view'): bool {
+        try {
+
+            // First verify the user owns the note
+            $checkQuery = "SELECT id, created_by FROM Notes WHERE id = ?";
+            $result = $this->db->select($checkQuery, [$noteId]);
+            
+            if (empty($result)) {
+                return false;
+            }
+            
+            $actualOwner = $result[0]['created_by'];
+            if ($actualOwner != $ownerId) {
+                return false;
+            }
+            
+            // Check if share already exists
+            $existsQuery = "SELECT id FROM note_shares WHERE note_id = ? AND shared_with_user_id = ?";
+            $existing = $this->db->select($existsQuery, [$noteId, $shareWithUserId]);
+            
+            if (!empty($existing)) {
+                // Update existing share
+                $updateQuery = "UPDATE note_shares 
+                               SET permission = ?, shared_by_user_id = ?, shared_at = GETDATE()
+                               WHERE note_id = ? AND shared_with_user_id = ?";
+                $this->db->update($updateQuery, [$permission, $ownerId, $noteId, $shareWithUserId]);
+            } else {
+                // Insert new share
+                $insertQuery = "INSERT INTO note_shares (note_id, shared_with_user_id, shared_by_user_id, permission)
+                               VALUES (?, ?, ?, ?)";
+                $this->db->insert($insertQuery, [$noteId, $shareWithUserId, $ownerId, $permission]);
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('Share Note Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Remove sharing for a note
+     */
+    public function unshareNote(int $noteId, int $ownerId, int $unshareUserId): bool {
+        try {
+            // Verify ownership first
+            $checkQuery = "SELECT id FROM Notes WHERE id = ? AND created_by = ?";
+            $result = $this->db->select($checkQuery, [$noteId, $ownerId]);
+            
+            if (empty($result)) {
+                error_log('Unshare Note Error: User does not own this note');
+                return false;
+            }
+            
+            $query = "DELETE FROM note_shares WHERE note_id = ? AND shared_with_user_id = ?";
+            $this->db->remove($query, [$noteId, $unshareUserId]);
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('Unshare Note Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get users who have access to a note
+     */
+    public function getSharedUsers(int $noteId): array {
+        try {
+            $query = "SELECT ns.*, u.username, u.name, u.email
+                     FROM note_shares ns
+                     INNER JOIN Users u ON ns.shared_with_user_id = u.id
+                     WHERE ns.note_id = ?
+                     ORDER BY ns.shared_at DESC";
+            
+            $result = $this->db->select($query, [$noteId]);
+            return $result ?: [];
+        } catch (Exception $e) {
+            error_log('Get Shared Users Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Check if a user has access to a note
+     */
+    public function hasAccess(int $noteId, int $userId, string $requiredPermission = 'view'): bool {
+        try {
+            // Get note details first
+            $noteQuery = "SELECT id, type, reference_id, created_by FROM Notes WHERE id = ?";
+            $noteResult = $this->db->select($noteQuery, [$noteId]);
+            
+            if (empty($noteResult)) {
+                return false; // Note doesn't exist
+            }
+            
+            $note = $noteResult[0];
+            
+            // Check if user owns the note
+            if ($note['created_by'] == $userId) {
+                return true; // Owner has full access
+            }
+            
+            // Check if note is explicitly shared with user
+            $shareQuery = "SELECT permission FROM note_shares WHERE note_id = ? AND shared_with_user_id = ?";
+            $shareResult = $this->db->select($shareQuery, [$noteId, $userId]);
+            
+            if (!empty($shareResult)) {
+                $permission = $shareResult[0]['permission'];
+                if ($requiredPermission === 'view') {
+                    return true; // Any share grants view access
+                }
+                return $permission === 'edit'; // Edit permission required
+            }
+            
+            // For view permission only, check project/task access
+            if ($requiredPermission === 'view') {
+                // Check if user has access to the project
+                if ($note['type'] === 'project' && $note['reference_id']) {
+                    $projectQuery = "SELECT 1 FROM project_team_members 
+                                   WHERE project_id = ? AND user_id = ?";
+                    $projectResult = $this->db->select($projectQuery, [$note['reference_id'], $userId]);
+                    if (!empty($projectResult)) {
+                        return true;
+                    }
+                }
+                
+                // Check if user has access to the task
+                if ($note['type'] === 'task' && $note['reference_id']) {
+                    $taskQuery = "SELECT 1 FROM Tasks 
+                                WHERE id = ? AND (assigned_to = ? OR created_by = ?)";
+                    $taskResult = $this->db->select($taskQuery, [$note['reference_id'], $userId, $userId]);
+                    if (!empty($taskResult)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            error_log('Check Note Access Error: ' . $e->getMessage());
             return false;
         }
     }

@@ -12,12 +12,16 @@ class Search extends Controller {
     private $clientModel;
     private $timeModel;
     private $noteModel;
+    private $db;
     
     public function __construct() {
         // Basic access check
         if (!isLoggedIn()) {
             redirect('auth/login');
         }
+        
+        // Initialize database
+        $this->db = new EasySQL(DB1);
         
         // Initialize models
         $this->projectModel = $this->model('Project');
@@ -360,6 +364,13 @@ class Search extends Controller {
                 $notes = $this->noteModel->searchNotesSecure($searchQuery, $userId, $hasFullNotesAccess, $limit);
                 
                 foreach ($notes as $note) {
+                    // For now, determine basic access level
+                    if ($note['created_by'] == $userId) {
+                        $note['access_level'] = 'owner';
+                    } else {
+                        $note['access_level'] = 'viewer'; // Assume shared if it appears in results
+                    }
+                    
                     // Double-check permission (defense in depth)
                     if ($this->canViewItem($note, 'notes')) {
                         $results[] = [

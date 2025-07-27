@@ -1,15 +1,35 @@
 # Notes Security Documentation
 
 ## Overview
-Notes in ProjectTracker are **private by default**. This means users can only see and search their own notes.
+Notes in ProjectTracker have a flexible visibility system:
+- **Personal notes** are private by default
+- **Project/Task notes** are automatically visible to team members
+- Notes can be **explicitly shared** with other users
 
 ## Security Model
 
+### 1. Personal Notes
+- Private by default - only visible to the creator
+- Can be shared with specific users (view or edit permissions)
+- Owners can manage sharing at any time
+
+### 2. Project Notes
+- **Automatically visible** to all project team members
+- Any user who is a member of the project can view these notes
+- Helps team collaboration on project-related information
+
+### 3. Task Notes
+- **Automatically visible** to:
+  - The task creator
+  - The task assignee
+- Ensures relevant parties have access to task-related information
+
 ### Regular Users (user, employee, supervisor, team_lead)
-- Can ONLY see their own notes
-- Can ONLY search their own notes
-- Cannot be granted 'notes.read' permission
-- Notes are filtered at the database level by `created_by = user_id`
+- Can see their own notes
+- Can see notes explicitly shared with them
+- Can see project notes (if they're project members)
+- Can see task notes (if they're the creator or assignee)
+- Cannot be granted global 'notes.read' permission
 
 ### Admin/Manager Roles
 - Can see ALL notes from all users

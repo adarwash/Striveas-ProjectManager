@@ -135,8 +135,7 @@ function canViewSearchItem($item, $entityType, $userId) {
             return hasSearchPermission('clients.read');
             
         case 'notes':
-            // Notes are private - users can only see their own notes
-            // Only admins/managers can see all notes
+            // Notes - users can only see their own notes (simplified for now)
             return (isset($item['created_by']) && $item['created_by'] == $userId);
                    
         default:

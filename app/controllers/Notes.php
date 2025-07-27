@@ -45,9 +45,20 @@ class Notes extends Controller {
         $userId = $_SESSION['user_id'];
         $note = $this->noteModel->getNoteById($id);
         
-        if (!$note || $note['created_by'] != $userId) {
-            flash('note_message', 'Note not found or you do not have permission to view it.', 'alert-danger');
+        if (!$note) {
+            // Clear any previous success messages before setting error
+            unset($_SESSION['flash']['note_success']);
+            flash('note_error', 'Note not found.');
             redirect('notes');
+            return;
+        }
+        
+        if (!$this->noteModel->hasAccess($id, $userId, 'view')) {
+            // Clear any previous success messages before setting error
+            unset($_SESSION['flash']['note_success']);
+            flash('note_error', 'You do not have permission to view this note.');
+            redirect('notes');
+            return;
         }
         
         // Get related project or task info if applicable
@@ -74,10 +85,17 @@ class Notes extends Controller {
             }
         }
         
+        // Get shared users if the current user is the owner
+        $sharedUsers = [];
+        if ($note['created_by'] == $userId) {
+            $sharedUsers = $this->noteModel->getSharedUsers($id);
+        }
+        
         $data = [
             'title' => 'View Note - ' . $note['title'],
             'note' => $note,
-            'related_info' => $relatedInfo
+            'related_info' => $relatedInfo,
+            'shared_users' => $sharedUsers
         ];
         
         $this->view('notes/show', $data);
@@ -508,5 +526,117 @@ class Notes extends Controller {
         
         $notes = $this->noteModel->getNotesByReference($type, $id);
         echo json_encode($notes);
+    }
+    
+    /**
+     * Share a note with another user
+     */
+    public function share($id = null) {
+        if (!$id || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('notes');
+        }
+        
+        $userId = $_SESSION['user_id'];
+        $shareWithUserId = $_POST['user_id'] ?? 0;
+        $permission = $_POST['permission'] ?? 'view';
+        
+
+        // Validate inputs
+        if (empty($shareWithUserId) || $shareWithUserId == 0) {
+            flash('note_message', 'Please select a user to share with.', 'alert-warning');
+            redirect('notes/show/' . $id);
+            return;
+        }
+        
+        // Validate permission
+        if (!in_array($permission, ['view', 'edit'])) {
+            $permission = 'view';
+        }
+        
+        // Check where we're going to redirect
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        $isFromDetailPage = strpos($referer, '/notes/show/') !== false;
+        
+        if ($this->noteModel->shareNote((int)$id, (int)$userId, (int)$shareWithUserId, $permission)) {
+            if ($isFromDetailPage) {
+                flash('note_message', 'Note shared successfully!', 'alert-success');
+            } else {
+                flash('note_success', 'Note shared successfully!');
+            }
+        } else {
+            if ($isFromDetailPage) {
+                flash('note_message', 'Failed to share note. Make sure you own the note.', 'alert-danger');
+            } else {
+                flash('note_error', 'Failed to share note. Make sure you own the note.');
+            }
+        }
+        
+        // Redirect based on where we came from
+        if ($isFromDetailPage) {
+            redirect('notes/show/' . $id);
+        } else {
+            redirect('notes');
+        }
+    }
+    
+    /**
+     * Remove sharing for a note
+     */
+    public function unshare($id = null) {
+        if (!$id || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('notes');
+        }
+        
+        $userId = $_SESSION['user_id'];
+        $unshareUserId = $_POST['user_id'] ?? 0;
+        
+        // Check where we're going to redirect
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        $isFromDetailPage = strpos($referer, '/notes/show/') !== false;
+        
+        if ($this->noteModel->unshareNote($id, $userId, $unshareUserId)) {
+            if ($isFromDetailPage) {
+                flash('note_message', 'Sharing removed successfully!', 'alert-success');
+            } else {
+                flash('note_success', 'Sharing removed successfully!');
+            }
+        } else {
+            if ($isFromDetailPage) {
+                flash('note_message', 'Failed to remove sharing. Make sure you own the note.', 'alert-danger');
+            } else {
+                flash('note_error', 'Failed to remove sharing. Make sure you own the note.');
+            }
+        }
+        
+        // Redirect based on where we came from
+        if ($isFromDetailPage) {
+            redirect('notes/show/' . $id);
+        } else {
+            redirect('notes');
+        }
+    }
+    
+    /**
+     * Get shared users for a note (AJAX)
+     */
+    public function getSharedUsers($id = null) {
+        header('Content-Type: application/json');
+        
+        if (!$id) {
+            echo json_encode(['error' => 'Invalid note ID']);
+            return;
+        }
+        
+        $userId = $_SESSION['user_id'];
+        $note = $this->noteModel->getNoteById($id);
+        
+        // Only the owner can see who has access
+        if (!$note || $note['created_by'] != $userId) {
+            echo json_encode(['error' => 'Unauthorized']);
+            return;
+        }
+        
+        $sharedUsers = $this->noteModel->getSharedUsers($id);
+        echo json_encode(['success' => true, 'users' => $sharedUsers]);
     }
 } 
