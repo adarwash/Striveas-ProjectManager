@@ -182,8 +182,15 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
                 // Get profile picture or default
                 $profilePic = '/uploads/profile_pictures/' . ($_SESSION['profile_picture'] ?? 'default.png');
                 if (!file_exists($_SERVER['DOCUMENT_ROOT'] . $profilePic) || empty($_SESSION['profile_picture'])) {
-                    // Show initial if no profile picture
-                    echo substr($_SESSION['user_name'] ?? 'U', 0, 1);
+                    // Show default profile image using SVG
+                    $initial = strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1));
+                    $svgData = 'data:image/svg+xml;base64,' . base64_encode('
+                        <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="20" fill="#3498db"/>
+                            <text x="20" y="28" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">' . $initial . '</text>
+                        </svg>
+                    ');
+                    echo '<img src="' . $svgData . '" alt="Default Profile" class="img-fluid rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">';
                 } else {
                     echo '<img src="' . $profilePic . '" alt="Profile" class="img-fluid rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">';
                 }

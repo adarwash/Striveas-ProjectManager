@@ -456,39 +456,7 @@
     align-items: center;
 }
 
-.page-header .btn-outline-primary {
-    background: rgba(255,255,255,0.15);
-    border-color: rgba(255,255,255,0.3);
-    color: #ffffff;
-    backdrop-filter: blur(10px);
-    text-shadow: none;
-    font-weight: 600;
-}
 
-.page-header .btn-outline-primary:hover {
-    background: rgba(255,255,255,0.25);
-    border-color: rgba(255,255,255,0.5);
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-.page-header .btn-primary {
-    background: rgba(255,255,255,0.2);
-    border-color: rgba(255,255,255,0.4);
-    color: #ffffff;
-    backdrop-filter: blur(10px);
-    font-weight: 600;
-    text-shadow: none;
-}
-
-.page-header .btn-primary:hover {
-    background: rgba(255,255,255,0.3);
-    border-color: rgba(255,255,255,0.6);
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
 
 /* Status Hero Card */
 .status-hero-card {

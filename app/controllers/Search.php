@@ -352,7 +352,9 @@ class Search extends Controller {
         if (($type === 'all' || $type === 'notes') && $this->noteModel && $this->canSearchEntity('notes')) {
             try {
                 $userId = $_SESSION['user_id'];
-                $hasFullNotesAccess = hasSearchPermission('notes.read') || isManager();
+                // Only admins and managers can see all notes
+                // Regular users can ONLY see their own notes
+                $hasFullNotesAccess = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager']);
                 
                 // Use secure search method that filters at database level
                 $notes = $this->noteModel->searchNotesSecure($searchQuery, $userId, $hasFullNotesAccess, $limit);

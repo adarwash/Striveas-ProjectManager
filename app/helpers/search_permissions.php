@@ -61,12 +61,14 @@ function hasSearchPermission($permission) {
     }
     
     // Basic permission mapping for common roles
-    // NOTE: notes.read allows viewing ALL notes, so it should be restricted to admin/manager roles only
+    // IMPORTANT: notes.read allows viewing ALL notes - DO NOT grant to regular users!
+    // Notes are private by default - users can only see their own notes
     $rolePermissions = [
         'user' => ['tasks.read'],
         'employee' => ['projects.read', 'tasks.read'],
         'supervisor' => ['projects.read', 'tasks.read', 'users.read', 'clients.read', 'reports_read'],
         'team_lead' => ['projects.read', 'tasks.read', 'users.read']
+        // notes.read is intentionally omitted - only admin/manager should have it
     ];
     
     return isset($rolePermissions[$userRole]) && in_array($permission, $rolePermissions[$userRole]);
@@ -133,8 +135,9 @@ function canViewSearchItem($item, $entityType, $userId) {
             return hasSearchPermission('clients.read');
             
         case 'notes':
-            return hasSearchPermission('notes.read') || 
-                   (isset($item['created_by']) && $item['created_by'] == $userId);
+            // Notes are private - users can only see their own notes
+            // Only admins/managers can see all notes
+            return (isset($item['created_by']) && $item['created_by'] == $userId);
                    
         default:
             return false;
