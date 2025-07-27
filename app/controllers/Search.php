@@ -1,5 +1,9 @@
 <?php
 
+// Include permission helper functions
+require_once '../app/helpers/permissions_helper.php';
+require_once '../app/helpers/search_permissions.php';
+
 class Search extends Controller {
     
     private $projectModel;
@@ -41,6 +45,35 @@ class Search extends Controller {
     }
     
     /**
+     * Check if user has permission to search a specific entity type
+     */
+    private function canSearchEntity($entityType) {
+        switch ($entityType) {
+            case 'projects':
+                return hasSearchPermission('projects.read') || isManager();
+            case 'tasks':
+                return hasSearchPermission('tasks.read') || isManager();
+            case 'users':
+                return hasSearchPermission('users.read') || hasSearchPermission('reports_read') || isManager();
+            case 'clients':
+                return hasSearchPermission('clients.read') || isManager();
+            case 'notes':
+                // Users can always search notes (they'll only see their own unless they have notes.read permission)
+                return true;
+            default:
+                return isManager(); // Default fallback for admin-only access
+        }
+    }
+    
+    /**
+     * Check if user can view a specific item based on ownership and permissions
+     */
+    private function canViewItem($item, $entityType) {
+        $userId = $_SESSION['user_id'];
+        return canViewSearchItem($item, $entityType, $userId);
+    }
+    
+    /**
      * Test endpoint to verify controller is working
      */
     public function test() {
@@ -51,6 +84,39 @@ class Search extends Controller {
             'timestamp' => date('Y-m-d H:i:s')
         ]);
         exit;
+    }
+    
+    /**
+     * Debug endpoint to check user permissions for search
+     */
+    public function permissions() {
+        header('Content-Type: application/json');
+        
+        if (!isLoggedIn()) {
+            echo json_encode(['error' => 'Not logged in']);
+            return;
+        }
+        
+        $userId = $_SESSION['user_id'];
+        $permissions = [];
+        $searchTypes = ['projects', 'tasks', 'users', 'clients', 'notes'];
+        
+        foreach ($searchTypes as $type) {
+            $permissions[$type] = [
+                'can_search' => $this->canSearchEntity($type),
+                'permission_check' => hasSearchPermission($type . '.read'),
+                'is_manager' => isManager()
+            ];
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'user_id' => $userId,
+            'role' => $_SESSION['role'] ?? 'unknown',
+            'permissions' => $permissions,
+            'allowed_types' => getAllowedSearchTypes(),
+            'permission_system_available' => function_exists('hasPermission')
+        ]);
     }
     
     /**
@@ -79,7 +145,36 @@ class Search extends Controller {
             return;
         }
         
+        // Check if user has permission to search at least one entity type
+        $canSearchAny = false;
+        $searchableTypes = ['projects', 'tasks', 'users', 'clients', 'notes'];
+        
+        if ($type === 'all') {
+            foreach ($searchableTypes as $entityType) {
+                if ($this->canSearchEntity($entityType)) {
+                    $canSearchAny = true;
+                    break;
+                }
+            }
+        } else {
+            $canSearchAny = $this->canSearchEntity($type);
+        }
+        
+        if (!$canSearchAny) {
+            echo json_encode([
+                'success' => false,
+                'results' => [],
+                'total' => 0,
+                'message' => 'You do not have permission to search this content type.',
+                'error' => 'insufficient_permissions'
+            ]);
+            return;
+        }
+        
         try {
+            // Log search for security audit
+            error_log("User {$_SESSION['user_id']} searched for: '$query' (type: $type)");
+            
             $results = $this->performSearch($query, $type, $limit);
             
             echo json_encode([
@@ -88,6 +183,13 @@ class Search extends Controller {
                 'total' => count($results),
                 'query' => $query,
                 'type' => $type,
+                'permissions' => [
+                    'projects' => $this->canSearchEntity('projects'),
+                    'tasks' => $this->canSearchEntity('tasks'),
+                    'users' => $this->canSearchEntity('users'),
+                    'clients' => $this->canSearchEntity('clients'),
+                    'notes' => $this->canSearchEntity('notes')
+                ],
                 'debug' => [
                     'models_loaded' => [
                         'project' => ($this->projectModel !== null),
@@ -137,121 +239,141 @@ class Search extends Controller {
         $results = [];
         $searchQuery = '%' . $query . '%';
         
-        // Search Projects
-        if ($type === 'all' || $type === 'projects') {
+        // Search Projects (with permission checks)
+        if (($type === 'all' || $type === 'projects') && $this->canSearchEntity('projects')) {
             try {
                 $projects = $this->projectModel->searchProjects($searchQuery, $limit);
                 foreach ($projects as $project) {
-                    $results[] = [
-                        'type' => 'project',
-                        'id' => $project['id'],
-                        'title' => $project['title'],
-                        'description' => $this->truncateText($project['description'] ?? '', 100),
-                        'url' => '/projects/viewProject/' . $project['id'],
-                        'icon' => 'bi bi-folder',
-                        'status' => $project['status'] ?? 'Active',
-                        'meta' => [
-                            'Client' => $project['client_name'] ?? 'No Client',
-                            'Created' => date('M j, Y', strtotime($project['created_at'] ?? 'now'))
-                        ]
-                    ];
+                    // Check if user can view this specific project
+                    if ($this->canViewItem($project, 'projects')) {
+                        $results[] = [
+                            'type' => 'project',
+                            'id' => $project['id'],
+                            'title' => $project['title'],
+                            'description' => $this->truncateText($project['description'] ?? '', 100),
+                            'url' => '/projects/viewProject/' . $project['id'],
+                            'icon' => 'bi bi-folder',
+                            'status' => $project['status'] ?? 'Active',
+                            'meta' => [
+                                'Client' => $project['client_name'] ?? 'No Client',
+                                'Created' => date('M j, Y', strtotime($project['created_at'] ?? 'now'))
+                            ]
+                        ];
+                    }
                 }
             } catch (Exception $e) {
                 error_log('Project search error: ' . $e->getMessage());
             }
         }
         
-        // Search Tasks
-        if ($type === 'all' || $type === 'tasks') {
+        // Search Tasks (with permission checks)
+        if (($type === 'all' || $type === 'tasks') && $this->canSearchEntity('tasks')) {
             try {
                 $tasks = $this->taskModel->searchTasks($searchQuery, $limit);
                 foreach ($tasks as $task) {
-                    $results[] = [
-                        'type' => 'task',
-                        'id' => $task['id'],
-                        'title' => $task['title'],
-                        'description' => $this->truncateText($task['description'] ?? '', 100),
-                        'url' => '/tasks/show/' . $task['id'],
-                        'icon' => 'bi bi-check-square',
-                        'status' => $task['status'] ?? 'Open',
-                        'meta' => [
-                            'Project' => $task['project_title'] ?? 'No Project',
-                            'Priority' => $task['priority'] ?? 'Normal',
-                            'Due Date' => $task['due_date'] ? date('M j, Y', strtotime($task['due_date'])) : 'No due date'
-                        ]
-                    ];
+                    // Check if user can view this specific task
+                    if ($this->canViewItem($task, 'tasks')) {
+                        $results[] = [
+                            'type' => 'task',
+                            'id' => $task['id'],
+                            'title' => $task['title'],
+                            'description' => $this->truncateText($task['description'] ?? '', 100),
+                            'url' => '/tasks/show/' . $task['id'],
+                            'icon' => 'bi bi-check-square',
+                            'status' => $task['status'] ?? 'Open',
+                            'meta' => [
+                                'Project' => $task['project_title'] ?? 'No Project',
+                                'Priority' => $task['priority'] ?? 'Normal',
+                                'Due Date' => $task['due_date'] ? date('M j, Y', strtotime($task['due_date'])) : 'No due date'
+                            ]
+                        ];
+                    }
                 }
             } catch (Exception $e) {
                 error_log('Task search error: ' . $e->getMessage());
             }
         }
         
-        // Search Users
-        if ($type === 'all' || $type === 'users') {
+        // Search Users (with permission checks)
+        if (($type === 'all' || $type === 'users') && $this->canSearchEntity('users')) {
             try {
                 $users = $this->userModel->searchUsers($searchQuery, $limit);
                 foreach ($users as $user) {
-                    $results[] = [
-                        'type' => 'user',
-                        'id' => $user['id'],
-                        'title' => $user['name'] ?? $user['username'],
-                        'description' => $user['email'] ?? '',
-                        'url' => '/users/profile/' . $user['id'],
-                        'icon' => 'bi bi-person-circle',
-                        'status' => $user['is_active'] ? 'Active' : 'Inactive',
-                        'meta' => [
-                            'Role' => $user['role'] ?? 'User',
-                            'Email' => $user['email'] ?? ''
-                        ]
-                    ];
+                    // Check if user can view this specific user
+                    if ($this->canViewItem($user, 'users')) {
+                        $results[] = [
+                            'type' => 'user',
+                            'id' => $user['id'],
+                            'title' => $user['name'] ?? $user['username'],
+                            'description' => $user['email'] ?? '',
+                            'url' => '/users/profile/' . $user['id'],
+                            'icon' => 'bi bi-person-circle',
+                            'status' => $user['is_active'] ? 'Active' : 'Inactive',
+                            'meta' => [
+                                'Role' => $user['role'] ?? 'User',
+                                'Email' => $user['email'] ?? ''
+                            ]
+                        ];
+                    }
                 }
             } catch (Exception $e) {
                 error_log('User search error: ' . $e->getMessage());
             }
         }
         
-        // Search Clients
-        if (($type === 'all' || $type === 'clients') && $this->clientModel) {
+        // Search Clients (with permission checks)
+        if (($type === 'all' || $type === 'clients') && $this->clientModel && $this->canSearchEntity('clients')) {
             try {
                 $clients = $this->clientModel->searchClients($searchQuery, $limit);
                 foreach ($clients as $client) {
-                    $results[] = [
-                        'type' => 'client',
-                        'id' => $client['id'],
-                        'title' => $client['name'],
-                        'description' => $client['email'] ?? '',
-                        'url' => '/clients/view/' . $client['id'],
-                        'icon' => 'bi bi-building',
-                        'status' => 'Active',
-                        'meta' => [
-                            'Contact' => $client['contact_person'] ?? 'N/A',
-                            'Phone' => $client['phone'] ?? 'N/A'
-                        ]
-                    ];
+                    // Check if user can view this specific client
+                    if ($this->canViewItem($client, 'clients')) {
+                        $results[] = [
+                            'type' => 'client',
+                            'id' => $client['id'],
+                            'title' => $client['name'],
+                            'description' => $client['email'] ?? '',
+                            'url' => '/clients/view/' . $client['id'],
+                            'icon' => 'bi bi-building',
+                            'status' => 'Active',
+                            'meta' => [
+                                'Contact' => $client['contact_person'] ?? 'N/A',
+                                'Phone' => $client['phone'] ?? 'N/A'
+                            ]
+                        ];
+                    }
                 }
             } catch (Exception $e) {
                 error_log('Client search error: ' . $e->getMessage());
             }
         }
         
-        // Search Notes
-        if (($type === 'all' || $type === 'notes') && $this->noteModel) {
+        // Search Notes (with permission checks)
+        if (($type === 'all' || $type === 'notes') && $this->noteModel && $this->canSearchEntity('notes')) {
             try {
-                $notes = $this->noteModel->searchNotes($searchQuery, $limit);
+                $userId = $_SESSION['user_id'];
+                $hasFullNotesAccess = hasSearchPermission('notes.read') || isManager();
+                
+                // Use secure search method that filters at database level
+                $notes = $this->noteModel->searchNotesSecure($searchQuery, $userId, $hasFullNotesAccess, $limit);
+                
                 foreach ($notes as $note) {
-                    $results[] = [
-                        'type' => 'note',
-                        'id' => $note['id'],
-                        'title' => $note['title'],
-                        'description' => $this->truncateText($note['content'] ?? '', 100),
-                        'url' => '/notes/show/' . $note['id'],
-                        'icon' => 'bi bi-journal-text',
-                        'status' => 'Note',
-                        'meta' => [
-                            'Created' => date('M j, Y', strtotime($note['created_at'] ?? 'now')),
-                            'Author' => $note['author_name'] ?? 'Unknown'
-                        ]
-                    ];
+                    // Double-check permission (defense in depth)
+                    if ($this->canViewItem($note, 'notes')) {
+                        $results[] = [
+                            'type' => 'note',
+                            'id' => $note['id'],
+                            'title' => $note['title'],
+                            'description' => $this->truncateText($note['content'] ?? '', 100),
+                            'url' => '/notes/show/' . $note['id'],
+                            'icon' => 'bi bi-journal-text',
+                            'status' => 'Note',
+                            'meta' => [
+                                'Created' => date('M j, Y', strtotime($note['created_at'] ?? 'now')),
+                                'Author' => $note['author_name'] ?? 'Unknown'
+                            ]
+                        ];
+                    }
                 }
             } catch (Exception $e) {
                 error_log('Note search error: ' . $e->getMessage());

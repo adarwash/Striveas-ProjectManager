@@ -5,19 +5,16 @@
     
     <!-- Page Header -->
     <div class="page-header mb-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="header-text">
-                <h1 class="page-title">
-                    <i class="fas fa-sticky-note"></i>
-                    <?= $data['title'] ?>
-                </h1>
-                <p class="mb-0">Your collection of thoughts, ideas, and important information</p>
-            </div>
-            <div class="header-actions">
-                <a href="/notes/add" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Add New Note
-                </a>
-            </div>
+        <div>
+            <h1 class="page-title">
+                <i class="fas fa-sticky-note me-3"></i><?= $data['title'] ?>
+            </h1>
+            <p class="mb-0">Your collection of thoughts, ideas, and important information</p>
+        </div>
+        <div>
+            <a href="/notes/add" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add New Note
+            </a>
         </div>
     </div>
     

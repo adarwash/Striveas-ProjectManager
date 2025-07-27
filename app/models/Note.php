@@ -295,6 +295,7 @@ class Note {
     
     /**
      * Search notes by title or content
+     * This method returns ALL matching notes - permission filtering happens in the controller
      */
     public function searchNotes($searchQuery, $limit = 10) {
         try {
@@ -324,6 +325,46 @@ class Note {
             return $results ?: [];
         } catch (Exception $e) {
             error_log('Note search error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Search notes by title or content with user permission filtering
+     * More secure method that filters at the database level
+     */
+    public function searchNotesSecure($searchQuery, $userId, $hasFullAccess = false, $limit = 10) {
+        try {
+            $whereClause = "(n.title LIKE ? OR n.content LIKE ?)";
+            $params = [$searchQuery, $searchQuery, $searchQuery, $searchQuery];
+            
+            // If user doesn't have full access, only show their own notes
+            if (!$hasFullAccess) {
+                $whereClause .= " AND n.created_by = ?";
+                $params[] = $userId;
+            }
+            
+            $query = "SELECT n.*, u.username as author_name
+                     FROM [Notes] n
+                     LEFT JOIN [Users] u ON n.created_by = u.id
+                     WHERE $whereClause
+                     ORDER BY 
+                         CASE 
+                             WHEN n.title LIKE ? THEN 1
+                             WHEN n.content LIKE ? THEN 2
+                             ELSE 3
+                         END,
+                         n.created_at DESC";
+            
+            // SQL Server uses TOP instead of LIMIT
+            if ($limit > 0) {
+                $query = str_replace("SELECT n.*", "SELECT TOP $limit n.*", $query);
+            }
+            
+            $results = $this->db->select($query, $params);
+            return $results ?: [];
+        } catch (Exception $e) {
+            error_log('Note secure search error: ' . $e->getMessage());
             return [];
         }
     }

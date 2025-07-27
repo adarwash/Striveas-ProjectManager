@@ -1,12 +1,21 @@
 <div class="container">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="mb-0">Add Note</h1>
-                <a href="/notes" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to Notes
-                </a>
-            </div>
+    <!-- Page Header -->
+    <div class="page-header mb-4">
+        <div>
+            <h1 class="page-title">
+                <i class="fas fa-plus me-3"></i>Add Note
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/notes">Notes</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add New</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="/notes" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Notes
+            </a>
         </div>
     </div>
 

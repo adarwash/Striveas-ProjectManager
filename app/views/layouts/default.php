@@ -144,7 +144,7 @@
         
         /* Team section */
         .team-section {
-            padding: 1.5rem;
+            padding: 0px 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             margin-top: auto;
         }
@@ -177,7 +177,7 @@
         .team-member-name {
             font-weight: 600;
             font-size: 0.95rem;
-            color: white;
+    /* color: white; */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -185,7 +185,7 @@
         
         .team-member-title {
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.7);
+            /* color: rgba(255, 255, 255, 0.7); */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -784,7 +784,7 @@
             }
             
             .team-section {
-                padding: 1rem 0.5rem;
+                padding: 0px 20px;
             }
             
             .team-member {
@@ -1454,9 +1454,9 @@
                     console.log('Search response data:', data);
                     hideSearchLoading();
                     if (data.success) {
-                        displaySearchResults(data.results);
+                        displaySearchResults(data.results, data.permissions);
                     } else {
-                        displaySearchError(data.message || 'Search failed');
+                        displaySearchError(data.message || 'Search failed', data.error);
                     }
                 })
                 .catch(error => {
@@ -1466,15 +1466,25 @@
                 });
         }
         
-        function displaySearchResults(results) {
+        function displaySearchResults(results, permissions) {
             const resultsContent = searchResults.querySelector('.search-results-content');
             
             if (results.length === 0) {
+                let noResultsMessage = 'Try different keywords or filters';
+                
+                // Check if no results due to permissions
+                if (permissions) {
+                    const hasAnyPermission = Object.values(permissions).some(p => p === true);
+                    if (!hasAnyPermission) {
+                        noResultsMessage = 'You may not have permission to search the available content types';
+                    }
+                }
+                
                 resultsContent.innerHTML = `
                     <div class="search-no-results">
                         <i class="bi bi-search"></i>
                         <div>No results found</div>
-                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">Try different keywords or filters</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.5rem;">${noResultsMessage}</div>
                     </div>
                 `;
             } else {
@@ -1513,12 +1523,22 @@
             showSearchResults();
         }
         
-        function displaySearchError(message) {
+        function displaySearchError(message, errorType) {
             const resultsContent = searchResults.querySelector('.search-results-content');
+            let icon = 'bi bi-exclamation-triangle';
+            let title = 'Search Error';
+            
+            // Handle specific error types
+            if (errorType === 'insufficient_permissions') {
+                icon = 'bi bi-shield-exclamation';
+                title = 'Access Restricted';
+                message = 'You do not have permission to search this content. Contact your administrator if you need access.';
+            }
+            
             resultsContent.innerHTML = `
                 <div class="search-no-results">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <div>Search Error</div>
+                    <i class="${icon}"></i>
+                    <div>${title}</div>
                     <div style="font-size: 0.75rem; margin-top: 0.5rem;">${escapeHtml(message)}</div>
                 </div>
             `;

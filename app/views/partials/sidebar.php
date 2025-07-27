@@ -286,7 +286,7 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
 
 /* Modern Time Status Widget Styles */
 .time-tracking-widget {
-    margin: 1rem 0;
+    margin-bottom: -45px;
     border-top: 1px solid rgba(0,0,0,0.08);
     padding-top: 1rem;
 }
