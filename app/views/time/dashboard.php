@@ -169,6 +169,31 @@
                                     <span class="control-time" id="controlCurrentTime"><?php echo date('h:i:s A'); ?></span>
                                 </div>
                                 
+                                <!-- Current Site Display -->
+                                <?php if ($user_status['status'] === 'clocked_in' && !empty($user_status['site_name'])): ?>
+                                    <div class="current-site-info mb-3">
+                                        <div class="site-badge">
+                                            <i class="fas fa-map-marker-alt me-2"></i>
+                                            <strong><?= htmlspecialchars($user_status['site_name']) ?></strong>
+                                            <?php if (!empty($user_status['site_location'])): ?>
+                                                <small class="text-muted d-block"><?= htmlspecialchars($user_status['site_location']) ?></small>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <!-- Site Selection (for Clock In) -->
+                                <?php if ($user_status['status'] === 'clocked_out'): ?>
+                                    <div class="site-selection mb-3">
+                                        <label for="clockInSite" class="form-label">
+                                            <i class="fas fa-building me-2"></i>Work Location
+                                        </label>
+                                        <select class="form-select" id="clockInSite">
+                                            <option value="">Loading sites...</option>
+                                        </select>
+                                    </div>
+                                <?php endif; ?>
+                                
                                 <div class="control-actions">
                                     <?php if ($user_status['status'] === 'clocked_out'): ?>
                                         <button class="btn btn-success btn-lg control-btn" onclick="clockIn()">
@@ -313,6 +338,7 @@
                                 <thead>
                                     <tr>
                                         <th>Date</th>
+                                        <th>Site</th>
                                         <th>Clock In</th>
                                         <th>Clock Out</th>
                                         <th>Work Hours</th>
@@ -329,6 +355,16 @@
                                                     <div class="date-main"><?php echo date('M d', strtotime($entry['clock_in_time'])); ?></div>
                                                     <div class="date-year"><?php echo date('Y', strtotime($entry['clock_in_time'])); ?></div>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                <?php if (!empty($entry['site_name'])): ?>
+                                                    <span class="badge bg-info bg-opacity-10 text-info border border-info" style="font-size: 0.7rem;" title="<?= htmlspecialchars($entry['site_location'] ?? '') ?>">
+                                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                                        <?= htmlspecialchars($entry['site_name']) ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="text-muted" style="font-size: 0.8rem;">-</span>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <span class="time-display"><?php echo date('h:i A', strtotime($entry['clock_in_time'])); ?></span>
@@ -699,6 +735,42 @@
     margin: 0;
 }
 
+/* Site Information Styles */
+.current-site-info {
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.site-badge {
+    color: #0066cc;
+    font-size: 0.875rem;
+}
+
+.site-badge i {
+    color: #0052a3;
+}
+
+.site-selection label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.site-selection .form-select {
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+}
+
+.site-selection .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
 .break-type-display {
     display: inline-block;
     background: #fff3cd;
@@ -1034,12 +1106,23 @@ function submitWithNotes() {
     const notes = document.getElementById('notes').value;
     const endpoint = currentAction === 'clockIn' ? '/time/clockIn' : '/time/clockOut';
     
+    // Prepare form data
+    let formData = `notes=${encodeURIComponent(notes)}`;
+    
+    // Add site_id for clock in
+    if (currentAction === 'clockIn') {
+        const siteSelect = document.getElementById('clockInSite');
+        if (siteSelect && siteSelect.value) {
+            formData += `&site_id=${encodeURIComponent(siteSelect.value)}`;
+        }
+    }
+    
     fetch(endpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `notes=${encodeURIComponent(notes)}`
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
@@ -1172,9 +1255,42 @@ function viewDetails(entryId) {
     console.log('View details for entry:', entryId);
 }
 
+// Load available sites for clock-in
+function loadUserSites() {
+    const siteSelect = document.getElementById('clockInSite');
+    if (!siteSelect) return;
+    
+    fetch('/time/getUserSites')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.sites) {
+                siteSelect.innerHTML = '<option value="">Select work location...</option>';
+                
+                data.sites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site.id;
+                    option.textContent = `${site.name}${site.location ? ' - ' + site.location : ''}`;
+                    siteSelect.appendChild(option);
+                });
+                
+                // Auto-select first site if only one available
+                if (data.sites.length === 1) {
+                    siteSelect.value = data.sites[0].id;
+                }
+            } else {
+                siteSelect.innerHTML = '<option value="">No sites available</option>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading sites:', error);
+            siteSelect.innerHTML = '<option value="">Error loading sites</option>';
+        });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     startTimers();
+    loadUserSites();
     
     // Clear notes when modal is hidden
     const notesModal = document.getElementById('notesModal');

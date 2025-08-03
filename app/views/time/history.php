@@ -223,6 +223,7 @@
                         <thead>
                             <tr>
                                 <th>Date</th>
+                                <th>Site</th>
                                 <th>Clock In</th>
                                 <th>Clock Out</th>
                                 <th>Work Hours</th>
@@ -236,6 +237,16 @@
                             <?php foreach ($time_entries as $entry): ?>
                             <tr>
                                 <td><?= date('M d (D)', strtotime($entry['clock_in_time'])) ?></td>
+                                <td>
+                                    <?php if (!empty($entry['site_name'])): ?>
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info" title="<?= htmlspecialchars($entry['site_location'] ?? '') ?>">
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            <?= htmlspecialchars($entry['site_name']) ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <span class="badge bg-success">
                                         <?= date('H:i', strtotime($entry['clock_in_time'])) ?>

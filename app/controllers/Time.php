@@ -27,7 +27,7 @@ class Time extends Controller{
             $userId = $_SESSION['user_id'];
             $userStatus = $this->timeModel->getUserStatus($userId);
             $todaySummary = $this->timeModel->getDailySummary($userId);
-            $recentEntries = $this->timeModel->getUserTimeEntries($userId, date('Y-m-d', strtotime('-7 days')), null, 10);
+            $recentEntries = $this->timeModel->getTimeEntriesWithSites($userId, date('Y-m-d', strtotime('-7 days')), null, 10);
             $breakTypes = $this->timeModel->getBreakTypes();
             
             $data = [
@@ -59,8 +59,9 @@ class Time extends Controller{
         
         $userId = $_SESSION['user_id'];
         $notes = $_POST['notes'] ?? null;
+        $siteId = !empty($_POST['site_id']) ? (int)$_POST['site_id'] : null;
         
-        $result = $this->timeModel->clockIn($userId, $notes);
+        $result = $this->timeModel->clockIn($userId, $notes, $siteId);
         $this->jsonResponse($result);
     }
     
@@ -123,6 +124,15 @@ class Time extends Controller{
     }
     
     /**
+     * Get available sites for the user (AJAX)
+     */
+    public function getUserSites() {
+        $userId = $_SESSION['user_id'];
+        $sites = $this->timeModel->getUserSites($userId);
+        $this->jsonResponse(['success' => true, 'sites' => $sites]);
+    }
+    
+    /**
      * View time history
      */
     public function history() {
@@ -130,7 +140,7 @@ class Time extends Controller{
         $startDate = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
         $endDate = $_GET['end_date'] ?? date('Y-m-d');
         
-        $timeEntries = $this->timeModel->getUserTimeEntries($userId, $startDate, $endDate);
+        $timeEntries = $this->timeModel->getTimeEntriesWithSites($userId, $startDate, $endDate, 0); // 0 = no limit for history
         
         $data = [
             'title' => 'Time History',

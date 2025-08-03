@@ -98,6 +98,12 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
                                     <div class="status-time">
                                         Since <?php echo date('H:i', strtotime($userStatus['clock_in_time'] ?? 'now')); ?>
                                     </div>
+                                    <?php if (!empty($userStatus['site_name'])): ?>
+                                        <div class="status-site">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <?= htmlspecialchars($userStatus['site_name']) ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php elseif ($userStatus['status'] === 'on_break'): ?>
@@ -396,6 +402,20 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
     font-size: 0.75rem;
     color: #7f8c8d;
     font-weight: 500;
+}
+
+.status-site {
+    font-size: 0.7rem;
+    color: #5a6c7d;
+    font-weight: 500;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.status-site i {
+    font-size: 0.7rem;
 }
 
 /* Time Statistics */

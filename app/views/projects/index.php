@@ -115,11 +115,10 @@
                     <div class="row align-items-center">
                         <div class="col-lg-4 col-md-6 mb-3 mb-lg-0">
                             <div class="search-section">
-                                <label class="search-label">Search Projects</label>
-                                <div class="search-box">
+                                <div class="search-box" style="position: relative;">
                                     <i class="fas fa-search search-icon"></i>
                                     <input type="text" class="form-control search-input" id="projectSearch" 
-                                           placeholder="Search by project name..." aria-label="Search projects">
+                                           placeholder="Search projects..." aria-label="Search projects">
                                     <button class="search-clear" id="clearSearch" style="display: none;">
                                         <i class="fas fa-times"></i>
                                     </button>
@@ -447,6 +446,17 @@
 
 <!-- Modern Styling -->
 <style>
+/* Override any Bootstrap or other framework styles for search */
+.search-section .form-control {
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+}
+
+.search-section .form-control:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+}
+
 /* Page Header */
 .page-header {
     background: #ffffff;
@@ -623,12 +633,18 @@
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
-.search-section,
+.search-section {
+    margin-bottom: 0 !important;
+}
+
+.search-section .search-box {
+    position: relative !important;
+}
+
 .filter-section {
     margin-bottom: 0;
 }
 
-.search-label,
 .filter-label {
     display: block;
     font-weight: 600;
@@ -639,53 +655,49 @@
     letter-spacing: 0.5px;
 }
 
-.search-box {
-    position: relative;
+.search-input.form-control {
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    font-size: 0.95rem !important;
+    background: #ffffff !important;
+}
+
+.search-input.form-control:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+    background: #ffffff !important;
 }
 
 .search-icon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6b7280;
-    z-index: 10;
-    font-size: 1rem;
-}
-
-.search-input {
-    padding: 0.75rem 1rem 0.75rem 2.75rem;
-    border-radius: 0.75rem;
-    border: 2px solid #e5e7eb;
-    transition: all 0.3s ease;
-    background: #ffffff;
-    font-size: 0.95rem;
-    width: 100%;
-}
-
-.search-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    background: #ffffff;
+    position: absolute !important;
+    left: 0.75rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #a0aec0 !important;
+    z-index: 3 !important;
+    font-size: 1rem !important;
 }
 
 .search-clear {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #9ca3af;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 0.25rem;
-    transition: all 0.3s ease;
+    position: absolute !important;
+    right: 0.75rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    background: none !important;
+    border: none !important;
+    color: #a0aec0 !important;
+    cursor: pointer !important;
+    z-index: 3 !important;
+    padding: 0.25rem !important;
+    border-radius: 0.25rem !important;
 }
 
 .search-clear:hover {
-    color: #6b7280;
-    background: rgba(0,0,0,0.05);
+    color: #6b7280 !important;
+    background: rgba(0,0,0,0.05) !important;
 }
 
 .filter-buttons {

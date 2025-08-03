@@ -10,7 +10,7 @@ class TimeTracking {
     /**
      * Clock in user - start time tracking
      */
-    public function clockIn($userId, $notes = null) {
+    public function clockIn($userId, $notes = null, $siteId = null) {
         try {
             // Check if user is already clocked in
             $activeEntry = $this->getActiveTimeEntry($userId);
@@ -20,15 +20,25 @@ class TimeTracking {
             
             $clockInTime = date('Y-m-d H:i:s');
             
-            $sql = "INSERT INTO dbo.TimeEntries (user_id, clock_in_time, notes, status) VALUES (?, ?, ?, 'active')";
-            $result = $this->db->insert($sql, [$userId, $clockInTime, $notes]);
+            // If no site specified, try to get user's default/primary site
+            if (!$siteId) {
+                $siteId = $this->getUserDefaultSite($userId);
+            }
+            
+            $sql = "INSERT INTO dbo.TimeEntries (user_id, clock_in_time, notes, status, site_id) VALUES (?, ?, ?, 'active', ?)";
+            $result = $this->db->insert($sql, [$userId, $clockInTime, $notes, $siteId]);
+            
+            // Get site information for response
+            $siteInfo = $this->getSiteInfo($siteId);
             
             // If no exception was thrown, the insert was successful
             return [
                 'success' => true, 
-                'message' => 'Clocked in successfully',
+                'message' => 'Clocked in successfully' . ($siteInfo ? ' at ' . $siteInfo['name'] : ''),
                 'clock_in_time' => $clockInTime,
-                'time_entry_id' => $result ?: 'created'
+                'time_entry_id' => $result ?: 'created',
+                'site_id' => $siteId,
+                'site_info' => $siteInfo
             ];
             
         } catch (Exception $e) {
@@ -160,9 +170,14 @@ class TimeTracking {
                 'status' => 'clocked_out',
                 'message' => 'Not clocked in',
                 'time_entry' => null,
-                'active_break' => null
+                'active_break' => null,
+                'site_name' => null,
+                'site_location' => null
             ];
         }
+        
+        // Get site information for active entry
+        $siteInfo = $this->getSiteInfo($activeEntry['site_id']);
         
         $activeBreak = $this->getActiveBreak($activeEntry['id']);
         
@@ -173,7 +188,10 @@ class TimeTracking {
                 'time_entry' => $activeEntry,
                 'active_break' => $activeBreak,
                 'elapsed_work_time' => $this->getElapsedWorkTime($activeEntry),
-                'break_duration' => $this->calculateTotalMinutes($activeBreak['break_start'], date('Y-m-d H:i:s'))
+                'break_duration' => $this->calculateTotalMinutes($activeBreak['break_start'], date('Y-m-d H:i:s')),
+                'site_name' => $siteInfo ? $siteInfo['name'] : null,
+                'site_location' => $siteInfo ? $siteInfo['location'] : null,
+                'site_info' => $siteInfo
             ];
         }
         
@@ -182,7 +200,10 @@ class TimeTracking {
             'message' => 'Clocked in and working',
             'time_entry' => $activeEntry,
             'active_break' => null,
-            'elapsed_work_time' => $this->getElapsedWorkTime($activeEntry)
+            'elapsed_work_time' => $this->getElapsedWorkTime($activeEntry),
+            'site_name' => $siteInfo ? $siteInfo['name'] : null,
+            'site_location' => $siteInfo ? $siteInfo['location'] : null,
+            'site_info' => $siteInfo
         ];
     }
     
@@ -634,6 +655,121 @@ class TimeTracking {
             'break_patterns' => [],
             'peak_hours' => []
         ];
+    }
+    
+    /**
+     * Get user's default/primary site
+     */
+    public function getUserDefaultSite($userId) {
+        try {
+            // First try to get from EmployeeSites if table exists
+            $checkTable = "SELECT COUNT(*) as table_exists 
+                          FROM INFORMATION_SCHEMA.TABLES 
+                          WHERE TABLE_NAME = 'EmployeeSites'";
+            $result = $this->db->select($checkTable);
+            
+            if ($result[0]['table_exists'] > 0) {
+                $sql = "SELECT TOP 1 site_id FROM dbo.EmployeeSites 
+                       WHERE user_id = ? AND status = 'Active' 
+                       ORDER BY created_at ASC"; // First site assigned
+                $result = $this->db->select($sql, [$userId]);
+                if ($result) {
+                    return $result[0]['site_id'];
+                }
+            }
+            
+            // Fallback: get first active site
+            $sql = "SELECT TOP 1 id FROM dbo.Sites WHERE status = 'Active' ORDER BY name ASC";
+            $result = $this->db->select($sql);
+            return $result ? $result[0]['id'] : null;
+            
+        } catch (Exception $e) {
+            error_log('Error getting user default site: ' . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Get site information by ID
+     */
+    public function getSiteInfo($siteId) {
+        if (!$siteId) return null;
+        
+        try {
+            $sql = "SELECT id, name, location, address, site_code, type FROM dbo.Sites WHERE id = ?";
+            $result = $this->db->select($sql, [$siteId]);
+            return $result ? $result[0] : null;
+        } catch (Exception $e) {
+            error_log('Error getting site info: ' . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Get available sites for a user
+     */
+    public function getUserSites($userId) {
+        try {
+            // Check if EmployeeSites table exists
+            $checkTable = "SELECT COUNT(*) as table_exists 
+                          FROM INFORMATION_SCHEMA.TABLES 
+                          WHERE TABLE_NAME = 'EmployeeSites'";
+            $result = $this->db->select($checkTable);
+            
+            if ($result[0]['table_exists'] > 0) {
+                // Get sites assigned to user
+                $sql = "SELECT s.id, s.name, s.location, s.site_code, s.type 
+                       FROM dbo.Sites s
+                       INNER JOIN dbo.EmployeeSites es ON s.id = es.site_id
+                       WHERE es.user_id = ? AND s.status = 'Active' AND es.status = 'Active'
+                       ORDER BY s.name ASC";
+                $result = $this->db->select($sql, [$userId]);
+                
+                if ($result && count($result) > 0) {
+                    return $result;
+                }
+            }
+            
+            // Fallback: return all active sites
+            $sql = "SELECT id, name, location, site_code, type 
+                   FROM dbo.Sites 
+                   WHERE status = 'Active' 
+                   ORDER BY name ASC";
+            return $this->db->select($sql);
+            
+        } catch (Exception $e) {
+            error_log('Error getting user sites: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get time entries with site information
+     */
+    public function getTimeEntriesWithSites($userId, $startDate = null, $endDate = null, $limit = 50) {
+        try {
+            $whereClause = "WHERE te.user_id = ?";
+            $params = [$userId];
+            
+            // Add date filtering if provided
+            if ($startDate && $endDate) {
+                $whereClause .= " AND CAST(te.clock_in_time AS DATE) BETWEEN ? AND ?";
+                $params[] = $startDate;
+                $params[] = $endDate;
+            }
+            
+            $limitClause = $limit > 0 ? "TOP $limit" : "";
+            
+            $sql = "SELECT $limitClause te.*, s.name as site_name, s.location as site_location, s.site_code
+                   FROM dbo.TimeEntries te
+                   LEFT JOIN dbo.Sites s ON te.site_id = s.id
+                   $whereClause
+                   ORDER BY te.created_at DESC";
+            return $this->db->select($sql, $params);
+        } catch (Exception $e) {
+            error_log('Error getting time entries with sites: ' . $e->getMessage());
+            return [];
+        }
     }
 }
 ?> 
