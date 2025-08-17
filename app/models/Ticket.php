@@ -101,7 +101,9 @@ class Ticket {
      */
     public function getById($id) {
         try {
-            $query = "SELECT * FROM TicketDashboard WHERE id = :id";
+            $query = "SELECT td.*, t.inbound_email_address, t.source FROM TicketDashboard td 
+                     LEFT JOIN Tickets t ON td.id = t.id 
+                     WHERE td.id = :id";
             $result = $this->db->select($query, ['id' => $id]);
             return $result[0] ?? false;
         } catch (Exception $e) {

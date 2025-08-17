@@ -104,27 +104,59 @@ class Tickets extends Controller {
         $messages = $this->ticketModel->getMessages($id, hasPermission('tickets.view_private'));
         $lookupData = $this->ticketModel->getLookupData();
 
-        // If the ticket was created from an email and has no messages,
-        // treat the ticket's description as the first message.
-        if (empty($messages) && isset($ticket['source']) && $ticket['source'] === 'email' && !empty($ticket['description'])) {
-            $originalMessage = [
-                'id' => 'initial_description',
-                'created_at' => $ticket['created_at'],
-                'message_type' => 'email_inbound',
-                'subject' => $ticket['subject'],
-                'content' => $ticket['description'],
-                'content_format' => 'html', // Assume HTML content for emails
-                'email_from' => $ticket['inbound_email_address'] ?? 'Unknown Sender',
-                'email_to' => '',
-                'email_cc' => '',
-                'is_public' => 1,
-                'is_system_message' => 0,
-                'username' => null,
-                'full_name' => $ticket['inbound_email_address'] ?? 'Unknown Sender',
-                'user_id' => null
-            ];
-            // Prepend the description as the first message
-            array_unshift($messages, $originalMessage);
+        // Always include the original email content as the first message if ticket was created from email
+        if (isset($ticket['source']) && $ticket['source'] === 'email') {
+            // Try to get the original email content from EmailInbox
+            $db = new EasySQL(DB1);
+            $originalEmail = $db->select(
+                "SELECT body_html, body_text, from_address, to_address, cc_address, subject, email_date 
+                 FROM EmailInbox WHERE ticket_id = :ticket_id ORDER BY email_date ASC",
+                ['ticket_id' => $id]
+            );
+            
+            if (!empty($originalEmail)) {
+                $email = $originalEmail[0];
+                $content = $email['body_html'] ?: $email['body_text'] ?: $ticket['description'];
+                
+                $originalMessage = [
+                    'id' => 'original_email',
+                    'created_at' => $email['email_date'] ?: $ticket['created_at'],
+                    'message_type' => 'email_inbound',
+                    'subject' => $email['subject'] ?: $ticket['subject'],
+                    'content' => $content,
+                    'content_format' => $email['body_html'] ? 'html' : 'text',
+                    'email_from' => $email['from_address'],
+                    'email_to' => $email['to_address'],
+                    'email_cc' => $email['cc_address'],
+                    'is_public' => 1,
+                    'is_system_message' => 0,
+                    'username' => null,
+                    'full_name' => $email['from_address'],
+                    'user_id' => null
+                ];
+                
+                // Always add the original email as the first message, regardless of existing messages
+                array_unshift($messages, $originalMessage);
+            } elseif (!empty($ticket['description'])) {
+                // Fallback to ticket description if no email found
+                $originalMessage = [
+                    'id' => 'initial_description',
+                    'created_at' => $ticket['created_at'],
+                    'message_type' => 'email_inbound',
+                    'subject' => $ticket['subject'],
+                    'content' => $ticket['description'],
+                    'content_format' => 'html',
+                    'email_from' => $ticket['inbound_email_address'] ?? 'Unknown Sender',
+                    'email_to' => '',
+                    'email_cc' => '',
+                    'is_public' => 1,
+                    'is_system_message' => 0,
+                    'username' => null,
+                    'full_name' => $ticket['inbound_email_address'] ?? 'Unknown Sender',
+                    'user_id' => null
+                ];
+                array_unshift($messages, $originalMessage);
+            }
         }
 
         // If still no messages, try to pull related emails by subject from EmailInbox (helps when ticket was created via Web)
@@ -730,6 +762,15 @@ class Tickets extends Controller {
             
             // Send notification email
             $this->sendTicketNotification($id, 'ticket_updated', $messageData['content']);
+            
+            // Process email queue immediately to send the notification right away
+            try {
+                require_once APPROOT . '/app/services/EmailService.php';
+                $emailService = new EmailService();
+                $emailService->processEmailQueue();
+            } catch (Exception $e) {
+                error_log('Failed to process email queue immediately: ' . $e->getMessage());
+            }
         } else {
             flash('error', 'Failed to add message. Please try again.');
         }
@@ -1079,22 +1120,33 @@ class Tickets extends Controller {
     private function sendTicketNotification($ticketId, $template, $message = null, $recipientUserId = null) {
         try {
             $ticket = $this->ticketModel->getById($ticketId);
-            if (!$ticket) return false;
-            
-            // Determine recipient
-            if ($recipientUserId) {
-                $userModel = $this->model('User');
-                $recipient = $userModel->getUserById($recipientUserId);
-            } else {
-                $fallbackRequesterEmail = $ticket['created_by_email'] ?: ($ticket['inbound_email_address'] ?? '');
-                $recipient = !empty($ticket['assigned_to_email']) ? 
-                    ['email' => $ticket['assigned_to_email']] : 
-                    ['email' => $fallbackRequesterEmail];
-            }
-            
-            if (!$recipient || !$recipient['email']) {
+            if (!$ticket) {
+                error_log("sendTicketNotification: Ticket $ticketId not found");
                 return false;
             }
+            
+            // Determine recipient with improved logic
+            $recipientEmail = null;
+            
+            if ($recipientUserId) {
+                $userModel = $this->model('User');
+                $user = $userModel->getUserById($recipientUserId);
+                $recipientEmail = $user['email'] ?? null;
+            } else {
+                // Priority order: inbound_email_address (original requester), assigned_to_email, created_by_email
+                $recipientEmail = $ticket['inbound_email_address'] ?? 
+                                 $ticket['assigned_to_email'] ?? 
+                                 $ticket['created_by_email'] ?? null;
+            }
+            
+            error_log("sendTicketNotification: Determined recipient email: " . ($recipientEmail ?: 'NONE'));
+            
+            if (!$recipientEmail || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+                error_log("sendTicketNotification: No valid recipient email found for ticket $ticketId");
+                return false;
+            }
+            
+            $recipient = ['email' => $recipientEmail];
             
             $emailData = $this->emailService->createTicketEmail($template, [
                 'ticket_id' => $ticket['id'],
@@ -1106,17 +1158,20 @@ class Tickets extends Controller {
                 'assigned_to_name' => $ticket['assigned_to_name'],
                 'description' => $ticket['description'] ?? '',
                 'update_message' => $message ?? '',
-                'assignee_email' => $recipient['email'],
+                'assignee_email' => $ticket['assigned_to_email'] ?? '',
                 'created_by_email' => $ticket['created_by_email'] ?? '',
-                'inbound_email_address' => $ticket['inbound_email_address'] ?? '',
+                'inbound_email_address' => $recipient['email'],
                 'due_date' => $ticket['due_date'] ?? 'Not set',
                 'resolution' => $message ?? ''
             ]);
             
             // Queue for sending
-            return $this->emailService->queueEmail($emailData, 5);
+            $result = $this->emailService->queueEmail($emailData, 5);
+            error_log("sendTicketNotification: Email queue result: " . ($result ? 'SUCCESS' : 'FAILED'));
+            return $result;
         } catch (Exception $e) {
             error_log('Ticket Notification Error: ' . $e->getMessage());
+            error_log('Ticket Notification Stack Trace: ' . $e->getTraceAsString());
             return false;
         }
     }

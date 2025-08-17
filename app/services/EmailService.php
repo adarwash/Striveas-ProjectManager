@@ -1,5 +1,7 @@
 <?php
 
+require_once APPROOT . '/app/core/EasySQL.php';
+
 /**
  * Comprehensive Email Service for Ticketing System
  * Handles SMTP sending, IMAP/POP3 receiving, email parsing, and queue management
@@ -72,58 +74,72 @@ class EmailService {
     }
 
     /**
-     * Send email immediately
+     * Send email immediately using Microsoft Graph API
      * 
      * @param array $emailData Email data
      * @return bool Success status
      */
     public function sendEmail($emailData) {
         try {
-            require_once 'app/libraries/SimpleMailer.php';
+            require_once APPROOT . '/app/services/MicrosoftGraphService.php';
             
-            $mailerConfig = [
-                'host' => $this->config['smtp_host'],
-                'port' => $this->config['smtp_port'],
-                'username' => $this->config['smtp_username'],
-                'password' => $this->config['smtp_password'],
-                'encryption' => $this->config['smtp_encryption'],
-                'from_email' => $this->config['from_email'],
-                'from_name' => $this->config['from_name']
-            ];
+            $graphService = new MicrosoftGraphService();
             
-            $mail = new SimpleMailer($mailerConfig);
+            // Get the connected email address for sending
+            $fromEmail = $this->config['graph_connected_email'] ?? $this->config['from_email'];
             
-            // Custom headers for ticket tracking
+            // Prepare email data for Microsoft Graph
+            $to = is_array($emailData['to']) ? $emailData['to'] : [$emailData['to']];
+            $cc = isset($emailData['cc']) && is_array($emailData['cc']) ? $emailData['cc'] : [];
+            $bcc = isset($emailData['bcc']) && is_array($emailData['bcc']) ? $emailData['bcc'] : [];
+            
+            // Use HTML body if available, otherwise use text body
+            $body = $emailData['html_body'] ?? $emailData['body'] ?? $emailData['text_body'] ?? '';
+            
+            // Custom headers for ticket tracking (will be included in email body for Graph API)
+            $customHeaders = '';
             if (!empty($emailData['ticket_id'])) {
                 try {
                     require_once APPROOT . '/app/models/Ticket.php';
                     $ticket = new Ticket();
                     $ticketData = $ticket->getById($emailData['ticket_id']);
                     if ($ticketData) {
-                        $emailData['custom_headers'] = [
-                            'X-Ticket-ID: ' . $ticketData['id'],
-                            'X-Ticket-Number: ' . $ticketData['ticket_number'],
-                            'References: <ticket-' . $ticketData['id'] . '@' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '>'
-                        ];
+                        $customHeaders = '
+                        <div style="display:none;">
+                            <meta name="X-Ticket-ID" content="' . $ticketData['id'] . '">
+                            <meta name="X-Ticket-Number" content="' . $ticketData['ticket_number'] . '">
+                        </div>';
                     }
                 } catch (Exception $e) {
                     error_log('EmailService: Error loading ticket data: ' . $e->getMessage());
                 }
             }
             
-            $result = $mail->send($emailData);
-            if (!$result) {
-                error_log('EmailService Send Error: mail() returned false. To: ' . (is_array($emailData['to']) ? implode(',', $emailData['to']) : $emailData['to']));
-            }
+            // Add custom headers to body
+            $fullBody = $customHeaders . $body;
             
-            // Log successful send
-            if ($result && !empty($emailData['ticket_id'])) {
-                $this->logOutboundEmail($emailData, $mail->getLastMessageID());
+            $result = $graphService->sendEmail(
+                $fromEmail,
+                $to,
+                $emailData['subject'],
+                $fullBody,
+                $cc,
+                $bcc
+            );
+            
+            if ($result) {
+                error_log('EmailService: Email sent successfully via Microsoft Graph. To: ' . implode(',', $to));
+                
+                // Log successful send
+                if (!empty($emailData['ticket_id'])) {
+                    $this->logOutboundEmail($emailData, 'graph-' . time());
+                }
             }
             
             return $result;
         } catch (Exception $e) {
-            error_log('EmailService Send Error: ' . $e->getMessage());
+            error_log('EmailService Send Error (Microsoft Graph): ' . $e->getMessage());
+            error_log('EmailService Send Error Stack: ' . $e->getTraceAsString());
             return false;
         }
     }
@@ -177,15 +193,26 @@ class EmailService {
      */
     public function processEmailQueue($limit = 10) {
         try {
-            // Recover stuck emails that are in 'sending' state for more than 10 minutes
+            // Recover stuck emails that are in 'sending' state for more than 2 minutes
             try {
                 $this->db->update(
-                    "UPDATE EmailQueue SET status = 'pending' \n" .
+                    "UPDATE EmailQueue SET status = 'pending', attempts = 0 \n" .
                     "WHERE status = 'sending' \n" .
-                    "AND (last_attempt_at IS NULL OR last_attempt_at < DATEADD(minute, -10, GETDATE()))"
+                    "AND (last_attempt_at IS NULL OR last_attempt_at < DATEADD(minute, -2, GETDATE()))"
                 );
             } catch (Exception $e) {
                 error_log('EmailService ProcessQueue: Failed to recover stuck emails: ' . $e->getMessage());
+            }
+
+            // Also reset any emails stuck in 'sending' for more than 30 seconds
+            try {
+                $this->db->update(
+                    "UPDATE EmailQueue SET status = 'pending', attempts = 0 \n" .
+                    "WHERE status = 'sending' \n" .
+                    "AND (last_attempt_at IS NULL OR last_attempt_at < DATEADD(second, -30, GETDATE()))"
+                );
+            } catch (Exception $e) {
+                error_log('EmailService ProcessQueue: Failed to recover recent stuck emails: ' . $e->getMessage());
             }
 
             $query = "SELECT TOP 10 * FROM EmailQueue 
@@ -1131,8 +1158,8 @@ class EmailService {
                 
             case 'ticket_updated':
                 $emailData['subject'] = '[' . $data['ticket_number'] . '] Ticket Updated: ' . $data['subject'];
-                // For updates/replies, notify the requester/customer (created_by or inbound address), not the assignee
-                $emailData['to'] = $data['created_by_email'] ?? ($data['inbound_email_address'] ?? null);
+                // For updates/replies, notify the requester/customer (inbound address first, then created_by)
+                $emailData['to'] = $data['inbound_email_address'] ?? ($data['created_by_email'] ?? null);
                 $emailData['html_body'] = $this->renderTicketUpdatedTemplate($data);
                 break;
                 

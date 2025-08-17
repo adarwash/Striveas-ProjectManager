@@ -16,6 +16,14 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <h1 class="h4 mb-2"><?= htmlspecialchars($data['ticket']['subject']) ?></h1>
+                            <?php if (!empty($data['ticket']['inbound_email_address'])): ?>
+                            <div class="mb-2">
+                                <small class="text-muted">From: </small>
+                                <a href="mailto:<?= htmlspecialchars($data['ticket']['inbound_email_address']) ?>" class="text-decoration-none">
+                                    <i class="bi bi-envelope me-1"></i><strong><?= htmlspecialchars($data['ticket']['inbound_email_address']) ?></strong>
+                                </a>
+                            </div>
+                            <?php endif; ?>
                             <div class="d-flex align-items-center gap-3">
                                 <span class="badge fs-6" style="background-color: <?= $data['ticket']['status_color'] ?>">
                                     <?= htmlspecialchars($data['ticket']['status_display']) ?>
@@ -73,6 +81,15 @@
                                 
                                 <dt class="col-sm-4">Created by:</dt>
                                 <dd class="col-sm-8"><?= htmlspecialchars($data['ticket']['created_by_name']) ?></dd>
+                                
+                                <?php if (!empty($data['ticket']['inbound_email_address'])): ?>
+                                <dt class="col-sm-4">Requester Email:</dt>
+                                <dd class="col-sm-8">
+                                    <a href="mailto:<?= htmlspecialchars($data['ticket']['inbound_email_address']) ?>" class="text-decoration-none">
+                                        <i class="bi bi-envelope me-1"></i><?= htmlspecialchars($data['ticket']['inbound_email_address']) ?>
+                                    </a>
+                                </dd>
+                                <?php endif; ?>
                                 
                                 <dt class="col-sm-4">Assigned to:</dt>
                                 <dd class="col-sm-8">

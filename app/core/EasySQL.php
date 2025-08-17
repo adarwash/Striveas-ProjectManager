@@ -49,16 +49,22 @@ class EasySQL {
                 $tableName = $tableMatches[1] ?? '';
                 
                 // Tables known to have triggers that conflict with OUTPUT clause
-                $tablesWithTriggers = ['Tickets', 'TicketMessages'];
+                $tablesWithTriggers = ['Tickets'];
                 
                 if (in_array($tableName, $tablesWithTriggers)) {
                     // Use traditional SCOPE_IDENTITY approach for tables with triggers
-                    $this->executeStatement($statement, $parameters);
+                    $insertStmt = $this->executeStatement($statement, $parameters);
                     
-                    // Get the last inserted ID using a separate query
-                    $scopeStmt = $this->executeStatement("SELECT SCOPE_IDENTITY() as id");
-                    $scopeResult = $scopeStmt->fetch();
-                    return $scopeResult['id'] ?? null;
+                    if ($insertStmt) {
+                        // Get the last inserted ID using a separate query
+                        $scopeStmt = $this->executeStatement("SELECT SCOPE_IDENTITY() as id");
+                        $scopeResult = $scopeStmt->fetch();
+                        $insertedId = $scopeResult['id'] ?? null;
+                        
+                        // Convert to integer if it's a valid ID
+                        return $insertedId ? (int)$insertedId : null;
+                    }
+                    return null;
                 } else {
                     // For other tables, use OUTPUT clause approach
                     if (stripos($statement, 'OUTPUT') === false) {
