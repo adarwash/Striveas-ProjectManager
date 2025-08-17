@@ -37,14 +37,49 @@ class EasySQL {
     public function insert($statement, $parameters = []) {
         try {
             $this->validateSQL($statement); // Validate the SQL statement
-            $this->executeStatement($statement, $parameters);
             
-            // Handle different last insert ID methods
+            // Handle different drivers for getting inserted ID
             if ($this->driver === 'mysql') {
+                $this->executeStatement($statement, $parameters);
                 return $this->connection->lastInsertId();
             } else if ($this->driver === 'sqlsrv') {
-                return $this->query("SELECT SCOPE_IDENTITY() as id")->fetch()['id'];
+                // For SQL Server, check if table has triggers that conflict with OUTPUT clause
+                $tablePattern = '/INSERT\s+INTO\s+(\w+)/i';
+                preg_match($tablePattern, $statement, $tableMatches);
+                $tableName = $tableMatches[1] ?? '';
+                
+                // Tables known to have triggers that conflict with OUTPUT clause
+                $tablesWithTriggers = ['Tickets', 'TicketMessages'];
+                
+                if (in_array($tableName, $tablesWithTriggers)) {
+                    // Use traditional SCOPE_IDENTITY approach for tables with triggers
+                    $this->executeStatement($statement, $parameters);
+                    
+                    // Get the last inserted ID using a separate query
+                    $scopeStmt = $this->executeStatement("SELECT SCOPE_IDENTITY() as id");
+                    $scopeResult = $scopeStmt->fetch();
+                    return $scopeResult['id'] ?? null;
+                } else {
+                    // For other tables, use OUTPUT clause approach
+                    if (stripos($statement, 'OUTPUT') === false) {
+                        $pattern = '/INSERT\s+INTO\s+\w+\s*\([^)]+\)\s*VALUES/i';
+                        if (preg_match($pattern, $statement, $matches)) {
+                            $statement = preg_replace(
+                                '/INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES/i',
+                                'INSERT INTO $1 ($2) OUTPUT INSERTED.id VALUES',
+                                $statement
+                            );
+                        }
+                    }
+                    
+                    $stmt = $this->executeStatement($statement, $parameters);
+                    $result = $stmt->fetch();
+                    return $result['id'] ?? null;
+                }
             }
+            
+            // Fallback for other drivers
+            $this->executeStatement($statement, $parameters);
             return null;
         } catch (PDOException $e) {
             throw new Exception('Insert Error: ' . $e->getMessage());

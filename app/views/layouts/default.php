@@ -1303,13 +1303,22 @@
             </div>
             
             <div class="content-wrapper">
-                <!-- Flash Messages -->
+                <!-- Flash Messages (supports both legacy and new helper) -->
                 <?php if (isset($_SESSION['flash_message'])) : ?>
                     <div class="alert flash-message alert-<?= $_SESSION['flash_type'] ?? 'primary' ?> alert-dismissible fade show" role="alert">
                         <?= $_SESSION['flash_message'] ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     <?php unset($_SESSION['flash_message'], $_SESSION['flash_type']); ?>
+                <?php endif; ?>
+                <?php if (!empty($_SESSION['flash_messages']) && is_array($_SESSION['flash_messages'])): ?>
+                    <?php foreach ($_SESSION['flash_messages'] as $name => $flash): ?>
+                        <div class="alert flash-message <?= htmlspecialchars($flash['class'] ?? 'alert-primary') ?> alert-dismissible fade show" role="alert">
+                            <?= $flash['message'] ?? '' ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php unset($_SESSION['flash_messages']); ?>
                 <?php endif; ?>
                 
                 <!-- Main Content -->

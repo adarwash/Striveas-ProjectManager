@@ -6,7 +6,25 @@
     define('VIEWSPATH', APPROOT . '/app/views');
     
     // URL Root (for links)
-    define('URLROOT', 'http://' . $_SERVER['HTTP_HOST']);
+    // Prefer explicit override via environment variable
+    $appUrlOverride = getenv('APP_URL');
+    if ($appUrlOverride) {
+        define('URLROOT', rtrim($appUrlOverride, '/'));
+    } else if (php_sapi_name() === 'cli') {
+        // CLI fallback
+        define('URLROOT', 'http://localhost');
+    } else {
+        // Auto-detect HTTPS (native or behind reverse proxies)
+        $isHttps = (
+            (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (!empty($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+            || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+            || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on')
+        );
+        $scheme = $isHttps ? 'https' : 'http';
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+        define('URLROOT', $scheme . '://' . $host);
+    }
     
     // Site Name
     define('SITENAME', 'Hive IT Portal');

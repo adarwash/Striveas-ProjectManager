@@ -29,6 +29,28 @@ class Project {
         
         return $projects;
     }
+
+    /**
+     * Get projects considered active for linking (minimal fields)
+     *
+     * Returns associative arrays suitable for views that expect array access
+     * (e.g., $project['id']). We consider active as status in
+     * ('Active', 'In Progress', 'Planning').
+     *
+     * @return array<int, array{id:int,title:string}>
+     */
+    public function getActiveProjects() {
+        try {
+            $query = "SELECT id, title FROM projects 
+                      WHERE status IN ('Active', 'In Progress', 'Planning')
+                      ORDER BY title ASC";
+            $results = $this->db->select($query);
+            return $results ?: [];
+        } catch (Exception $e) {
+            error_log('Error in getActiveProjects: ' . $e->getMessage());
+            return [];
+        }
+    }
     
     // Get projects by user ID
     public function getProjectsByUser($userId) {

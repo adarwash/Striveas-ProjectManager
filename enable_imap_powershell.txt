@@ -1,0 +1,22 @@
+# COPY AND RUN THESE COMMANDS IN POWERSHELL (on a Windows machine or Azure Cloud Shell)
+
+# 1. Connect to Exchange Online
+Connect-ExchangeOnline -UserPrincipalName admin@yourdomain.com
+
+# 2. Enable IMAP for your support mailbox
+Set-CASMailbox -Identity "support@yourdomain.com" -ImapEnabled $true -PopEnabled $true -SmtpClientAuthenticationDisabled $false
+
+# 3. Verify it worked
+Get-CASMailbox -Identity "support@yourdomain.com" | Select ImapEnabled, PopEnabled
+
+# 4. If IMAP is still False, remove authentication policy
+Set-User -Identity "support@yourdomain.com" -AuthenticationPolicy $null
+
+# 5. Try enabling again
+Set-CASMailbox -Identity "support@yourdomain.com" -ImapEnabled $true
+
+# 6. Check organization-wide settings
+Get-OrganizationConfig | Select IMAP4Enabled, POP3Enabled
+
+# 7. If those are False, enable them globally
+Set-OrganizationConfig -IMAP4Enabled $true -POP3Enabled $true

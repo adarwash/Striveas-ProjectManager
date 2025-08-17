@@ -19,4 +19,27 @@ $router->addRoute('/invoices/view/:id', 'Invoices@viewDetail');
 $router->addRoute('/invoices/delete', 'Invoices@delete');
 $router->addRoute('/invoices/deleteAjax', 'Invoices@deleteAjax');
 $router->addRoute('/invoices/markAsPaid', 'Invoices@markAsPaid');
-$router->addRoute('/invoices/markAsPaidAjax', 'Invoices@markAsPaidAjax'); 
+$router->addRoute('/invoices/markAsPaidAjax', 'Invoices@markAsPaidAjax');
+
+// Ticket routes
+$router->addRoute('/tickets', 'Tickets@index');
+$router->addRoute('/tickets/create', 'Tickets@create');
+$router->addRoute('/tickets/store', 'Tickets@store');
+$router->addRoute('/tickets/view/:id', 'Tickets@show');
+$router->addRoute('/tickets/show/:id', 'Tickets@show');
+$router->addRoute('/tickets/edit/:id', 'Tickets@edit');
+$router->addRoute('/tickets/update', 'Tickets@update');
+$router->addRoute('/tickets/delete', 'Tickets@delete');
+$router->addRoute('/tickets/assign/:id', 'Tickets@assign');
+$router->addRoute('/tickets/assign', 'Tickets@assign');
+$router->addRoute('/tickets/close/:id', 'Tickets@close');
+$router->addRoute('/tickets/addMessage/:id', 'Tickets@addMessage');
+$router->addRoute('/tickets/addMessage', 'Tickets@addMessage');
+$router->addRoute('/tickets/updateStatus', 'Tickets@updateStatus');
+
+// Email Inbox routes
+$router->addRoute('/email/inbox', 'EmailInbox@index');
+$router->addRoute('/email/view/:id', 'EmailInbox@show');
+$router->addRoute('/email/delete', 'EmailInbox@delete');
+
+ 

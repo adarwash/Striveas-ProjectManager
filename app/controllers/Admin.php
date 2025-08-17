@@ -36,6 +36,189 @@ class Admin extends Controller {
         );
     }
     
+    /**
+     * Email Settings Page
+     */
+    public function emailSettings() {
+        // Load current settings
+        $settings = $this->settingsModel->getAllSettings();
+        
+        $data = [
+            'title' => 'Email Settings',
+            'settings' => $settings
+        ];
+        
+        // Use the new OAuth-enabled view
+        $this->view('admin/email_settings_oauth', $data);
+    }
+    
+    /**
+     * Save Email Settings
+     */
+    public function saveEmailSettings() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('admin/emailSettings');
+        }
+        
+        $settingsType = $_POST['settings_type'] ?? 'graph_api';
+        
+        if ($settingsType === 'graph_api') {
+            // Save Graph API settings
+            $settings = [
+                'graph_tenant_id' => trim($_POST['graph_tenant_id'] ?? ''),
+                'graph_client_id' => trim($_POST['graph_client_id'] ?? ''),
+                'graph_client_secret' => trim($_POST['graph_client_secret'] ?? ''),
+                'graph_support_email' => trim($_POST['graph_support_email'] ?? ''),
+                'graph_enabled' => isset($_POST['graph_enabled']) ? '1' : '0',
+                'graph_auto_process' => isset($_POST['graph_auto_process']) ? '1' : '0'
+            ];
+            
+            foreach ($settings as $key => $value) {
+                $this->settingsModel->setSetting($key, $value);
+            }
+            
+            flash('success', 'Graph API settings saved successfully!', 'alert alert-success');
+        } elseif ($settingsType === 'smtp') {
+            // Save SMTP settings
+            $settings = [
+                'smtp_host' => trim($_POST['smtp_host'] ?? ''),
+                'smtp_port' => trim($_POST['smtp_port'] ?? '587'),
+                'smtp_username' => trim($_POST['smtp_username'] ?? ''),
+                'smtp_password' => trim($_POST['smtp_password'] ?? ''),
+                'smtp_encryption' => trim($_POST['smtp_encryption'] ?? 'tls')
+            ];
+            
+            foreach ($settings as $key => $value) {
+                $this->settingsModel->setSetting($key, $value);
+            }
+            
+            flash('success', 'SMTP settings saved successfully!', 'alert alert-success');
+        }
+        
+        redirect('admin/emailSettings');
+    }
+    
+    /**
+     * Save Email Processing Settings
+     */
+    public function saveEmailProcessingSettings() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('admin/emailSettings');
+        }
+        
+        // Save email processing settings
+        $settings = [
+            'email_folder' => trim($_POST['email_folder'] ?? 'Inbox'),
+            'check_interval' => (int)($_POST['check_interval'] ?? 5),
+            'auto_reply' => $_POST['auto_reply'] ?? '1',
+            'default_priority' => $_POST['default_priority'] ?? 'Medium',
+            'allowed_domains' => trim($_POST['allowed_domains'] ?? '')
+        ];
+        
+        foreach ($settings as $key => $value) {
+            $this->settingsModel->setSetting($key, $value);
+        }
+        
+        flash('settings_success', 'Email processing settings saved successfully!', 'alert alert-success');
+        redirect('admin/emailSettings');
+    }
+    
+    /**
+     * Test Graph API Connection (AJAX)
+     */
+    public function testGraphConnection() {
+        header('Content-Type: application/json');
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            return;
+        }
+        
+        // Get settings from database
+        $settings = $this->settingsModel->getAllSettings();
+        
+        // Check if required settings exist
+        if (empty($settings['graph_client_id']) || empty($settings['graph_client_secret'])) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Please save your Microsoft App credentials first'
+            ]);
+            return;
+        }
+        
+        // Test the connection
+        require_once APPROOT . '/app/services/MicrosoftGraphService.php';
+        
+        // Temporarily set the config for testing
+        if (!defined('GRAPH_TENANT_ID')) {
+            $tenantId = isset($settings['graph_tenant_id']) && !empty($settings['graph_tenant_id']) 
+                        ? $settings['graph_tenant_id'] : 'common';
+            define('GRAPH_TENANT_ID', $tenantId);
+            define('GRAPH_CLIENT_ID', $settings['graph_client_id']);
+            define('GRAPH_CLIENT_SECRET', $settings['graph_client_secret']);
+        }
+        
+        try {
+            $graph = new MicrosoftGraphService();
+            
+            // Test getting token
+            $token = $graph->getAccessToken();
+            
+            // For testing, we don't need to check emails yet
+            // Just verify we can get a token
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Connection successful! Microsoft Graph API is configured correctly.'
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Connection failed: ' . $e->getMessage(),
+                'details' => 'Check your Azure AD app configuration and permissions'
+            ]);
+        }
+    }
+    
+    /**
+     * Send Test Email (AJAX)
+     */
+    public function sendTestEmail() {
+        header('Content-Type: application/json');
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            return;
+        }
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        $to = $input['to'] ?? '';
+        
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid email address']);
+            return;
+        }
+        
+        try {
+            require_once APPROOT . '/app/services/MicrosoftGraphService.php';
+            $graph = new MicrosoftGraphService();
+            
+            $supportEmail = $this->settingsModel->getSetting('graph_support_email') ?: 'support@yourdomain.com';
+            
+            $graph->sendEmail(
+                $supportEmail,
+                $to,
+                'Test Email from ProjectTracker',
+                '<p>This is a test email from your ProjectTracker ticketing system.</p>
+                 <p>If you received this, your email configuration is working correctly!</p>'
+            );
+            
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+    
     // Main admin dashboard
     public function index() {
         // Get some stats for the dashboard
@@ -307,6 +490,44 @@ class Admin extends Controller {
                 'max_projects' => (int)trim($_POST['max_projects'])
             ];
             
+            // Email configuration settings
+            $emailSettings = [
+                // SMTP (Outbound) Settings
+                'from_email' => trim($_POST['from_email'] ?? ''),
+                'from_name' => trim($_POST['from_name'] ?? 'Hive IT Portal'),
+                'smtp_host' => trim($_POST['smtp_host'] ?? ''),
+                'smtp_port' => (int)trim($_POST['smtp_port'] ?? 587),
+                'smtp_username' => trim($_POST['smtp_username'] ?? ''),
+                'smtp_password' => trim($_POST['smtp_password'] ?? ''),
+                'smtp_encryption' => trim($_POST['smtp_encryption'] ?? 'tls'),
+                
+                // Inbound Email Settings (supports both POP3 and IMAP)
+                'inbound_protocol' => trim($_POST['inbound_protocol'] ?? 'imap'),
+                'inbound_auth_type' => trim($_POST['inbound_auth_type'] ?? 'password'),
+                'inbound_host' => trim($_POST['inbound_host'] ?? ''),
+                'inbound_port' => (int)trim($_POST['inbound_port'] ?? 993),
+                'inbound_username' => trim($_POST['inbound_username'] ?? ''),
+                'inbound_password' => trim($_POST['inbound_password'] ?? ''),
+                'inbound_encryption' => trim($_POST['inbound_encryption'] ?? 'ssl'),
+                'imap_folder' => trim($_POST['imap_folder'] ?? 'INBOX'),
+                
+                // OAuth2 Settings
+                'oauth2_provider' => trim($_POST['oauth2_provider'] ?? 'microsoft'),
+                'oauth2_client_id' => trim($_POST['oauth2_client_id'] ?? ''),
+                'oauth2_client_secret' => trim($_POST['oauth2_client_secret'] ?? ''),
+                'oauth2_redirect_uri' => trim($_POST['oauth2_redirect_uri'] ?? ''),
+                
+                // Processing Settings
+                'auto_process_emails' => isset($_POST['auto_process_emails']) ? 1 : 0,
+                'delete_processed_emails' => isset($_POST['delete_processed_emails']) ? 1 : 0,
+                'ticket_email_pattern' => trim($_POST['ticket_email_pattern'] ?? '/\[TKT-\d{4}-\d{6}\]/'),
+                'max_attachment_size' => (int)trim($_POST['max_attachment_size'] ?? 10) * 1048576, // Convert MB to bytes
+                'allowed_file_types' => trim($_POST['allowed_file_types'] ?? 'pdf,doc,docx,txt,png,jpg,jpeg,gif')
+            ];
+            
+            // Combine with system settings
+            $data = array_merge($data, $emailSettings);
+            
             // Update settings
             if ($this->settingsModel->updateSystemSettings($data)) {
                 flash('settings_success', 'System settings updated successfully', 'alert alert-success');
@@ -347,6 +568,296 @@ class Admin extends Controller {
         $this->view('admin/settings', $data);
     }
     
+    // Test email configuration
+    public function testEmail() {
+        // Ensure this is a POST request
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+            return;
+        }
+        
+        // Clear any previous output to ensure clean JSON
+        if (ob_get_level()) {
+            ob_clean();
+        }
+        
+        // Set JSON response header
+        header('Content-Type: application/json');
+        
+        // Suppress notices and warnings to prevent JSON corruption
+        $oldErrorReporting = error_reporting(E_ERROR | E_PARSE);
+        
+        try {
+            $action = $_POST['action'] ?? '';
+            
+            if ($action === 'test_smtp') {
+                $this->testSMTP();
+            } elseif ($action === 'test_inbound') {
+                $this->testInboundEmail();
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Invalid action']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        } finally {
+            // Restore original error reporting
+            error_reporting($oldErrorReporting);
+        }
+    }
+    
+    // Test SMTP configuration
+    private function testSMTP() {
+        try {
+            // Get SMTP settings from form
+            $smtpConfig = [
+                'host' => trim($_POST['smtp_host'] ?? ''),
+                'port' => (int)($_POST['smtp_port'] ?? 587),
+                'username' => trim($_POST['smtp_username'] ?? ''),
+                'password' => trim($_POST['smtp_password'] ?? ''),
+                'encryption' => trim($_POST['smtp_encryption'] ?? 'tls'),
+                'from_email' => trim($_POST['from_email'] ?? ''),
+                'from_name' => trim($_POST['from_name'] ?? 'Hive IT Portal')
+            ];
+            
+            // Validate required fields
+            if (empty($smtpConfig['host']) || empty($smtpConfig['from_email'])) {
+                echo json_encode(['success' => false, 'error' => 'SMTP host and from email are required']);
+                return;
+            }
+            
+            // Load SimpleMailer
+            require_once '../app/libraries/SimpleMailer.php';
+            
+            // Create mailer instance
+            $mailer = new SimpleMailer($smtpConfig);
+            
+            // Prepare test email
+            $emailData = [
+                'to' => $smtpConfig['from_email'], // Send test email to sender
+                'subject' => 'SMTP Configuration Test - ' . date('Y-m-d H:i:s'),
+                'body' => 'This is a test email to verify your SMTP configuration is working correctly.<br><br>If you received this email, your SMTP settings are properly configured!<br><br>Sent from: Hive IT Portal<br>Time: ' . date('Y-m-d H:i:s'),
+                'is_html' => true
+            ];
+            
+            // Send test email
+            $result = $mailer->send($emailData);
+            
+            if ($result) {
+                echo json_encode([
+                    'success' => true, 
+                    'message' => 'Test email sent successfully to ' . $smtpConfig['from_email']
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'Failed to send test email. Please check your SMTP settings.'
+                ]);
+            }
+            
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => 'SMTP Error: ' . $e->getMessage()]);
+        }
+    }
+    
+    // Test inbound email configuration (supports both IMAP and POP3)
+    private function testInboundEmail() {
+        // Clear any previous output and start clean
+        if (ob_get_level()) {
+            ob_clean();
+        }
+        
+        // Suppress PHP notices and warnings for IMAP functions (still used for POP3)
+        $oldErrorReporting = error_reporting(E_ERROR | E_PARSE);
+        
+        try {
+            // Get inbound email settings from form
+            $protocol = trim($_POST['inbound_protocol'] ?? 'imap');
+            $inboundConfig = [
+                'protocol' => $protocol,
+                'host' => trim($_POST['inbound_host'] ?? ''),
+                'port' => (int)($_POST['inbound_port'] ?? ($protocol === 'pop3' ? 995 : 993)),
+                'username' => trim($_POST['inbound_username'] ?? ''),
+                'password' => trim($_POST['inbound_password'] ?? ''),
+                'encryption' => trim($_POST['inbound_encryption'] ?? 'ssl'),
+                'folder' => trim($_POST['imap_folder'] ?? 'INBOX') // Only used for IMAP
+            ];
+            
+            // Validate required fields
+            if (empty($inboundConfig['host']) || empty($inboundConfig['username']) || empty($inboundConfig['password'])) {
+                echo json_encode(['success' => false, 'error' => ucfirst($protocol) . ' host, username, and password are required']);
+                return;
+            }
+            
+            // Check if IMAP extension is loaded (needed for POP3 too)
+            if (!extension_loaded('imap')) {
+                echo json_encode(['success' => false, 'error' => 'PHP IMAP extension is not installed']);
+                return;
+            }
+            
+            // Clear any IMAP errors from previous attempts
+            @imap_errors();
+            @imap_alerts();
+            
+            // Build connection string with improved error handling
+            $encryption = strtolower($inboundConfig['encryption']);
+            $flags = '/' . $protocol;
+            
+            if ($encryption === 'ssl') {
+                $flags .= '/ssl';
+            } elseif ($encryption === 'tls') {
+                $flags .= '/tls';
+            }
+            
+            // Add additional flags for better connection handling
+            $flags .= '/novalidate-cert'; // Skip certificate validation for testing
+            $flags .= '/norsh'; // Disable rsh fallback
+            
+            // Build server string based on protocol
+            if ($protocol === 'imap') {
+                $server = '{' . $inboundConfig['host'] . ':' . $inboundConfig['port'] . $flags . '}' . $inboundConfig['folder'];
+            } else {
+                $server = '{' . $inboundConfig['host'] . ':' . $inboundConfig['port'] . $flags . '}';
+            }
+            
+            // First, try a basic connection test with timeout
+            $context = stream_context_create([
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ]);
+            
+            // Test basic connectivity first
+            $testSocket = @fsockopen($inboundConfig['host'], $inboundConfig['port'], $errno, $errstr, 10);
+            if (!$testSocket) {
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'Cannot connect to ' . strtoupper($protocol) . ' server: ' . $errstr . ' (Error: ' . $errno . ')'
+                ]);
+                return;
+            }
+            fclose($testSocket);
+            
+            // Attempt connection with multiple retry attempts
+            $connection = false;
+            $maxRetries = 3;
+            $lastError = '';
+            
+            for ($retry = 0; $retry < $maxRetries; $retry++) {
+                // Clear previous errors
+                @imap_errors();
+                @imap_alerts();
+                
+                // Try different connection flags on each retry
+                $retryFlags = $flags;
+                if ($retry == 1) {
+                    // Second attempt: try without SSL/TLS if encryption was enabled
+                    $retryFlags = '/' . $protocol . '/novalidate-cert/norsh';
+                    if ($protocol === 'imap') {
+                        $retryServer = '{' . $inboundConfig['host'] . ':' . $inboundConfig['port'] . $retryFlags . '}' . $inboundConfig['folder'];
+                    } else {
+                        $retryServer = '{' . $inboundConfig['host'] . ':' . $inboundConfig['port'] . $retryFlags . '}';
+                    }
+                } else if ($retry == 2) {
+                    // Third attempt: try with different auth method
+                    $retryFlags = $flags . '/notls';
+                    if ($protocol === 'imap') {
+                        $retryServer = '{' . $inboundConfig['host'] . ':' . $inboundConfig['port'] . $retryFlags . '}' . $inboundConfig['folder'];
+                    } else {
+                        $retryServer = '{' . $inboundConfig['host'] . ':' . $inboundConfig['port'] . $retryFlags . '}';
+                    }
+                } else {
+                    $retryServer = $server;
+                }
+                
+                $connection = @imap_open($retryServer, $inboundConfig['username'], $inboundConfig['password'], OP_HALFOPEN);
+                
+                if ($connection) {
+                    break; // Success, break out of retry loop
+                } else {
+                    // Capture error for this attempt
+                    $errors = @imap_errors();
+                    if (is_array($errors) && !empty($errors)) {
+                        $lastError = end($errors);
+                    }
+                    
+                    // Wait a bit before retrying
+                    if ($retry < $maxRetries - 1) {
+                        usleep(500000); // 0.5 second delay
+                    }
+                }
+            }
+            
+            if ($connection) {
+                // Get message count based on protocol
+                if ($protocol === 'pop3') {
+                    $messageCount = @imap_num_msg($connection);
+                } else {
+                    // For IMAP, get mailbox info
+                    $mailboxInfo = @imap_status($connection, $server, SA_ALL);
+                    $messageCount = isset($mailboxInfo->messages) ? $mailboxInfo->messages : 0;
+                }
+                
+                // Close connection
+                @imap_close($connection);
+                
+                // Clear any IMAP errors/alerts that might have been generated
+                @imap_errors();
+                @imap_alerts();
+                
+                echo json_encode([
+                    'success' => true, 
+                    'message' => strtoupper($protocol) . ' connection successful',
+                    'message_count' => $messageCount,
+                    'server_used' => $server,
+                    'protocol' => strtoupper($protocol)
+                ]);
+            } else {
+                // Connection failed after all retries
+                $finalError = !empty($lastError) ? $lastError : 'Unknown connection error';
+                
+                // Clear errors to prevent them from appearing in output
+                @imap_errors();
+                @imap_alerts();
+                
+                // Provide more specific error guidance
+                $errorMessage = strtoupper($protocol) . ' connection failed: ' . $finalError;
+                
+                if (strpos($finalError, 'certificate') !== false) {
+                    $errorMessage .= ' (Try disabling SSL certificate verification in your email client)';
+                } elseif (strpos($finalError, 'authenticate') !== false || strpos($finalError, 'login') !== false) {
+                    // Check if this is Microsoft 365
+                    $host = strtolower($inboundConfig['host']);
+                    if (strpos($host, 'outlook.office365.com') !== false || strpos($host, 'outlook.com') !== false) {
+                        $errorMessage .= ' (Microsoft 365 requires an App Password. Go to Microsoft 365 Security settings to create one. Also ensure IMAP is enabled in your mailbox settings)';
+                    } else {
+                        $errorMessage .= ' (Please check your username and password. For Gmail, use an App Password instead of your regular password)';
+                    }
+                } elseif (strpos($finalError, 'CLOSED') !== false) {
+                    $errorMessage .= ' (Server closed connection. This may be due to security restrictions, incorrect settings, or server-side firewall rules)';
+                }
+                
+                echo json_encode([
+                    'success' => false, 
+                    'error' => $errorMessage
+                ]);
+            }
+            
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => ucfirst($protocol) . ' Error: ' . $e->getMessage()]);
+        } finally {
+            // Restore original error reporting
+            error_reporting($oldErrorReporting);
+            
+            // Clear any remaining IMAP errors/alerts
+            @imap_errors();
+            @imap_alerts();
+        }
+    }
+
     // Toggle maintenance mode
     public function toggle_maintenance() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -66,6 +66,20 @@ class PermissionHelper {
             'notes/edit' => 'notes.update',
             'notes/delete' => 'notes.delete',
             
+            // Support Tickets
+            'tickets' => 'tickets.read',
+            'tickets/create' => 'tickets.create',
+            'tickets/edit' => 'tickets.update',
+            'tickets/view' => 'tickets.read',
+            'tickets/delete' => 'tickets.delete',
+            'tickets/assign' => 'tickets.assign',
+            'tickets/close' => 'tickets.close',
+            
+            // Email Inbox
+            'email/inbox' => 'email.inbox',
+            'email/manage' => 'email.manage',
+            'email/delete' => 'email.delete',
+            
             // Time Tracking
             'time' => 'time.access',
             'time/admin' => 'time.admin',
@@ -252,6 +266,18 @@ class PermissionHelper {
                 'permission' => 'notes.read'
             ],
             [
+                'title' => 'Support Tickets',
+                'url' => '/tickets',
+                'icon' => 'bi bi-ticket-perforated',
+                'permission' => 'tickets.read'
+            ],
+            [
+                'title' => 'Email Inbox',
+                'url' => '/emailinbox',
+                'icon' => 'bi bi-envelope',
+                'permission' => 'email.inbox'
+            ],
+            [
                 'title' => 'Time Tracking',
                 'url' => '/time',
                 'icon' => 'bi bi-stopwatch',
@@ -359,6 +385,13 @@ class PermissionHelper {
         foreach ($menuItems as $item) {
             if (isset($item['always_show']) && $item['always_show']) {
                 $accessibleItems[] = $item;
+            } elseif ($item['url'] === '/email/inbox' || $item['url'] === '/emailinbox') {
+                // Special handling for Email Inbox - allow for admin, manager, technician
+                $allowedRoles = ['admin', 'manager', 'technician'];
+                $userRole = $_SESSION['role'] ?? '';
+                if (in_array($userRole, $allowedRoles)) {
+                    $accessibleItems[] = $item;
+                }
             } elseif (self::hasPermission($item['permission'])) {
                 $accessibleItems[] = $item;
             }

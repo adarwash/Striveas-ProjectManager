@@ -206,6 +206,17 @@
                             </a>
                         </div>
                         <div class="col-md-6">
+                            <a href="<?= URLROOT ?>/admin/emailSettings" class="card h-100 border-0 shadow-sm bg-light">
+                                <div class="card-body p-4 text-center">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 mx-auto mb-3" style="width: fit-content;">
+                                        <i class="bi bi-envelope-at fs-1 text-primary"></i>
+                                    </div>
+                                    <h5>Email Settings</h5>
+                                    <p class="text-muted mb-0">Configure email integration</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
                             <a href="<?= URLROOT ?>/admin/logs" class="card h-100 border-0 shadow-sm bg-light">
                                 <div class="card-body p-4 text-center">
                                     <div class="rounded-circle bg-info bg-opacity-10 p-3 mx-auto mb-3" style="width: fit-content;">

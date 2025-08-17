@@ -70,6 +70,60 @@ class Setting {
     }
 
     /**
+     * Get all settings as key-value pairs
+     * 
+     * @return array Settings array
+     */
+    public function getAllSettings() {
+        try {
+            $query = "SELECT setting_key, setting_value FROM settings";
+            $results = $this->db->select($query);
+            
+            $settings = [];
+            if ($results) {
+                foreach ($results as $row) {
+                    $key = $row['setting_key'];
+                    $value = $row['setting_value'];
+                    
+                    // Check if the value is JSON
+                    if ($this->isJson($value)) {
+                        $settings[$key] = json_decode($value, true);
+                    } else {
+                        $settings[$key] = $value;
+                    }
+                }
+            }
+            
+            return $settings;
+        } catch (Exception $e) {
+            error_log('GetAllSettings Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Set a setting value (alias for set method)
+     * 
+     * @param string $key Setting key
+     * @param mixed $value Setting value
+     * @return bool Success status
+     */
+    public function setSetting(string $key, $value) {
+        return $this->set($key, $value);
+    }
+    
+    /**
+     * Get a setting value (alias for get method)
+     * 
+     * @param string $key Setting key
+     * @param mixed $default Default value if not found
+     * @return mixed Setting value
+     */
+    public function getSetting(string $key, $default = null) {
+        return $this->get($key, $default);
+    }
+    
+    /**
      * Get a setting by key
      * 
      * @param string $key Setting key
@@ -173,7 +227,45 @@ class Setting {
             'maintenance_mode' => $maintenanceMode,
             'version' => $this->get('system_version', '1.0.0'),
             'last_backup' => $this->get('last_backup_date', null),
-            'allow_registration' => $this->get('allow_registration', true)
+            'allow_registration' => $this->get('allow_registration', true),
+            'enable_registration' => $this->get('enable_registration', true),
+            'enable_api' => $this->get('enable_api', false),
+            'default_project_category' => $this->get('default_project_category', ''),
+            'default_project_status' => $this->get('default_project_status', ''),
+            'default_task_priority' => $this->get('default_task_priority', ''),
+            'default_date_format' => $this->get('default_date_format', 'Y-m-d'),
+            'max_upload_size' => $this->get('max_upload_size', 10),
+            'max_projects' => $this->get('max_projects', 100),
+            
+            // Email Configuration Settings
+            'from_email' => $this->get('from_email', ''),
+            'from_name' => $this->get('from_name', 'Hive IT Portal'),
+            'smtp_host' => $this->get('smtp_host', ''),
+            'smtp_port' => $this->get('smtp_port', 587),
+            'smtp_username' => $this->get('smtp_username', ''),
+            'smtp_password' => $this->get('smtp_password', ''),
+            'smtp_encryption' => $this->get('smtp_encryption', 'tls'),
+            
+            'inbound_protocol' => $this->get('inbound_protocol', 'imap'),
+            'inbound_auth_type' => $this->get('inbound_auth_type', 'password'),
+            'inbound_host' => $this->get('inbound_host', ''),
+            'inbound_port' => $this->get('inbound_port', 993),
+            'inbound_username' => $this->get('inbound_username', ''),
+            'inbound_password' => $this->get('inbound_password', ''),
+            'inbound_encryption' => $this->get('inbound_encryption', 'ssl'),
+            'imap_folder' => $this->get('imap_folder', 'INBOX'),
+            
+            // OAuth2 Settings
+            'oauth2_provider' => $this->get('oauth2_provider', 'microsoft'),
+            'oauth2_client_id' => $this->get('oauth2_client_id', ''),
+            'oauth2_client_secret' => $this->get('oauth2_client_secret', ''),
+            'oauth2_redirect_uri' => $this->get('oauth2_redirect_uri', ''),
+            
+            'auto_process_emails' => $this->get('auto_process_emails', true),
+            'delete_processed_emails' => $this->get('delete_processed_emails', false),
+            'ticket_email_pattern' => $this->get('ticket_email_pattern', '/\[TKT-\d{4}-\d{6}\]/'),
+            'max_attachment_size' => $this->get('max_attachment_size', 10485760), // 10MB in bytes
+            'allowed_file_types' => $this->get('allowed_file_types', 'pdf,doc,docx,txt,png,jpg,jpeg,gif')
         ];
     }
     
@@ -190,7 +282,45 @@ class Setting {
                 'maintenance_mode',
                 'system_version',
                 'last_backup_date',
-                'allow_registration'
+                'allow_registration',
+                'enable_registration',
+                'enable_api',
+                'default_project_category',
+                'default_project_status',
+                'default_task_priority',
+                'default_date_format',
+                'max_upload_size',
+                'max_projects',
+                
+                // Email Configuration Settings
+                'from_email',
+                'from_name',
+                'smtp_host',
+                'smtp_port',
+                'smtp_username',
+                'smtp_password',
+                'smtp_encryption',
+                
+                // Inbound Email Settings (supports both IMAP and POP3)
+                'inbound_protocol',
+                'inbound_auth_type',
+                'inbound_host',
+                'inbound_port',
+                'inbound_username',
+                'inbound_password',
+                'inbound_encryption',
+                'imap_folder',
+                
+                // OAuth2 Settings
+                'oauth2_provider',
+                'oauth2_client_id',
+                'oauth2_client_secret',
+                'oauth2_redirect_uri',
+                'auto_process_emails',
+                'delete_processed_emails',
+                'ticket_email_pattern',
+                'max_attachment_size',
+                'allowed_file_types'
             ];
             
             // Update each provided setting if it's valid
