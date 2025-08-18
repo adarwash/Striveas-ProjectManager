@@ -7,6 +7,7 @@
 class Tickets extends Controller {
     private $ticketModel;
     private $emailService;
+    private $slaService;
     
     public function __construct() {
         // Check if user is logged in
@@ -16,7 +17,9 @@ class Tickets extends Controller {
         
         $this->ticketModel = $this->model('Ticket');
         require_once APPROOT . '/app/services/EmailService.php';
+        require_once APPROOT . '/app/services/SLAService.php';
         $this->emailService = new EmailService();
+        $this->slaService = new SLAService();
     }
     
     /**
@@ -268,21 +271,11 @@ class Tickets extends Controller {
         try {
             $db = new EasySQL(DB1);
             
-            // First, check if there are any undownloaded attachments and try to download them
-            $pendingAttachments = $db->select(
-                "SELECT COUNT(*) as count FROM EmailAttachments ea "
-                . "JOIN EmailInbox ei ON ea.email_inbox_id = ei.id "
-                . "WHERE ei.ticket_id = :ticket_id AND ea.is_downloaded = 0",
-                ['ticket_id' => $id]
-            );
-            
-            if (!empty($pendingAttachments) && $pendingAttachments[0]['count'] > 0) {
-                // Auto-download pending attachments
-                try {
-                    $this->downloadAttachmentsForTicket($id);
-                } catch (Exception $e) {
-                    error_log('Auto-download attachments failed: ' . $e->getMessage());
-                }
+            // Always check for and download attachments when opening a ticket
+            try {
+                $this->downloadAttachmentsForTicket($id);
+            } catch (Exception $e) {
+                error_log('Auto-download attachments failed: ' . $e->getMessage());
             }
             
             $attachments = $db->select(
@@ -312,6 +305,40 @@ class Tickets extends Controller {
         $userModel = $this->model('User');
         $users = $userModel->getAllUsers();
         
+        // Calculate SLA deadlines if not already set
+        if (empty($ticket['sla_response_deadline']) || empty($ticket['sla_resolution_deadline'])) {
+            try {
+                $this->slaService->calculateSLADeadlines($id);
+            } catch (Exception $e) {
+                error_log('Failed to calculate SLA deadlines: ' . $e->getMessage());
+            }
+        }
+        
+        // Check for SLA breaches
+        try {
+            $slaBreaches = $this->slaService->checkSLABreaches($id);
+            if (!empty($slaBreaches)) {
+                $breachMessages = [];
+                if (in_array('response', $slaBreaches)) {
+                    $breachMessages[] = 'Response SLA breached';
+                }
+                if (in_array('resolution', $slaBreaches)) {
+                    $breachMessages[] = 'Resolution SLA breached';
+                }
+                flash('warning', 'SLA Alert: ' . implode(', ', $breachMessages));
+            }
+        } catch (Exception $e) {
+            error_log('Failed to check SLA breaches: ' . $e->getMessage());
+        }
+        
+        // Get SLA status
+        try {
+            $slaStatus = $this->slaService->getSLAStatus($id);
+        } catch (Exception $e) {
+            error_log('Failed to get SLA status: ' . $e->getMessage());
+            $slaStatus = null;
+        }
+        
         $viewData = [
             'ticket' => $ticket,
             'messages' => $messages,
@@ -323,7 +350,8 @@ class Tickets extends Controller {
             'can_edit' => hasPermission('tickets.update') || $this->canEditTicket($ticket, $_SESSION['user_id']),
             'can_assign' => hasPermission('tickets.assign'),
             'can_close' => hasPermission('tickets.close') || $this->canCloseTicket($ticket, $_SESSION['user_id']),
-            'original_email' => null // This will be set if original email is loaded
+            'original_email' => null, // This will be set if original email is loaded
+            'sla_status' => $slaStatus
         ];
         
         $this->view('tickets/view', $viewData);
@@ -759,6 +787,15 @@ class Tickets extends Controller {
         
         if ($messageId) {
             flash('success', 'Message added successfully.');
+            
+            // Update first_response_at if this is the first response
+            if (empty($ticket['first_response_at'])) {
+                try {
+                    $this->ticketModel->updateFirstResponse($id);
+                } catch (Exception $e) {
+                    error_log('Failed to update first response time: ' . $e->getMessage());
+                }
+            }
             
             // Send notification email
             $this->sendTicketNotification($id, 'ticket_updated', $messageData['content']);

@@ -302,6 +302,23 @@ class Ticket {
     }
 
     /**
+     * Update first response time for a ticket
+     * 
+     * @param int $ticketId Ticket ID
+     * @return bool Success status
+     */
+    public function updateFirstResponse($ticketId) {
+        try {
+            $query = "UPDATE Tickets SET first_response_at = GETDATE() WHERE id = :id AND first_response_at IS NULL";
+            $result = $this->db->update($query, ['id' => $ticketId]);
+            return $result !== false;
+        } catch (Exception $e) {
+            error_log('Ticket UpdateFirstResponse Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Get messages for a ticket
      * 
      * @param int $ticketId Ticket ID

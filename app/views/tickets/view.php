@@ -316,6 +316,7 @@
                         <span class="badge bg-secondary ms-2"><?= count($data['attachments']) ?></span>
                     </h6>
                 </div>
+
                 <div class="card-body">
                     <ul class="list-group list-group-flush">
                         <?php foreach ($data['attachments'] as $att): ?>
@@ -434,6 +435,120 @@
                     </dl>
                 </div>
             </div>
+
+            <!-- SLA Information -->
+            <?php if (!empty($data['sla_status'])): ?>
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-clock me-2"></i>SLA Status
+                        <?php if ($data['sla_status']['response_breached'] || $data['sla_status']['resolution_breached']): ?>
+                            <span class="badge bg-danger ms-2">Breached</span>
+                        <?php endif; ?>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="mb-0">
+                        <dt class="small text-muted">Priority</dt>
+                        <dd>
+                            <span class="badge" style="background-color: <?= $data['ticket']['priority_color'] ?>">
+                                <?= ucfirst($data['sla_status']['priority']) ?>
+                            </span>
+                        </dd>
+                        
+                        <dt class="small text-muted">Response Target</dt>
+                        <dd>
+                            <?php if (!empty($data['sla_status']['response_deadline'])): ?>
+                                <?php if ($data['sla_status']['response_breached']): ?>
+                                    <span class="text-danger">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        Breached
+                                    </span>
+                                <?php elseif (!empty($data['sla_status']['first_response_at'])): ?>
+                                    <span class="text-success">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Met
+                                    </span>
+                                <?php elseif (isset($data['sla_status']['response_time_remaining_hours'])): ?>
+                                    <?php if ($data['sla_status']['response_time_remaining_hours'] < 0): ?>
+                                        <span class="text-danger">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            Overdue
+                                        </span>
+                                    <?php elseif ($data['sla_status']['response_time_remaining_hours'] < 2): ?>
+                                        <span class="text-warning">
+                                            <i class="bi bi-clock me-1"></i>
+                                            <?= round($data['sla_status']['response_time_remaining_hours'], 1) ?>h left
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            <?= round($data['sla_status']['response_time_remaining_hours'], 1) ?>h left
+                                        </span>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span class="text-muted">Not set</span>
+                            <?php endif; ?>
+                        </dd>
+                        
+                        <dt class="small text-muted">Resolution Target</dt>
+                        <dd>
+                            <?php if (!empty($data['sla_status']['resolution_deadline'])): ?>
+                                <?php if ($data['sla_status']['resolution_breached']): ?>
+                                    <span class="text-danger">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        Breached
+                                    </span>
+                                <?php elseif (!empty($data['sla_status']['resolved_at'])): ?>
+                                    <span class="text-success">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Met
+                                    </span>
+                                <?php elseif (isset($data['sla_status']['resolution_time_remaining_hours'])): ?>
+                                    <?php if ($data['sla_status']['resolution_time_remaining_hours'] < 0): ?>
+                                        <span class="text-danger">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            Overdue
+                                        </span>
+                                    <?php elseif ($data['sla_status']['resolution_time_remaining_hours'] < 4): ?>
+                                        <span class="text-warning">
+                                            <i class="bi bi-clock me-1"></i>
+                                            <?= round($data['sla_status']['resolution_time_remaining_hours'], 1) ?>h left
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            <?= round($data['sla_status']['resolution_time_remaining_hours'], 1) ?>h left
+                                        </span>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span class="text-muted">Not set</span>
+                            <?php endif; ?>
+                        </dd>
+                        
+                        <?php if (!empty($data['sla_status']['response_deadline'])): ?>
+                            <dt class="small text-muted">Response Deadline</dt>
+                            <dd>
+                                <small class="text-muted">
+                                    <?= date('M j, Y g:i A', strtotime($data['sla_status']['response_deadline'])) ?>
+                                </small>
+                            </dd>
+                        <?php endif; ?>
+                        
+                        <?php if (!empty($data['sla_status']['resolution_deadline'])): ?>
+                            <dt class="small text-muted">Resolution Deadline</dt>
+                            <dd>
+                                <small class="text-muted">
+                                    <?= date('M j, Y g:i A', strtotime($data['sla_status']['resolution_deadline'])) ?>
+                                </small>
+                            </dd>
+                        <?php endif; ?>
+                    </dl>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Activity Summary -->
             <div class="card border-0 shadow-sm">
