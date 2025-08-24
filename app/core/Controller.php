@@ -99,5 +99,17 @@ class Controller {
         require_once VIEWSPATH . '/' . $view . '.php';
         return ob_get_clean();
     }
+    
+    /**
+     * Send JSON response
+     * 
+     * @param array $data Data to send as JSON
+     * @return void
+     */
+    public function jsonResponse($data) {
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit();
+    }
 }
 ?>

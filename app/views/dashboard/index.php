@@ -215,49 +215,7 @@ $title = 'Dashboard - HiveIT Portal';
     </div>
 </div>
 
-<style>
-/* Clickable Card Styles */
-.clickable-card {
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.clickable-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-}
-
-.clickable-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-}
-
-.clickable-card:hover::before {
-    left: 100%;
-}
-
-.clickable-card:active {
-    transform: translateY(-2px);
-    transition: transform 0.1s;
-}
-
-/* Add a subtle pointer cursor icon */
-.clickable-card .stats-icon {
-    transition: transform 0.3s ease;
-}
-
-.clickable-card:hover .stats-icon {
-    transform: scale(1.1);
-}
-</style>
+<!-- Dashboard uses global styles from app.css -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

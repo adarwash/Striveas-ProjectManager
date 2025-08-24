@@ -721,7 +721,8 @@ class TimeTracking {
                 $sql = "SELECT s.id, s.name, s.location, s.site_code, s.type 
                        FROM dbo.Sites s
                        INNER JOIN dbo.EmployeeSites es ON s.id = es.site_id
-                       WHERE es.user_id = ? AND s.status = 'Active' AND es.status = 'Active'
+                       WHERE es.user_id = ? AND s.status = 'Active' 
+                       AND (es.end_date IS NULL OR es.end_date > GETDATE())
                        ORDER BY s.name ASC";
                 $result = $this->db->select($sql, [$userId]);
                 

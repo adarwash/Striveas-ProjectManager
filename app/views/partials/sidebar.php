@@ -153,6 +153,16 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
                     <!-- Quick Actions -->
                     <div class="widget-actions">
                         <?php if ($userStatus['status'] === 'clocked_out'): ?>
+                            <!-- Work Location Selection -->
+                            <div class="location-selection mb-2">
+                                <label for="sidebarClockInSite" class="form-label small">
+                                    <i class="fas fa-building me-1"></i>Work Location
+                                </label>
+                                <select class="form-select form-select-sm" id="sidebarClockInSite">
+                                    <option value="">Loading sites...</option>
+                                </select>
+                            </div>
+                            
                             <button class="action-btn primary" onclick="sidebarClockIn()">
                                 <i class="fas fa-play"></i>
                                 <span>Clock In</span>
@@ -542,6 +552,35 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
     color: #7f8c8d !important;
     margin: 1rem 1.5rem 0.5rem !important;
 }
+
+/* Time tracking widget location selection */
+.time-tracking-widget .location-selection {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.time-tracking-widget .location-selection .form-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.time-tracking-widget .form-select-sm {
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #333;
+    font-size: 0.8rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.time-tracking-widget .form-select-sm:focus {
+    background-color: #fff;
+    border-color: #6a5acd;
+    box-shadow: 0 0 0 0.2rem rgba(106, 90, 205, 0.25);
+}
 </style>
 
 <script>
@@ -587,12 +626,52 @@ function updateSidebarSession() {
     }
 }
 
+// Load available sites for sidebar clock-in
+function loadSidebarUserSites() {
+    const siteSelect = document.getElementById('sidebarClockInSite');
+    if (!siteSelect) return;
+    
+    fetch('/time/getUserSites')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.sites) {
+                siteSelect.innerHTML = '<option value="">Select work location...</option>';
+                
+                data.sites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site.id;
+                    option.textContent = `${site.name}${site.location ? ' - ' + site.location : ''}`;
+                    siteSelect.appendChild(option);
+                });
+                
+                // Auto-select first site if only one available
+                if (data.sites.length === 1) {
+                    siteSelect.value = data.sites[0].id;
+                }
+            } else {
+                siteSelect.innerHTML = '<option value="">No sites available</option>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading sites:', error);
+            siteSelect.innerHTML = '<option value="">Error loading sites</option>';
+        });
+}
+
 // Sidebar clock in function
 function sidebarClockIn() {
+    const siteSelect = document.getElementById('sidebarClockInSite');
+    const siteId = siteSelect ? siteSelect.value : '';
+    
+    if (!siteId) {
+        showSidebarNotification('error', 'Please select a work location');
+        return;
+    }
+    
     fetch('/time/clockIn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: ''
+        body: `site_id=${encodeURIComponent(siteId)}`
     })
     .then(response => {
         if (!response.ok) {
@@ -744,6 +823,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update session timer every minute
     updateSidebarSession();
     sidebarUpdateInterval = setInterval(updateSidebarSession, 60000);
+    
+    // Load available sites for clock-in
+    loadSidebarUserSites();
 });
 
 // Clean up intervals when page unloads

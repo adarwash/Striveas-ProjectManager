@@ -271,11 +271,39 @@ class Tickets extends Controller {
         try {
             $db = new EasySQL(DB1);
             
-            // Always check for and download attachments when opening a ticket
-            try {
-                $this->downloadAttachmentsForTicket($id);
-            } catch (Exception $e) {
-                error_log('Auto-download attachments failed: ' . $e->getMessage());
+            // Smart auto-download: only run if there are pending attachments or emails without attachment records
+            $pendingAttachments = $db->select(
+                "SELECT COUNT(*) as count FROM EmailAttachments ea "
+                . "JOIN EmailInbox ei ON ea.email_inbox_id = ei.id "
+                . "WHERE ei.ticket_id = :ticket_id AND ea.is_downloaded = 0",
+                ['ticket_id' => $id]
+            );
+            
+            // Check if there are emails with has_attachments=1 but no attachment records
+            $emailsWithAttachmentsButNoRecords = $db->select(
+                "SELECT COUNT(*) as count FROM EmailInbox ei "
+                . "WHERE ei.ticket_id = :ticket_id "
+                . "AND ei.has_attachments = 1 "
+                . "AND NOT EXISTS (SELECT 1 FROM EmailAttachments ea WHERE ea.email_inbox_id = ei.id)",
+                ['ticket_id' => $id]
+            );
+            
+            // Only auto-download if there are pending attachments or emails that need attachment processing
+            // Skip auto-download if we're in auto-reload mode to prevent infinite loops
+            if (!isset($_GET['auto_reload']) && 
+                ((!empty($pendingAttachments) && $pendingAttachments[0]['count'] > 0) || 
+                 (!empty($emailsWithAttachmentsButNoRecords) && $emailsWithAttachmentsButNoRecords[0]['count'] > 0))) {
+                
+                try {
+                    $attachmentsDownloaded = $this->downloadAttachmentsForTicket($id, true); // true = silent auto-download
+                    
+                    // If attachments were downloaded, redirect to reload the page
+                    if ($attachmentsDownloaded) {
+                        redirect('tickets/show/' . $id . '?auto_reload=1');
+                    }
+                } catch (Exception $e) {
+                    error_log('Auto-download attachments failed: ' . $e->getMessage());
+                }
             }
             
             $attachments = $db->select(
@@ -359,8 +387,11 @@ class Tickets extends Controller {
 
     /**
      * Helper method to download all attachments for a ticket
+     * @param int $ticketId Ticket ID
+     * @param bool $silent If true, don't show success messages (for auto-download)
+     * @return bool True if attachments were downloaded, false otherwise
      */
-    private function downloadAttachmentsForTicket($ticketId) {
+    private function downloadAttachmentsForTicket($ticketId, $silent = false) {
         try {
             error_log('downloadAttachmentsForTicket: Starting for ticket ' . $ticketId);
             $db = new EasySQL(DB1);
@@ -413,8 +444,10 @@ class Tickets extends Controller {
             }
             
             if (empty($emails)) {
-                flash('info', 'No emails found for this ticket. If you expect emails, try syncing from Graph first.');
-                return;
+                if (!$silent) {
+                    flash('info', 'No emails found for this ticket. If you expect emails, try syncing from Graph first.');
+                }
+                return false;
             }
             
             $totalDownloaded = 0;
@@ -433,16 +466,26 @@ class Tickets extends Controller {
             }
             
             if ($totalDownloaded > 0) {
-                flash('success', "Successfully downloaded $totalDownloaded attachments." . (count($errors) > 0 ? ' Some errors occurred.' : ''));
+                if (!$silent) {
+                    flash('success', "Successfully downloaded $totalDownloaded attachments." . (count($errors) > 0 ? ' Some errors occurred.' : ''));
+                }
+                return true; // Return true if attachments were downloaded
             } elseif (count($errors) > 0) {
                 flash('error', 'Failed to download attachments: ' . implode(', ', $errors));
+                return false;
             } else {
-                flash('info', 'No attachments to download.');
+                if (!$silent) {
+                    flash('info', 'No attachments to download.');
+                }
+                return false; // Return false if no attachments were downloaded
             }
             
         } catch (Exception $e) {
             error_log('downloadAttachmentsForTicket: Exception: ' . $e->getMessage());
-            flash('error', 'Download failed: ' . $e->getMessage());
+            if (!$silent) {
+                flash('error', 'Download failed: ' . $e->getMessage());
+            }
+            return false;
         }
     }
 
@@ -466,45 +509,9 @@ class Tickets extends Controller {
 
         try {
             error_log('Tickets::downloadAllAttachments - Starting download process');
-            $db = new EasySQL(DB1);
             
-            // Get all emails linked to this ticket
-            $emails = $db->select(
-                "SELECT id, message_id, subject FROM EmailInbox WHERE ticket_id = :ticket_id",
-                ['ticket_id' => $ticketId]
-            );
-
-            error_log('Tickets::downloadAllAttachments - Found ' . count($emails) . ' emails for ticket');
-
-            if (empty($emails)) {
-                error_log('Tickets::downloadAllAttachments - No emails found');
-                flash('info', 'No emails found for this ticket.');
-                redirect('tickets/show/' . $ticketId);
-            }
-
-            $processed = 0;
-            $errors = [];
-
-            foreach ($emails as $email) {
-                try {
-                    error_log('Tickets::downloadAllAttachments - Processing email ID: ' . $email['id'] . ' Subject: ' . $email['subject']);
-                    // Call the redownloadAttachments method for each email
-                    $this->redownloadAttachmentsForEmail($email['id']);
-                    $processed++;
-                    error_log('Tickets::downloadAllAttachments - Successfully processed email ID: ' . $email['id']);
-                } catch (Exception $e) {
-                    error_log('Tickets::downloadAllAttachments - Error processing email ID ' . $email['id'] . ': ' . $e->getMessage());
-                    $errors[] = "Email '{$email['subject']}': " . $e->getMessage();
-                }
-            }
-
-            error_log('Tickets::downloadAllAttachments - Completed. Processed: ' . $processed . ', Errors: ' . count($errors));
-
-            if ($processed > 0) {
-                flash('success', "Processed $processed emails. " . (count($errors) > 0 ? 'Some errors: ' . implode(', ', $errors) : ''));
-            } else {
-                flash('error', 'Failed to process any emails: ' . implode(', ', $errors));
-            }
+            // Use the silent download method but show messages for manual downloads
+            $this->downloadAttachmentsForTicket($ticketId, false); // false = show messages for manual downloads
 
         } catch (Exception $e) {
             error_log('Tickets::downloadAllAttachments - Exception: ' . $e->getMessage());

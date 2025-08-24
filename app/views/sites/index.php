@@ -290,38 +290,9 @@
     </div>
 </div>
 
+<!-- Sites page uses global styles from app.css -->
 <style>
-/* Page Header */
-.page-header {
-    background: #ffffff;
-    color: #333;
-    padding: 2rem;
-    border-radius: 1rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid #e9ecef;
-}
-
-.page-title {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: #333;
-}
-
-.page-title i {
-    color: #7c3aed;
-    margin-right: 0.75rem;
-}
-
-.page-header p {
-    color: #6c757d;
-    margin: 0;
-}
-
+/* Site-specific overrides */
 .btn-falcon-default {
     border-color: #e3e6ed;
     background-color: #fff;
@@ -331,13 +302,6 @@
     background-color: #f9fafd;
     color: #212529;
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.1);
-}
-.avatar-icon {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 .empty-state {
     width: 100px;
@@ -351,9 +315,6 @@
 }
 .has-search .form-control {
     padding-left: 2.375rem;
-}
-.form-control:focus {
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
 }
 </style>
 

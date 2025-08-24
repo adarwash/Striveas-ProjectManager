@@ -1113,10 +1113,5 @@ class Employees extends Controller {
     /**
      * Helper method to send JSON responses
      */
-    private function jsonResponse($data) {
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
 }
 ?> 

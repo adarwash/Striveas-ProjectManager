@@ -101,36 +101,7 @@
     </div>
 </div>
 
-<style>
-.avatar-sm {
-    width: 40px;
-    height: 40px;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.card {
-    border-radius: 12px;
-}
-
-.table th {
-    border-top: none;
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.table td {
-    border-color: #f8f9fa;
-    vertical-align: middle;
-}
-
-.table tbody tr:hover {
-    background-color: #f8f9fa;
-}
-</style>
+<!-- Users page uses global styles from app.css -->
 
 <?php
 // Helper function for role colors

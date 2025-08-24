@@ -44,12 +44,12 @@ class EasySQL {
                 return $this->connection->lastInsertId();
             } else if ($this->driver === 'sqlsrv') {
                 // For SQL Server, check if table has triggers that conflict with OUTPUT clause
-                $tablePattern = '/INSERT\s+INTO\s+(\w+)/i';
+                $tablePattern = '/INSERT\s+INTO\s+(?:dbo\.)?(\w+)/i';
                 preg_match($tablePattern, $statement, $tableMatches);
                 $tableName = $tableMatches[1] ?? '';
                 
                 // Tables known to have triggers that conflict with OUTPUT clause
-                $tablesWithTriggers = ['Tickets'];
+                $tablesWithTriggers = ['Tickets', 'TimeEntries'];
                 
                 if (in_array($tableName, $tablesWithTriggers)) {
                     // Use traditional SCOPE_IDENTITY approach for tables with triggers
