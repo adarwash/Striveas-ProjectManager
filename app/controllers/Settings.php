@@ -16,20 +16,40 @@ class Settings extends Controller {
             redirect('/auth/login');
         }
         
-        // Check if user is admin
-        if (!isAdmin()) {
-            redirect('/dashboard');
-        }
-        
         // Create UserSettings table if it doesn't exist
         $this->user->createUserSettingsTable();
     }
     
     /**
-     * Redirect to admin settings
+     * Settings page - shows different content based on user role
      */
     public function index() {
-        redirect('/admin/settings');
+        // Get current user data
+        $userData = $this->user->getUserById($_SESSION['user_id']);
+        $userSettings = $this->user->getUserSettings($_SESSION['user_id']);
+        $systemSettings = $this->setting->getSystemSettings();
+        
+        // Check if user is admin
+        $isAdmin = isAdmin() || hasPermission('admin.system_settings') || 
+                   (isset($_SESSION['username']) && $_SESSION['username'] === 'admin');
+        
+        $data = [
+            'title' => 'Settings',
+            'user' => $userData,
+            'userSettings' => $userSettings,
+            'systemSettings' => $systemSettings,
+            'isAdmin' => $isAdmin,
+            'currency' => $systemSettings['currency'] ?? ['code' => 'USD', 'symbol' => '$', 'position' => 'before', 'decimals' => 2, 'thousands_separator' => ',', 'decimal_separator' => '.']
+        ];
+        
+        // Load appropriate view based on admin status
+        if ($isAdmin) {
+            // Redirect admins to admin settings for system-wide settings
+            redirect('/admin/settings');
+        } else {
+            // Show user settings page
+            $this->view('settings/index', $data);
+        }
     }
     
     /**
@@ -295,6 +315,166 @@ class Settings extends Controller {
         } else {
             redirect('settings');
         }
+    }
+    
+    /**
+     * Update user profile information
+     * 
+     * @return void
+     */
+    public function updateProfile() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('settings');
+        }
+        
+        $userId = $_SESSION['user_id'];
+        $data = [
+            'user_id' => $userId,
+            'full_name' => trim($_POST['full_name'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'department' => trim($_POST['department'] ?? '')
+        ];
+        
+        // Validate inputs
+        if (empty($data['full_name'])) {
+            $_SESSION['settings_error'] = 'Full name is required';
+            redirect('settings');
+        }
+        
+        if (empty($data['email']) || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['settings_error'] = 'Valid email is required';
+            redirect('settings');
+        }
+        
+        // Update user profile
+        if ($this->user->updateUserProfile($data)) {
+            $_SESSION['settings_success'] = 'Profile updated successfully';
+        } else {
+            $_SESSION['settings_error'] = 'Failed to update profile';
+        }
+        
+        redirect('settings');
+    }
+    
+    /**
+     * Update user preferences
+     * 
+     * @return void
+     */
+    public function updatePreferences() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('settings');
+        }
+        
+        $userId = $_SESSION['user_id'];
+        $settings = [
+            'theme' => $_POST['theme'] ?? 'light',
+            'items_per_page' => (int)($_POST['items_per_page'] ?? 25),
+            'date_format' => $_POST['date_format'] ?? 'M j, Y'
+        ];
+        
+        if ($this->user->updateUserSettings($userId, $settings)) {
+            $_SESSION['settings_success'] = 'Preferences updated successfully';
+        } else {
+            $_SESSION['settings_error'] = 'Failed to update preferences';
+        }
+        
+        redirect('settings');
+    }
+    
+    /**
+     * Update time settings
+     * 
+     * @return void
+     */
+    public function updateTimeSettings() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('settings');
+        }
+        
+        $userId = $_SESSION['user_id'];
+        $settings = [
+            'timezone' => $_POST['timezone'] ?? 'UTC',
+            'time_format' => $_POST['time_format'] ?? '12'
+        ];
+        
+        if ($this->user->updateUserSettings($userId, $settings)) {
+            $_SESSION['settings_success'] = 'Time settings updated successfully';
+        } else {
+            $_SESSION['settings_error'] = 'Failed to update time settings';
+        }
+        
+        redirect('settings');
+    }
+    
+    /**
+     * Update notification preferences
+     * 
+     * @return void
+     */
+    public function updateNotifications() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('settings');
+        }
+        
+        $userId = $_SESSION['user_id'];
+        $settings = [
+            'email_new_tickets' => isset($_POST['email_new_tickets']),
+            'email_ticket_updates' => isset($_POST['email_ticket_updates']),
+            'email_comments' => isset($_POST['email_comments']),
+            'browser_notifications' => isset($_POST['browser_notifications']),
+            'daily_digest' => isset($_POST['daily_digest']),
+            'weekly_summary' => isset($_POST['weekly_summary'])
+        ];
+        
+        if ($this->user->updateUserSettings($userId, $settings)) {
+            $_SESSION['settings_success'] = 'Notification settings updated successfully';
+        } else {
+            $_SESSION['settings_error'] = 'Failed to update notification settings';
+        }
+        
+        redirect('settings');
+    }
+    
+    /**
+     * Update user password
+     * 
+     * @return void
+     */
+    public function updatePassword() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('settings');
+        }
+        
+        $currentPassword = $_POST['current_password'] ?? '';
+        $newPassword = $_POST['new_password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+        
+        // Validate inputs
+        if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
+            $_SESSION['settings_error'] = 'All password fields are required';
+            redirect('settings');
+        }
+        
+        if ($newPassword !== $confirmPassword) {
+            $_SESSION['settings_error'] = 'New passwords do not match';
+            redirect('settings');
+        }
+        
+        if (strlen($newPassword) < 6) {
+            $_SESSION['settings_error'] = 'Password must be at least 6 characters';
+            redirect('settings');
+        }
+        
+        // Verify current password and update
+        $userId = $_SESSION['user_id'];
+        if ($this->user->updatePassword($userId, $newPassword, $currentPassword)) {
+            $_SESSION['settings_success'] = 'Password updated successfully';
+        } else {
+            $_SESSION['settings_error'] = 'Current password is incorrect or update failed';
+        }
+        
+        redirect('settings');
     }
     
     /**

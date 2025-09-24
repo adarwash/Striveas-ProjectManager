@@ -287,6 +287,81 @@
                     <?php endif; ?>
                 </div>
             </div>
+            
+            <!-- Client Domains -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-globe2 text-primary me-2"></i>
+                            Email Domains
+                        </h5>
+                        <?php if (hasPermission('clients.update')): ?>
+                        <form action="/clients/manageDomains/<?= $client['id'] ?>" method="post" class="d-flex gap-2">
+                            <input type="hidden" name="action" value="add">
+                            <input type="text" name="domain" class="form-control form-control-sm" placeholder="Add domain (example.com)" required>
+                            <div class="form-check form-check-inline align-self-center">
+                                <input class="form-check-input" type="checkbox" id="is_primary" name="is_primary">
+                                <label class="form-check-label" for="is_primary">Primary</label>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($domains)): ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>Primary</th>
+                                    <th>Added</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($domains as $d): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($d['domain']) ?></td>
+                                    <td>
+                                        <?php if (!empty($d['is_primary'])): ?>
+                                        <span class="badge text-bg-success">Primary</span>
+                                        <?php else: ?>
+                                        <span class="badge text-bg-secondary">Secondary</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= !empty($d['created_at']) ? date('M j, Y', strtotime($d['created_at'])) : '—' ?></td>
+                                    <td class="text-end">
+                                        <?php if (hasPermission('clients.update')): ?>
+                                        <form action="/clients/manageDomains/<?= $client['id'] ?>" method="post" class="d-inline">
+                                            <input type="hidden" name="action" value="remove">
+                                            <input type="hidden" name="domain_id" value="<?= $d['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php else: ?>
+                    <div class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="bi bi-globe2 text-muted" style="font-size: 2rem;"></i>
+                        </div>
+                        <h6 class="text-muted">No Domains Added</h6>
+                        <p class="text-muted mb-0">Add domains to auto-link tickets by sender email domain.</p>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
         
         <!-- Quick Actions -->

@@ -11,6 +11,13 @@ function hasPermission($permissionName) {
         return false;
     }
     
+    // Enhanced fallback for admin users - check both session role and username
+    if ((isset($_SESSION['role']) && $_SESSION['role'] === 'admin') || 
+        (isset($_SESSION['user_name']) && $_SESSION['user_name'] === 'admin') ||
+        (isset($_SESSION['username']) && $_SESSION['username'] === 'admin')) {
+        return true; // Admin users have all permissions
+    }
+    
     try {
         $userModel = new User();
         return $userModel->hasPermission($_SESSION['user_id'], $permissionName);

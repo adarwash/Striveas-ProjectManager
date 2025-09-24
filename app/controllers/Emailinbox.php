@@ -129,12 +129,28 @@ class Emailinbox extends Controller {
             'email_thread_id' => $email['message_id'],
             'original_message_id' => $email['message_id']
         ];
+        // Auto-link client by sender email domain when mapping exists
+        try {
+            if (!class_exists('ClientDomain')) {
+                require_once APPROOT . '/app/models/ClientDomain.php';
+            }
+            $clientDomainModel = new ClientDomain();
+            $mappedClientId = $clientDomainModel->getClientIdByEmail($email['from_address']);
+            if (!empty($mappedClientId)) {
+                $ticketData['client_id'] = (int)$mappedClientId;
+            }
+        } catch (Exception $e) {
+            // ignore mapping errors
+        }
         
         $ticketId = $this->ticketModel->create($ticketData);
         
         if ($ticketId) {
             // Link email to ticket
             $this->emailInboxModel->linkToTicket($emailId, $ticketId);
+            
+            // Send auto-acknowledgment for tickets created from email
+            $this->sendAutoAcknowledgment($ticketId, $email['from_address']);
             
             // Add email as first message
             $this->ticketModel->addMessage($ticketId, [
@@ -730,11 +746,28 @@ class Emailinbox extends Controller {
                 'email_thread_id' => $email['message_id'],
                 'original_message_id' => $email['message_id']
             ];
+            // Auto-link client by sender email domain when mapping exists
+            try {
+                if (!class_exists('ClientDomain')) {
+                    require_once APPROOT . '/app/models/ClientDomain.php';
+                }
+                $clientDomainModel = new ClientDomain();
+                $mappedClientId = $clientDomainModel->getClientIdByEmail($email['from_address']);
+                if (!empty($mappedClientId)) {
+                    $ticketData['client_id'] = (int)$mappedClientId;
+                }
+            } catch (Exception $e) {
+                // ignore mapping errors
+            }
             
             $ticketId = $this->ticketModel->create($ticketData);
             
             if ($ticketId) {
                 $this->emailInboxModel->linkToTicket($email['id'], $ticketId);
+                
+                // Send auto-acknowledgment email if enabled
+                $this->sendAutoAcknowledgment($ticketId, $email['from_address']);
+                
                 return true;
             }
             
@@ -742,6 +775,106 @@ class Emailinbox extends Controller {
         } catch (Exception $e) {
             error_log('ProcessEmailToTicket Error: ' . $e->getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Send auto-acknowledgment email for new ticket
+     */
+    private function sendAutoAcknowledgment($ticketId, $requesterEmail) {
+        error_log("Emailinbox::sendAutoAcknowledgment called for ticket $ticketId, email $requesterEmail");
+        try {
+            // Basic validation and loop prevention
+            if (empty($ticketId) || empty($requesterEmail)) {
+                return;
+            }
+            // Avoid acknowledging to the support mailbox itself
+            try {
+                require_once APPROOT . '/app/models/Setting.php';
+                $settingModel = new Setting();
+                $supportEmail = $settingModel->get('graph_connected_email') ?: $settingModel->get('from_email');
+                if (!empty($supportEmail) && strcasecmp(trim($supportEmail), trim($requesterEmail)) === 0) {
+                    error_log('Skipping acknowledgment to support mailbox to avoid loops: ' . $requesterEmail);
+                    return;
+                }
+            } catch (Exception $e) {
+                // ignore and continue
+            }
+            
+            // Check if auto-acknowledgment is enabled
+            require_once APPROOT . '/app/models/Setting.php';
+            $settingModel = new Setting();
+            $autoAcknowledge = $settingModel->get('auto_acknowledge_tickets', true);
+            
+            if (!$autoAcknowledge) {
+                return;
+            }
+            
+            // Get ticket details
+            $ticket = $this->ticketModel->getById($ticketId);
+            if (!$ticket) {
+                return;
+            }
+            
+            // Prevent duplicate acknowledgments for same ticket+recipient
+            try {
+                $existing = $this->ticketModel->db->select(
+                    "SELECT TOP 1 id FROM EmailQueue WHERE ticket_id = :tid AND to_address = :to AND subject LIKE '%Thank you%'",
+                    ['tid' => $ticketId, 'to' => $requesterEmail]
+                );
+                if (!empty($existing)) {
+                    error_log("Acknowledgment already queued/sent for ticket {$ticket['ticket_number']} to {$requesterEmail}");
+                    return;
+                }
+            } catch (Exception $e) {
+                // ignore and proceed
+            }
+            
+            // Extract customer name from email
+            $requesterName = strstr($requesterEmail, '@', true);
+            $requesterName = ucwords(str_replace(['.', '_', '-'], ' ', $requesterName));
+            
+            // Get priority display name
+            $priorityNames = [
+                1 => 'Low',
+                2 => 'Normal', 
+                3 => 'High',
+                4 => 'Critical'
+            ];
+            $priorityDisplay = $priorityNames[$ticket['priority_id']] ?? 'Normal';
+            
+            // Prepare email data
+            require_once APPROOT . '/app/services/EmailService.php';
+            $emailService = new EmailService();
+            
+            $emailData = $emailService->createTicketEmail('ticket_acknowledgment', [
+                'ticket_id' => $ticket['id'],
+                'ticket_number' => $ticket['ticket_number'],
+                'subject' => $ticket['subject'],
+                'priority' => $priorityDisplay,
+                'requester_name' => $requesterName,
+                'inbound_email_address' => $requesterEmail,
+                'created_by_email' => $requesterEmail
+            ]);
+            
+            // Queue the acknowledgment email
+            $result = $emailService->queueEmail($emailData, 2); // High priority
+            
+            if ($result) {
+                error_log("Auto-acknowledgment queued for ticket {$ticket['ticket_number']} to {$requesterEmail}");
+                
+                // Process email queue immediately to send the acknowledgment
+                try {
+                    $emailService->processEmailQueue();
+                } catch (Exception $e) {
+                    error_log('Failed to process acknowledgment email queue immediately: ' . $e->getMessage());
+                }
+            } else {
+                error_log("Failed to queue auto-acknowledgment for ticket {$ticket['ticket_number']}");
+            }
+            
+        } catch (Exception $e) {
+            error_log('SendAutoAcknowledgment Error: ' . $e->getMessage());
         }
     }
 }

@@ -192,11 +192,31 @@ class User {
      * @param string $newPassword The new password
      * @return bool True if update successful, false otherwise
      */
-    public function updatePassword(int $userId, string $newPassword): bool {
+    public function updatePassword(int $userId, string $newPassword, string $currentPassword = null): bool {
         try {
-            // In a real application, you would use password_hash() here
-            $query = "UPDATE [Users] SET password = ? WHERE id = ?";
-            $params = [$newPassword, $userId];
+            // If current password is provided, verify it first
+            if ($currentPassword !== null) {
+                $query = "SELECT password FROM [Users] WHERE id = ?";
+                $result = $this->db->select($query, [$userId]);
+                
+                if (empty($result)) {
+                    return false;
+                }
+                
+                $storedPassword = $result[0]['password'];
+                
+                // Verify current password
+                if (!password_verify($currentPassword, $storedPassword) && $currentPassword !== $storedPassword) {
+                    return false;
+                }
+            }
+            
+            // Hash the new password
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            
+            // Update password
+            $query = "UPDATE [Users] SET password = ?, updated_at = GETDATE() WHERE id = ?";
+            $params = [$hashedPassword, $userId];
             
             $this->db->update($query, $params);
             return true;
@@ -809,6 +829,85 @@ class User {
             return false;
         }
     }
+    
+    /**
+     * Get user settings
+     * 
+     * @param int $userId User ID
+     * @return array Array of user settings
+     */
+    public function getUserSettings(int $userId): array {
+        try {
+            $query = "SELECT * FROM UserSettings WHERE user_id = ?";
+            $result = $this->db->select($query, [$userId]);
+            
+            if (empty($result)) {
+                // Return default settings if none exist
+                return [
+                    'theme' => 'light',
+                    'items_per_page' => 25,
+                    'date_format' => 'M j, Y',
+                    'timezone' => 'UTC',
+                    'time_format' => '12',
+                    'email_new_tickets' => true,
+                    'email_ticket_updates' => true,
+                    'email_comments' => true,
+                    'browser_notifications' => false,
+                    'daily_digest' => false,
+                    'weekly_summary' => false
+                ];
+            }
+            
+            // Parse JSON settings if stored as JSON
+            $settings = $result[0];
+            if (isset($settings['settings']) && is_string($settings['settings'])) {
+                $jsonSettings = json_decode($settings['settings'], true);
+                if ($jsonSettings) {
+                    $settings = array_merge($settings, $jsonSettings);
+                }
+            }
+            
+            return $settings;
+        } catch (Exception $e) {
+            error_log('GetUserSettings Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Update user settings
+     * 
+     * @param int $userId User ID
+     * @param array $settings Array of settings to update
+     * @return bool True if update successful, false otherwise
+     */
+    public function updateUserSettings(int $userId, array $settings): bool {
+        try {
+            // Check if user settings exist
+            $existingSettings = $this->db->select("SELECT id FROM UserSettings WHERE user_id = ?", [$userId]);
+            
+            if (empty($existingSettings)) {
+                // Insert new settings
+                $settingsJson = json_encode($settings);
+                $query = "INSERT INTO UserSettings (user_id, settings, created_at, updated_at) VALUES (?, ?, GETDATE(), GETDATE())";
+                $this->db->update($query, [$userId, $settingsJson]);
+            } else {
+                // Update existing settings
+                $existingData = $this->getUserSettings($userId);
+                $mergedSettings = array_merge($existingData, $settings);
+                $settingsJson = json_encode($mergedSettings);
+                
+                $query = "UPDATE UserSettings SET settings = ?, updated_at = GETDATE() WHERE user_id = ?";
+                $this->db->update($query, [$settingsJson, $userId]);
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('UpdateUserSettings Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
     
     /**
      * Get user's permissions

@@ -35,7 +35,7 @@ class EmailService {
                 'smtp_encryption' => 'tls',
                 'smtp_auth' => true,
                 'from_email' => 'noreply@example.com',
-                'from_name' => 'Hive IT Portal',
+                'from_name' => SITENAME,
                 
                 // Inbound Email Settings (supports both POP3 and IMAP)
                 'inbound_protocol' => 'imap', // 'imap' or 'pop3'
@@ -1174,6 +1174,12 @@ class EmailService {
                 $emailData['to'] = $data['created_by_email'];
                 $emailData['html_body'] = $this->renderTicketResolvedTemplate($data);
                 break;
+                
+            case 'ticket_acknowledgment':
+                $emailData['subject'] = '[' . $data['ticket_number'] . '] Thank you - Your support request has been received';
+                $emailData['to'] = $data['inbound_email_address'] ?? $data['created_by_email'];
+                $emailData['html_body'] = $this->renderTicketAcknowledgmentTemplate($data);
+                break;
         }
         
         // Generate text version from HTML
@@ -1233,6 +1239,49 @@ class EmailService {
         <p><strong>Resolution:</strong></p>
         <div>" . nl2br(htmlspecialchars($data['resolution'])) . "</div>
         <p><a href='" . URLROOT . "/tickets/view/{$data['ticket_id']}'>View Ticket</a></p>
+        ";
+    }
+    
+    private function renderTicketAcknowledgmentTemplate($data) {
+        $portalLink = '';
+        if (function_exists('isCustomerAuthEnabled') && isCustomerAuthEnabled()) {
+            $portalLink = "<p><strong>Customer Portal:</strong> <a href='" . URLROOT . "/customer/auth'>Sign in with Microsoft 365</a> to view and track your tickets online.</p>";
+        }
+        
+        return "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+            <h2 style='color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;'>
+                Thank you for contacting us
+            </h2>
+            
+            <p>Dear " . htmlspecialchars($data['requester_name'] ?? 'Valued Customer') . ",</p>
+            
+            <p>We have received your support request and a ticket has been created for you.</p>
+            
+            <div style='background: #f8f9fa; padding: 15px; border-left: 4px solid #3498db; margin: 20px 0;'>
+                <p><strong>Ticket Number:</strong> {$data['ticket_number']}</p>
+                <p><strong>Subject:</strong> " . htmlspecialchars($data['subject']) . "</p>
+                <p><strong>Priority:</strong> " . htmlspecialchars($data['priority'] ?? 'Normal') . "</p>
+                <p><strong>Created:</strong> " . date('F j, Y \a\t g:i A') . "</p>
+            </div>
+            
+            <p><strong>What happens next?</strong></p>
+            <ul>
+                <li>Our support team will review your request</li>
+                <li>You will receive email updates when there are any changes to your ticket</li>
+                <li>Please keep this ticket number for your reference</li>
+                <li>If you need to add more information, simply reply to this email</li>
+            </ul>
+            
+            " . $portalLink . "
+            
+            <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666;'>
+                <p><strong>Important:</strong> Please do not remove the ticket number [" . htmlspecialchars($data['ticket_number']) . "] from the subject line when replying to ensure your response is properly linked to this ticket.</p>
+                
+                <p>Best regards,<br>
+                " . htmlspecialchars(SITENAME ?? 'Support Team') . " Support Team</p>
+            </div>
+        </div>
         ";
     }
 }

@@ -11,8 +11,8 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
     <!-- Logo/Brand Section -->
     <div class="sidebar-header">
         <a href="/" class="sidebar-brand">
-            <i class="fas fa-th-large"></i>
-            <span>HiveIT Portal</span>
+            <i class="fas fa-layer-group"></i>
+            <span><?php echo SITENAME; ?></span>
         </a>
     </div>
     

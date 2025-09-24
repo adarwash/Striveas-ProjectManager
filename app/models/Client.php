@@ -287,4 +287,136 @@ class Client {
             return [];
         }
     }
+
+    /**
+     * Get top clients by number of associated projects (fallback: sites)
+     *
+     * Attempts to compute top clients by counting distinct projects linked to
+     * the client's sites via project_sites. If project_sites doesn't exist,
+     * falls back to counting distinct sites from SiteClients.
+     *
+     * @param int $limit Maximum number of clients to return
+     * @return array List of top clients with counts
+     */
+    public function getTopClients($limit = 5) {
+        try {
+            // Ensure SiteClients table exists
+            $tableCheck = "SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SiteClients'";
+            $result = $this->db->select($tableCheck);
+            $siteClientsExists = ($result && isset($result[0]['table_count']) && (int)$result[0]['table_count'] > 0);
+
+            if (!$siteClientsExists) {
+                // No linkage table; return active clients with zero counts as a safe fallback
+                $query = "SELECT id, name, CAST(0 AS INT) AS sites_count, CAST(0 AS INT) AS projects_count FROM Clients WHERE status = 'Active' ORDER BY name ASC";
+                if ($limit > 0) {
+                    $query = str_replace("SELECT id, name", "SELECT TOP $limit id, name", $query);
+                }
+                return $this->db->select($query) ?: [];
+            }
+
+            // Check if project_sites table exists
+            $psCheck = "SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'project_sites'";
+            $psResult = $this->db->select($psCheck);
+            $projectSitesExists = ($psResult && isset($psResult[0]['table_count']) && (int)$psResult[0]['table_count'] > 0);
+
+            if ($projectSitesExists) {
+                $query = "SELECT c.id, c.name,
+                                COUNT(DISTINCT sc.site_id) AS sites_count,
+                                COUNT(DISTINCT ps.project_id) AS projects_count
+                          FROM Clients c
+                          LEFT JOIN SiteClients sc ON sc.client_id = c.id
+                          LEFT JOIN project_sites ps ON ps.site_id = sc.site_id
+                          WHERE c.status = 'Active'
+                          GROUP BY c.id, c.name
+                          ORDER BY COUNT(DISTINCT ps.project_id) DESC, COUNT(DISTINCT sc.site_id) DESC, c.name ASC";
+                if ($limit > 0) {
+                    $query = str_replace("SELECT c.id, c.name", "SELECT TOP $limit c.id, c.name", $query);
+                }
+                return $this->db->select($query) ?: [];
+            } else {
+                $query = "SELECT c.id, c.name,
+                                 COUNT(DISTINCT sc.site_id) AS sites_count
+                          FROM Clients c
+                          LEFT JOIN SiteClients sc ON sc.client_id = c.id
+                          WHERE c.status = 'Active'
+                          GROUP BY c.id, c.name
+                          ORDER BY COUNT(DISTINCT sc.site_id) DESC, c.name ASC";
+                if ($limit > 0) {
+                    $query = str_replace("SELECT c.id, c.name", "SELECT TOP $limit c.id, c.name", $query);
+                }
+                $rows = $this->db->select($query) ?: [];
+                // Normalize shape by adding projects_count = 0
+                foreach ($rows as &$row) {
+                    if (!isset($row['projects_count'])) {
+                        $row['projects_count'] = 0;
+                    }
+                }
+                return $rows;
+            }
+        } catch (Exception $e) {
+            error_log('Error fetching top clients: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get top clients by ticket volume within a date range (capped to 90 days)
+     *
+     * @param string $range One of: 'today', 'week', 'month'
+     * @param int $limit Max number of clients to return
+     * @param int $maxDaysCap Absolute maximum days to include (default 90)
+     * @return array
+     */
+    public function getTopClientsByTickets($range = 'month', $limit = 5, $maxDaysCap = 90) {
+        try {
+            // Verify Tickets table exists
+            $checkTickets = "SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Tickets'";
+            $exists = $this->db->select($checkTickets);
+            if (!$exists || (int)($exists[0]['table_count'] ?? 0) === 0) {
+                return [];
+            }
+
+            // Determine window in days
+            $range = strtolower((string)$range);
+            switch ($range) {
+                case 'today':
+                    $days = 0;
+                    break;
+                case 'week':
+                    $days = 7;
+                    break;
+                case 'month':
+                default:
+                    $days = 30;
+                    break;
+            }
+            // Cap to max days
+            $days = min((int)$days, (int)$maxDaysCap);
+
+            // Compute from-date
+            if ($days === 0) {
+                // Today starting at midnight
+                $fromDate = date('Y-m-d 00:00:00');
+            } else {
+                $fromDate = date('Y-m-d H:i:s', strtotime("-$days days"));
+            }
+
+            // Build query (SQL Server TOP needs literal integer)
+            $top = (int)$limit > 0 ? "TOP $limit " : '';
+            $query = "SELECT ${top}c.id, c.name, COUNT(*) AS ticket_count
+                      FROM Tickets t
+                      INNER JOIN Clients c ON c.id = t.client_id
+                      WHERE t.client_id IS NOT NULL
+                        AND t.created_at >= :from_date
+                        AND t.created_at <= GETDATE()
+                      GROUP BY c.id, c.name
+                      ORDER BY COUNT(*) DESC, c.name ASC";
+
+            $rows = $this->db->select($query, ['from_date' => $fromDate]);
+            return $rows ?: [];
+        } catch (Exception $e) {
+            error_log('Error fetching top clients by tickets: ' . $e->getMessage());
+            return [];
+        }
+    }
 } 

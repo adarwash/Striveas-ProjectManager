@@ -49,4 +49,12 @@
                 exit;
             }
         }
+        
+        /**
+         * Show 404 error page
+         */
+        public function notFound() {
+            http_response_code(404);
+            $this->view('errors/404', ['title' => 'Page Not Found']);
+        }
     }

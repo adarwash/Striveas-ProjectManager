@@ -239,7 +239,7 @@ class Setting {
             
             // Email Configuration Settings
             'from_email' => $this->get('from_email', ''),
-            'from_name' => $this->get('from_name', 'Hive IT Portal'),
+            'from_name' => $this->get('from_name', SITENAME),
             'smtp_host' => $this->get('smtp_host', ''),
             'smtp_port' => $this->get('smtp_port', 587),
             'smtp_username' => $this->get('smtp_username', ''),
@@ -265,7 +265,21 @@ class Setting {
             'delete_processed_emails' => $this->get('delete_processed_emails', false),
             'ticket_email_pattern' => $this->get('ticket_email_pattern', '/\[TKT-\d{4}-\d{6}\]/'),
             'max_attachment_size' => $this->get('max_attachment_size', 10485760), // 10MB in bytes
-            'allowed_file_types' => $this->get('allowed_file_types', 'pdf,doc,docx,txt,png,jpg,jpeg,gif')
+            'allowed_file_types' => $this->get('allowed_file_types', 'pdf,doc,docx,txt,png,jpg,jpeg,gif'),
+            
+            // Email Auto-Acknowledgment
+            'auto_acknowledge_tickets' => $this->get('auto_acknowledge_tickets', true),
+            
+            // Customer Authentication Settings
+            'customer_auth_enabled' => $this->get('customer_auth_enabled', false),
+            'azure_tenant_id' => $this->get('azure_tenant_id', ''),
+            'azure_client_id' => $this->get('azure_client_id', ''),
+            'azure_client_secret' => $this->get('azure_client_secret', ''),
+            'azure_connection_status' => $this->get('azure_connection_status', 'not_connected'),
+            'azure_connected_at' => $this->get('azure_connected_at', ''),
+            'customer_domain_restriction' => $this->get('customer_domain_restriction', ''),
+            'ticket_visibility' => $this->get('ticket_visibility', 'email_match'),
+            'allow_ticket_creation' => $this->get('allow_ticket_creation', false)
         ];
     }
     
@@ -320,17 +334,44 @@ class Setting {
                 'delete_processed_emails',
                 'ticket_email_pattern',
                 'max_attachment_size',
-                'allowed_file_types'
+                'allowed_file_types',
+                'auto_acknowledge_tickets',
+                
+                // Customer Portal Authentication (Azure AD)
+                'customer_auth_enabled',
+                'azure_tenant_id',
+                'azure_client_id',
+                'azure_client_secret',
+                'azure_connection_status',
+                'azure_connected_at',
+                'customer_domain_restriction',
+                'ticket_visibility',
+                'allow_ticket_creation'
             ];
             
             // Update each provided setting if it's valid
             foreach ($settings as $key => $value) {
                 if (in_array($key, $validSettings)) {
-                    // Convert boolean strings to actual booleans
-                    if ($value === 'true') {
-                        $value = true;
-                    } elseif ($value === 'false') {
-                        $value = false;
+                    // Normalize typical checkbox and boolean string values
+                    $normalized = null;
+                    if (is_string($value)) {
+                        $lower = strtolower(trim($value));
+                        if (in_array($lower, ['true','1','on','yes'], true)) {
+                            $normalized = true;
+                        } elseif (in_array($lower, ['false','0','off','no'], true)) {
+                            $normalized = false;
+                        }
+                    }
+                    if ($normalized !== null) {
+                        $value = $normalized;
+                    }
+                    
+                    // Do not overwrite existing client secret with empty value
+                    if ($key === 'azure_client_secret') {
+                        $existing = $this->get('azure_client_secret', '');
+                        if ((string)$value === '' && (string)$existing !== '') {
+                            continue; // skip update to preserve current secret
+                        }
                     }
                     
                     // Save the setting

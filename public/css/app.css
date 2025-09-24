@@ -287,7 +287,7 @@ body {
 .card-header {
     background: white !important;
     border-bottom: 1px solid var(--border-color);
-    border-radius: var(--card-border-radius) var(--card-border-radius) 0 0 !important;
+    /* border-radius: var(--card-border-radius) var(--card-border-radius) 0 0 !important; */
     padding: 1.5rem 2rem;
     font-weight: 600;
 }

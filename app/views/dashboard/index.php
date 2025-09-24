@@ -192,24 +192,41 @@ $title = 'Dashboard - HiveIT Portal';
 
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-star me-2"></i>Top Clients</h5>
+                <form method="get" action="/dashboard" class="d-flex align-items-center" style="gap: 8px;">
+                    <label for="top_client_range" class="form-label mb-0 small text-muted">Range</label>
+                    <select id="top_client_range" name="top_client_range" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="today" <?= (isset($top_client_range) && $top_client_range === 'today') ? 'selected' : '' ?>>Today</option>
+                        <option value="week" <?= (!isset($top_client_range) || $top_client_range === 'week') ? 'selected' : '' ?>>Week</option>
+                        <option value="month" <?= (isset($top_client_range) && $top_client_range === 'month') ? 'selected' : '' ?>>Month</option>
+                    </select>
+                </form>
             </div>
             <div class="card-body">
-                <div class="client-list">
-                    <div class="client-item">
-                        <div class="client-info">
-                            <div class="client-name">PSandB</div>
-                            <div class="client-projects">Multiple projects</div>
-                                        </div>
-                        <div class="client-badge">
-                            <span class="badge bg-primary">0</span>
-                                    </div>
+                <?php if (!empty($top_clients)) : ?>
+                    <div class="client-list">
+                        <?php foreach ($top_clients as $client) : ?>
+                            <div class="client-item">
+                                <div class="client-info">
+                                    <div class="client-name"><?= htmlspecialchars($client['name']) ?></div>
+                                    <div class="client-projects">Tickets: <?= (int)($client['ticket_count'] ?? 0) ?></div>
+                                </div>
+                                <div class="client-badge">
+                                    <span class="badge bg-primary"><?= (int)($client['ticket_count'] ?? 0) ?></span>
                                 </div>
                             </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else : ?>
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-tie fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No client data yet.</p>
+                    </div>
+                <?php endif; ?>
                 <div class="text-center mt-3">
                     <a href="/clients" class="btn btn-sm btn-outline-primary">View All Clients</a>
-                    </div>
+                </div>
             </div>
         </div>
     </div>

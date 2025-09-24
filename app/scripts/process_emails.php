@@ -31,6 +31,28 @@ if (!file_exists(dirname($logFile))) {
     mkdir(dirname($logFile), 0755, true);
 }
 
+// Prevent overlapping runs with a lock file
+$lockFilePath = sys_get_temp_dir() . '/projecttracker_email_processor.lock';
+$lockHandle = @fopen($lockFilePath, 'c');
+if ($lockHandle === false) {
+    // If we cannot open a lock file, proceed but log a warning
+    file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . "] [WARNING] Failed to open lock file: $lockFilePath\n", FILE_APPEND | LOCK_EX);
+} else {
+    if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
+        // Another instance is running
+        file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . "] [INFO] Another email processing instance is already running. Exiting.\n", FILE_APPEND | LOCK_EX);
+        exit(0);
+    }
+    // Ensure lock released on shutdown
+    register_shutdown_function(function() use ($lockHandle, $lockFilePath) {
+        if (is_resource($lockHandle)) {
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
+        }
+        // Do not unlink the lock file; persistent file is fine and safer across processes
+    });
+}
+
 /**
  * Log messages with timestamp
  */

@@ -12,6 +12,7 @@ class Search extends Controller {
     private $clientModel;
     private $timeModel;
     private $noteModel;
+    private $ticketModel;
     private $db;
     
     public function __construct() {
@@ -45,6 +46,12 @@ class Search extends Controller {
             $this->noteModel = $this->model('Note');
         } catch (Exception $e) {
             $this->noteModel = null;
+        }
+        
+        try {
+            $this->ticketModel = $this->model('Ticket');
+        } catch (Exception $e) {
+            $this->ticketModel = null;
         }
     }
     
@@ -151,7 +158,7 @@ class Search extends Controller {
         
         // Check if user has permission to search at least one entity type
         $canSearchAny = false;
-        $searchableTypes = ['projects', 'tasks', 'users', 'clients', 'notes'];
+        $searchableTypes = ['projects', 'tasks', 'users', 'clients', 'notes', 'tickets'];
         
         if ($type === 'all') {
             foreach ($searchableTypes as $entityType) {
@@ -192,7 +199,8 @@ class Search extends Controller {
                     'tasks' => $this->canSearchEntity('tasks'),
                     'users' => $this->canSearchEntity('users'),
                     'clients' => $this->canSearchEntity('clients'),
-                    'notes' => $this->canSearchEntity('notes')
+                    'notes' => $this->canSearchEntity('notes'),
+                    'tickets' => $this->canSearchEntity('tickets')
                 ],
                 'debug' => [
                     'models_loaded' => [
@@ -200,7 +208,8 @@ class Search extends Controller {
                         'task' => ($this->taskModel !== null),
                         'user' => ($this->userModel !== null),
                         'client' => ($this->clientModel !== null),
-                        'note' => ($this->noteModel !== null)
+                        'note' => ($this->noteModel !== null),
+                        'ticket' => ($this->ticketModel !== null)
                     ]
                 ]
             ]);

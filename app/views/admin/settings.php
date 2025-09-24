@@ -1,64 +1,404 @@
 <?php require VIEWSPATH . '/inc/header.php'; ?>
 
-<div class="container-fluid px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h2 mb-1">System Settings</h1>
-            <p class="text-muted">Configure application-wide settings</p>
-        </div>
-        <div>
-            <a href="<?= URLROOT ?>/admin" class="btn btn-outline-primary">
-                <i class="bi bi-speedometer2 me-2"></i>Dashboard
-            </a>
+<!-- Custom CSS for enhanced UI -->
+<style>
+.settings-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 200px;
+    border-radius: 0 0 30px 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+.settings-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1.5" fill="white" opacity="0.08"/><circle cx="50" cy="10" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+}
+
+.settings-header {
+    position: relative;
+    z-index: 2;
+    color: white;
+}
+
+.breadcrumb-modern {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 50px;
+    padding: 8px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.breadcrumb-modern .breadcrumb-item a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.breadcrumb-modern .breadcrumb-item a:hover {
+    color: white;
+}
+
+.breadcrumb-modern .breadcrumb-item.active {
+    color: white;
+    font-weight: 500;
+}
+
+.settings-tabs {
+    background: white;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
+    margin-top: -50px;
+    position: relative;
+    z-index: 3;
+    border: none;
+}
+
+.settings-tabs .nav-link {
+    border: none;
+    border-radius: 15px 15px 0 0;
+    padding: 15px 25px;
+    color: #6c757d;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    margin: 0 5px;
+}
+
+.settings-tabs .nav-link:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    transform: translateY(-2px);
+}
+
+.settings-tabs .nav-link.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    transform: translateY(-2px);
+}
+
+.settings-tabs .nav-link i {
+    font-size: 1.1rem;
+}
+
+.settings-card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    background: white;
+    overflow: hidden;
+}
+
+.settings-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+.settings-card .card-header {
+    background: linear-gradient(135deg, #f8f9ff, #e3e8ff);
+    border: none;
+    padding: 20px 25px;
+    border-radius: 20px 20px 0 0;
+}
+
+.settings-card .card-body {
+    padding: 25px;
+}
+
+.icon-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.form-control, .form-select {
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    transform: translateY(-1px);
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+    border-radius: 50px;
+    background-color: #dee2e6;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+}
+
+.btn-modern {
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary.btn-modern {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.btn-outline-primary.btn-modern {
+    border: 2px solid #667eea;
+    color: #667eea;
+    background: transparent;
+}
+
+.btn-outline-primary.btn-modern:hover {
+    background: #667eea;
+    color: white;
+}
+
+.input-group-text {
+    border: 2px solid #e9ecef;
+    border-radius: 12px 0 0 12px;
+    background: #f8f9fa;
+    border-right: none;
+}
+
+.input-group .form-control {
+    border-left: none;
+    border-radius: 0 12px 12px 0;
+}
+
+.input-group .form-control:focus {
+    border-left: 2px solid #667eea;
+}
+
+.alert-modern {
+    border: none;
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.save-section {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
+    border: none;
+    margin-top: 30px;
+}
+
+@media (max-width: 768px) {
+    .settings-container {
+        border-radius: 0 0 20px 20px;
+        min-height: 150px;
+    }
+    
+    .settings-tabs {
+        margin-top: -30px;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .settings-tabs .nav-link {
+        padding: 12px 15px;
+        margin: 0 2px;
+        font-size: 14px;
+    }
+    
+    .settings-card .card-body {
+        padding: 20px;
+    }
+    
+    .icon-circle {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up {
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+.active-card {
+    transform: translateY(-8px) !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+.maintenance-active {
+    border: 2px solid #ff6b6b !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 107, 0.15) !important;
+}
+
+.changed {
+    border-left: 4px solid #667eea !important;
+}
+
+.settings-card {
+    will-change: transform;
+}
+
+.btn-modern {
+    will-change: transform;
+}
+</style>
+
+<div class="settings-container">
+    <div class="container-fluid px-4 py-5">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb breadcrumb-modern mb-0">
+                <li class="breadcrumb-item">
+                    <a href="<?= URLROOT ?>/admin">
+                        <i class="bi bi-house-door me-1"></i>Admin
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    <i class="bi bi-gear me-1"></i>System Settings
+                </li>
+            </ol>
+        </nav>
+
+        <div class="settings-header text-center">
+            <div class="d-inline-flex align-items-center justify-content-center mb-3">
+                <div class="icon-circle me-3">
+                    <i class="bi bi-gear-wide-connected fs-2"></i>
+                </div>
+                <div class="text-start">
+                    <h1 class="h2 mb-1 fw-bold">System Settings</h1>
+                    <p class="mb-0 opacity-75">Configure your application's core functionality</p>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <?php flash('settings_success'); ?>
-    <?php flash('settings_error'); ?>
+</div>
+
+<div class="container-fluid px-4 pb-5">
+    <!-- Flash Messages -->
+    <div class="fade-in">
+        <?php if (isset($_SESSION['settings_success'])): ?>
+            <div class="alert alert-success alert-modern alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong>Success!</strong> <?= $_SESSION['settings_success'] ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['settings_success']); ?>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['settings_error'])): ?>
+            <div class="alert alert-danger alert-modern alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Error!</strong> <?= $_SESSION['settings_error'] ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['settings_error']); ?>
+        <?php endif; ?>
+    </div>
     
     <!-- Settings Navigation Tabs -->
-    <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="application-tab" data-bs-toggle="tab" data-bs-target="#application" 
-                type="button" role="tab" aria-controls="application" aria-selected="true">
-                <i class="bi bi-gear-wide-connected me-2"></i>Application
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="defaults-tab" data-bs-toggle="tab" data-bs-target="#defaults" 
-                type="button" role="tab" aria-controls="defaults" aria-selected="false">
-                <i class="bi bi-sliders me-2"></i>Defaults
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" 
-                type="button" role="tab" aria-controls="email" aria-selected="false">
-                <i class="bi bi-envelope me-2"></i>Email
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="currency-tab" data-bs-toggle="tab" data-bs-target="#currency" 
-                type="button" role="tab" aria-controls="currency" aria-selected="false">
-                <i class="bi bi-currency-exchange me-2"></i>Currency
-            </button>
-        </li>
-    </ul>
+    <div class="slide-up">
+        <ul class="nav settings-tabs mb-0" id="settingsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="application-tab" data-bs-toggle="tab" data-bs-target="#application" 
+                    type="button" role="tab" aria-controls="application" aria-selected="true">
+                    <i class="bi bi-gear-wide-connected me-2"></i>Application
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="defaults-tab" data-bs-toggle="tab" data-bs-target="#defaults" 
+                    type="button" role="tab" aria-controls="defaults" aria-selected="false">
+                    <i class="bi bi-sliders me-2"></i>Defaults
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" 
+                    type="button" role="tab" aria-controls="email" aria-selected="false">
+                    <i class="bi bi-envelope me-2"></i>Email
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="currency-tab" data-bs-toggle="tab" data-bs-target="#currency" 
+                    type="button" role="tab" aria-controls="currency" aria-selected="false">
+                    <i class="bi bi-currency-exchange me-2"></i>Currency
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="authentication-tab" data-bs-toggle="tab" data-bs-target="#authentication" 
+                    type="button" role="tab" aria-controls="authentication" aria-selected="false">
+                    <i class="bi bi-shield-lock me-2"></i>Authentication
+                </button>
+            </li>
+        </ul>
+    </div>
     
     <form action="<?= URLROOT ?>/admin/settings" method="POST">
         <div class="tab-content" id="settingsTabContent">
             <!-- Application Settings Tab -->
             <div class="tab-pane fade show active" id="application" role="tabpanel" aria-labelledby="application-tab">
-        <div class="row g-4">
-                    <div class="col-md-6">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white py-3">
-                        <div class="d-flex align-items-center">
-                                    <span class="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
-                                        <i class="bi bi-toggles fs-4 text-primary"></i>
-                                    </span>
-                                    <h5 class="mb-0">System Status</h5>
-                        </div>
-                    </div>
+                <div class="fade-in">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="settings-card">
+                                <div class="card-header">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-3">
+                                            <i class="bi bi-toggles fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1 fw-bold">System Status</h5>
+                                            <small class="text-muted">Core system controls</small>
+                                        </div>
+                                    </div>
+                                </div>
                     <div class="card-body">
                                 <div class="mb-3">
                                     <div class="form-check form-switch">
@@ -92,20 +432,23 @@
                                 <div class="form-text">Enable API endpoints for third-party integrations.</div>
                                     </div>
                                 </div>
-                            </div>
+                                </div>
                             </div>
                         </div>
                         
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-header bg-white py-3">
-                                <div class="d-flex align-items-center">
-                                    <span class="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
-                                        <i class="bi bi-shield-lock fs-4 text-primary"></i>
-                                    </span>
-                                    <h5 class="mb-0">System Limits</h5>
+                        <div class="col-md-6">
+                            <div class="settings-card">
+                                <div class="card-header">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-3">
+                                            <i class="bi bi-shield-lock fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1 fw-bold">System Limits</h5>
+                                            <small class="text-muted">Resource constraints</small>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label for="max_upload_size" class="form-label fw-medium">Maximum Upload Size (MB)</label>
@@ -127,13 +470,16 @@
                             </div>
                         </div>
                         
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-header bg-white py-3">
+                        <div class="settings-card">
+                            <div class="card-header">
                                 <div class="d-flex align-items-center">
-                                    <span class="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
-                                        <i class="bi bi-calendar-date fs-4 text-primary"></i>
-                                    </span>
-                                    <h5 class="mb-0">Display Settings</h5>
+                                    <div class="icon-circle me-3">
+                                        <i class="bi bi-calendar-date fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1 fw-bold">Display Settings</h5>
+                                        <small class="text-muted">Format preferences</small>
+                                    </div>
                                 </div>
                             </div>
                             <div class="card-body">
@@ -151,23 +497,28 @@
                             </div>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- Defaults Tab -->
             <div class="tab-pane fade" id="defaults" role="tabpanel" aria-labelledby="defaults-tab">
-                <div class="row g-4">
-                    <div class="col-md-6">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white py-3">
-                        <div class="d-flex align-items-center">
-                                    <span class="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
-                                        <i class="bi bi-kanban fs-4 text-primary"></i>
-                                    </span>
-                                    <h5 class="mb-0">Project Defaults</h5>
-                        </div>
-                    </div>
+                <div class="fade-in">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="settings-card">
+                                <div class="card-header">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-3">
+                                            <i class="bi bi-kanban fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1 fw-bold">Project Defaults</h5>
+                                            <small class="text-muted">Default project settings</small>
+                                        </div>
+                                    </div>
+                                </div>
                     <div class="card-body">
                             <div class="mb-3">
                                     <label for="default_project_category" class="form-label fw-medium">Default Project Category</label>
@@ -183,20 +534,23 @@
                                     <option value="Completed" <?= (isset($systemSettings['default_project_status']) && $systemSettings['default_project_status'] == 'Completed') ? 'selected' : '' ?>>Completed</option>
                                 </select>
                                 </div>
-                            </div>
+                                </div>
                             </div>
                         </div>
                         
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-header bg-white py-3">
-                                <div class="d-flex align-items-center">
-                                    <span class="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
-                                        <i class="bi bi-check2-square fs-4 text-primary"></i>
-                                    </span>
-                                    <h5 class="mb-0">Task Defaults</h5>
+                        <div class="col-md-6">
+                            <div class="settings-card">
+                                <div class="card-header">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-3">
+                                            <i class="bi bi-check2-square fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1 fw-bold">Task Defaults</h5>
+                                            <small class="text-muted">Default task settings</small>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
                             <div class="card-body">
                                 <div class="mb-0">
                                     <label for="default_task_priority" class="form-label fw-medium">Default Task Priority</label>
@@ -312,7 +666,7 @@
                                                 <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
                                                 <input type="text" class="form-control" id="from_name" name="from_name" 
                                                     placeholder="Your Company Support"
-                                                    value="<?= $systemSettings['from_name'] ?? 'Hive IT Portal' ?>">
+                                                    value="<?= $systemSettings['from_name'] ?? SITENAME ?>">
                                             </div>
                                         </div>
                                         
@@ -644,6 +998,17 @@
                                         </div>
                                         
                                         <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" role="switch" id="auto_acknowledge_tickets" name="auto_acknowledge_tickets" 
+                                                    <?= !isset($systemSettings['auto_acknowledge_tickets']) || $systemSettings['auto_acknowledge_tickets'] ? 'checked' : '' ?>>
+                                                <label class="form-check-label fw-medium" for="auto_acknowledge_tickets">
+                                                    Auto-acknowledge new tickets
+                                                </label>
+                                                <div class="form-text">Send automatic acknowledgment email when tickets are created from emails</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
                                             <label for="ticket_email_pattern" class="form-label fw-medium">Ticket Pattern</label>
                                             <div class="input-group">
                                                 <span class="input-group-text"><i class="bi bi-regex"></i></span>
@@ -821,16 +1186,192 @@
                                 </div>
                             </div>
                         </div>
+            </div>
+            
+            <!-- Authentication Settings Tab -->
+            <div class="tab-pane fade" id="authentication" role="tabpanel" aria-labelledby="authentication-tab">
+                <div class="row">
+                    <div class="col-lg-10 mx-auto">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-white py-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
+                                        <i class="bi bi-shield-lock fs-4 text-primary"></i>
+                                    </span>
+                                    <div>
+                                        <h5 class="mb-0">Customer Portal Authentication</h5>
+                                        <small class="text-muted">Configure Microsoft 365 (Azure AD) authentication for customer ticket portal</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Microsoft 365 Configuration -->
+                                <div class="alert alert-info mb-4 d-flex align-items-start">
+                                    <div class="d-flex justify-content-center align-items-center me-3">
+                                        <div style="width: 45px; height: 45px;" class="bg-info bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center">
+                                            <i class="bi bi-microsoft text-info fs-4"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Microsoft 365 Integration</h6>
+                                        <p class="mb-0 small">Allow customers to sign in with their Microsoft 365 accounts to view their support tickets. This requires Azure AD app registration.</p>
+                                    </div>
+                                </div>
+
+                                <div class="row g-4">
+                                    <!-- Enable/Disable Authentication -->
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="customer_auth_enabled" name="customer_auth_enabled" 
+                                                   <?= (isset($settings['customer_auth_enabled']) && $settings['customer_auth_enabled']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label fw-medium" for="customer_auth_enabled">
+                                                Enable Customer Portal Authentication
+                                            </label>
+                                            <small class="text-muted d-block">When enabled, customers can sign in to view their tickets</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Azure AD Configuration -->
+                                    <div class="col-md-6">
+                                        <label for="azure_tenant_id" class="form-label fw-medium">
+                                            <i class="bi bi-building me-1"></i>Azure Tenant ID
+                                        </label>
+                                        <input type="text" class="form-control" id="azure_tenant_id" name="azure_tenant_id" 
+                                               value="<?= htmlspecialchars($settings['azure_tenant_id'] ?? '') ?>" 
+                                               placeholder="common (for multi-tenant) or your tenant ID">
+                                        <small class="text-muted">Use 'common' for multi-tenant or your specific tenant ID</small>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="azure_client_id" class="form-label fw-medium">
+                                            <i class="bi bi-key me-1"></i>Azure Client ID (Application ID)
+                                        </label>
+                                        <input type="text" class="form-control" id="azure_client_id" name="azure_client_id" 
+                                               value="<?= htmlspecialchars($settings['azure_client_id'] ?? '') ?>" 
+                                               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                                        <small class="text-muted">From your Azure AD app registration</small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label for="azure_client_secret" class="form-label fw-medium">
+                                            <i class="bi bi-shield-lock me-1"></i>Azure Client Secret
+                                        </label>
+                                        <input type="password" class="form-control" id="azure_client_secret" name="azure_client_secret" 
+                                               value="<?= htmlspecialchars($settings['azure_client_secret'] ?? '') ?>" 
+                                               placeholder="Enter your client secret">
+                                        <small class="text-muted">Keep this secret secure. It will be encrypted in the database.</small>
+                                    </div>
+
+                                    <!-- Redirect URI Info -->
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium">
+                                            <i class="bi bi-link-45deg me-1"></i>Redirect URI (Read-only)
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control bg-light" readonly 
+                                                   value="<?= URLROOT ?>/customer/auth/callback" id="redirect_uri">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('redirect_uri')">
+                                                <i class="bi bi-clipboard"></i> Copy
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">Add this URL to your Azure AD app's redirect URIs</small>
+                                    </div>
+
+                                    <!-- Test Connection -->
+                                    <div class="col-12">
+                                        <div class="d-flex gap-3 align-items-center">
+                                            <button type="button" class="btn btn-outline-primary" onclick="testAzureConnection()">
+                                                <i class="bi bi-plug me-2"></i>Test Azure Connection
+                                            </button>
+                                            <div id="azure_connection_status" class="flex-grow-1">
+                                                <?php if (isset($settings['azure_connection_status']) && $settings['azure_connection_status'] === 'connected'): ?>
+                                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Connected</span>
+                                                    <small class="text-muted ms-2">Last connected: <?= $settings['azure_connected_at'] ?? 'Unknown' ?></small>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Not Connected</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Customer Access Control -->
+                                <hr class="my-4">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-people me-2"></i>Customer Access Control
+                                </h6>
+
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label for="customer_domain_restriction" class="form-label fw-medium">Domain Restriction (Optional)</label>
+                                        <input type="text" class="form-control" id="customer_domain_restriction" name="customer_domain_restriction" 
+                                               value="<?= htmlspecialchars($settings['customer_domain_restriction'] ?? '') ?>" 
+                                               placeholder="@company.com">
+                                        <small class="text-muted">Only allow users from specific domains. Leave empty for all domains.</small>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="ticket_visibility" class="form-label fw-medium">Ticket Visibility</label>
+                                        <select class="form-select" id="ticket_visibility" name="ticket_visibility">
+                                            <option value="email_match" <?= ($settings['ticket_visibility'] ?? 'email_match') === 'email_match' ? 'selected' : '' ?>>
+                                                Own tickets only (by email)
+                                            </option>
+                                            <option value="domain_match" <?= ($settings['ticket_visibility'] ?? '') === 'domain_match' ? 'selected' : '' ?>>
+                                                All company tickets (by domain)
+                                            </option>
+                                        </select>
+                                        <small class="text-muted">Control which tickets customers can see</small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="allow_ticket_creation" name="allow_ticket_creation" 
+                                                   <?= (isset($settings['allow_ticket_creation']) && $settings['allow_ticket_creation']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="allow_ticket_creation">
+                                                Allow customers to create new tickets through the portal
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Setup Instructions -->
+                                <hr class="my-4">
+                                <div class="alert alert-light border">
+                                    <h6 class="alert-heading">
+                                        <i class="bi bi-info-circle me-2"></i>Azure AD Setup Instructions
+                                    </h6>
+                                    <ol class="mb-0 small">
+                                        <li>Go to <a href="https://portal.azure.com" target="_blank">Azure Portal</a></li>
+                                        <li>Navigate to Azure Active Directory → App registrations</li>
+                                        <li>Create a new registration with name "ProjectTracker Customer Portal"</li>
+                                        <li>Set redirect URI to: <code><?= URLROOT ?>/customer/auth/callback</code></li>
+                                        <li>Add API permissions: Microsoft Graph → Delegated → User.Read, offline_access</li>
+                                        <li>Create a client secret and copy the values above</li>
+                                        <li>Grant admin consent for the permissions</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
                         
-        <div class="card border-0 shadow-sm mt-4">
+        <div class="save-section">
             <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <button type="reset" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Changes
-                    </button>
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-save me-2"></i>Save Settings
-                    </button>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-shield-check text-success me-2 fs-5"></i>
+                        <small class="text-muted">Changes are saved automatically and applied immediately</small>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <button type="reset" class="btn btn-outline-secondary btn-modern">
+                            <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Changes
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-modern btn-lg">
+                            <i class="bi bi-save me-2"></i>Save Settings
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -867,7 +1408,7 @@ function clearSettings() {
     if (confirm('Are you sure you want to clear all email settings?')) {
         // Clear SMTP settings
         document.getElementById('from_email').value = '';
-        document.getElementById('from_name').value = 'Hive IT Portal';
+        document.getElementById('from_name').value = '<?= addslashes(SITENAME) ?>';
         document.getElementById('smtp_host').value = '';
         document.getElementById('smtp_port').value = '587';
         document.getElementById('smtp_username').value = '';
@@ -894,21 +1435,145 @@ function clearSettings() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle for maintenance mode label
+    // Enhanced animations and interactions
+    
+    // Staggered animation for cards
+    const cards = document.querySelectorAll('.settings-card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('fade-in');
+    });
+    
+    // Tab switching with enhanced feedback
+    const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
+    tabButtons.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Add loading state
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+        });
+    });
+    
+    // Form interactions with enhanced feedback
+    const formInputs = document.querySelectorAll('.form-control, .form-select');
+    formInputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.closest('.settings-card')?.classList.add('active-card');
+        });
+        
+        input.addEventListener('blur', function() {
+            this.closest('.settings-card')?.classList.remove('active-card');
+        });
+        
+        // Add change indicators
+        input.addEventListener('change', function() {
+            this.classList.add('changed');
+            showUnsavedChanges();
+        });
+    });
+    
+    // Switch animations
+    const switches = document.querySelectorAll('.form-switch .form-check-input');
+    switches.forEach(switchInput => {
+        switchInput.addEventListener('change', function() {
+            this.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 200);
+            showUnsavedChanges();
+        });
+    });
+    
+    // Show unsaved changes indicator
+    function showUnsavedChanges() {
+        const saveBtn = document.querySelector('button[type="submit"]');
+        if (saveBtn && !saveBtn.classList.contains('changes-pending')) {
+            saveBtn.classList.add('changes-pending');
+            saveBtn.innerHTML = '<i class="bi bi-exclamation-circle me-2"></i>Save Changes';
+            saveBtn.style.background = 'linear-gradient(135deg, #ff6b6b, #ee5a24)';
+        }
+    }
+    
+    // Enhanced form submission
+    const settingsForm = document.querySelector('form');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            const saveBtn = this.querySelector('button[type="submit"]');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+                saveBtn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                
+                // Add success animation after form submission
+                setTimeout(() => {
+                    saveBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Saved!';
+                    saveBtn.style.background = 'linear-gradient(135deg, #06d6a0, #118bee)';
+                }, 1000);
+            }
+        });
+    }
+    
+    // Toggle for maintenance mode label with enhanced animation
     const maintenanceToggle = document.getElementById('maintenance_mode');
     if (maintenanceToggle) {
         maintenanceToggle.addEventListener('change', function() {
             const label = this.nextElementSibling;
+            const card = this.closest('.settings-card');
+            
             if (this.checked) {
                 label.textContent = 'Maintenance Mode Active';
                 label.classList.add('text-danger', 'fw-bold');
+                card?.classList.add('maintenance-active');
+                
+                // Show warning toast
+                showToast('⚠️ Maintenance mode activated', 'warning');
             } else {
                 label.textContent = 'Maintenance Mode';
                 label.classList.remove('text-danger', 'fw-bold');
+                card?.classList.remove('maintenance-active');
+                
+                showToast('✅ Maintenance mode deactivated', 'success');
             }
         });
         // Trigger once on load
         maintenanceToggle.dispatchEvent(new Event('change'));
+    }
+    
+    // Toast notification system
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span class="me-2">${message}</span>
+                <button class="btn-close btn-close-sm ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        `;
+        
+        // Add toast styles
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'warning' ? '#fff3cd' : '#d1edff'};
+            border: 1px solid ${type === 'warning' ? '#ffeaa7' : '#74b9ff'};
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+            max-width: 300px;
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
     
     // Show/hide password toggle
@@ -1388,6 +2053,77 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCurrencyPreview();
     }
 });
+
+// Authentication Tab Functions
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    element.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    
+    // Show feedback
+    const button = element.nextElementSibling;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-check"></i> Copied!';
+    button.classList.add('btn-success');
+    button.classList.remove('btn-outline-secondary');
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+function testAzureConnection() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    const statusDiv = document.getElementById('azure_connection_status');
+    
+    // Get form values
+    const tenantId = document.getElementById('azure_tenant_id').value;
+    const clientId = document.getElementById('azure_client_id').value;
+    const clientSecret = document.getElementById('azure_client_secret').value;
+    
+    if (!tenantId || !clientId || !clientSecret) {
+        alert('Please fill in all Azure AD configuration fields before testing.');
+        return;
+    }
+    
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
+    
+    // Create form data
+    const formData = new FormData();
+    formData.append('action', 'test_azure_connection');
+    formData.append('azure_tenant_id', tenantId);
+    formData.append('azure_client_id', clientId);
+    formData.append('azure_client_secret', clientSecret);
+    
+    fetch('<?= URLROOT ?>/admin/testAzureConnection', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusDiv.innerHTML = '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Connection Successful</span>';
+            alert('✅ Azure AD connection test successful!');
+        } else {
+            statusDiv.innerHTML = '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Connection Failed</span>';
+            alert('❌ Azure AD connection test failed: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Azure connection test error:', error);
+        statusDiv.innerHTML = '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Test Failed</span>';
+        alert('❌ Connection test failed: ' + error.message);
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
 </script>
 
 <?php require VIEWSPATH . '/inc/footer.php'; ?> 

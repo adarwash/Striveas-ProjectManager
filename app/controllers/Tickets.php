@@ -105,6 +105,17 @@ class Tickets extends Controller {
         }
         
         $messages = $this->ticketModel->getMessages($id, hasPermission('tickets.view_private'));
+
+        // Load client info for display pill
+        $client = null;
+        if (!empty($ticket['client_id'])) {
+            try {
+                $clientModel = $this->model('Client');
+                $client = $clientModel->getClientById($ticket['client_id']);
+            } catch (Exception $e) {
+                $client = null;
+            }
+        }
         $lookupData = $this->ticketModel->getLookupData();
 
         // Always include the original email content as the first message if ticket was created from email
@@ -379,7 +390,8 @@ class Tickets extends Controller {
             'can_assign' => hasPermission('tickets.assign'),
             'can_close' => hasPermission('tickets.close') || $this->canCloseTicket($ticket, $_SESSION['user_id']),
             'original_email' => null, // This will be set if original email is loaded
-            'sla_status' => $slaStatus
+            'sla_status' => $slaStatus,
+            'client' => $client
         ];
         
         $this->view('tickets/view', $viewData);
@@ -1089,6 +1101,50 @@ class Tickets extends Controller {
     public function test() {
         header('Content-Type: application/json');
         echo json_encode(['message' => 'Tickets controller is working', 'timestamp' => date('Y-m-d H:i:s')]);
+    }
+    
+    /**
+     * Delete a ticket (POST only)
+     */
+    public function delete() {
+        if ($_SERVER['REQUEST_METHOD'] != 'POST') {
+            redirect('tickets');
+        }
+        
+        if (!hasPermission('tickets.delete')) {
+            flash('error', 'You do not have permission to delete tickets.');
+            redirect('tickets');
+        }
+        
+        $ticketId = $_POST['ticket_id'] ?? null;
+        if (empty($ticketId)) {
+            flash('error', 'Invalid request.');
+            redirect('tickets');
+        }
+        
+        // Optional: CSRF check if token provided in form
+        if (isset($_POST['csrf_token'])) {
+            $sessionToken = $_SESSION['csrf_token'] ?? '';
+            if (empty($sessionToken) || !hash_equals($sessionToken, $_POST['csrf_token'])) {
+                flash('error', 'Security token mismatch. Please try again.');
+                redirect('tickets/show/' . $ticketId);
+            }
+        }
+        
+        $ticket = $this->ticketModel->getById($ticketId);
+        if (!$ticket) {
+            flash('error', 'Ticket not found.');
+            redirect('tickets');
+        }
+        
+        $ok = $this->ticketModel->delete($ticketId);
+        if ($ok) {
+            flash('success', 'Ticket deleted successfully.');
+            redirect('tickets');
+        } else {
+            flash('error', 'Failed to delete ticket.');
+            redirect('tickets/show/' . $ticketId);
+        }
     }
     
     /**

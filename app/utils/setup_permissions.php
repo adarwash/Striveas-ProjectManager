@@ -120,7 +120,7 @@ class PermissionSetup {
                 'sites.create', 'sites.read', 'sites.update', 'sites.delete',
                 'clients.create', 'clients.read', 'clients.update', 'clients.delete', 'clients.assign_sites',
                 'employees.create', 'employees.read', 'employees.update', 'employees.delete',
-                'admin.access', 'users.manage', 'tasks.assign', 'tasks.manage'
+                'admin.access', 'admin.system_settings', 'users.manage', 'tasks.assign', 'tasks.manage'
             ],
             'manager' => [
                 'dashboard.access', 'calendar.access', 'gantt.access',

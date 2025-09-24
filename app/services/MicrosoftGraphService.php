@@ -596,46 +596,71 @@ class MicrosoftGraphService {
             
             foreach ($emails as $email) {
                 error_log('processEmailsToTickets: Processing email: ' . $email['subject']);
-                // Check if email already processed (by message ID)
+                // Check if email already exists and get its status
                 $existingCheck = $this->db->select(
-                    "SELECT id FROM EmailInbox WHERE message_id = :message_id",
+                    "SELECT id, processing_status, ticket_id FROM EmailInbox WHERE message_id = :message_id",
                     ['message_id' => $email['id']]
                 );
                 
-                if (!empty($existingCheck)) {
-                    error_log('processEmailsToTickets: Email already exists, skipping');
-                    continue; // Already processed
+                $emailInboxId = null;
+                $isNewEmail = empty($existingCheck);
+                $isPending = false;
+                
+                if (!$isNewEmail) {
+                    // Email exists - check if it's pending and needs processing
+                    $emailInboxId = $existingCheck[0]['id'];
+                    $status = $existingCheck[0]['processing_status'];
+                    $hasTicket = !empty($existingCheck[0]['ticket_id']);
+                    
+                    if ($status === 'processed' || $hasTicket) {
+                        error_log('processEmailsToTickets: Email already processed, skipping');
+                        continue; // Already fully processed with ticket
+                    } else if ($status === 'pending') {
+                        error_log('processEmailsToTickets: Email exists with pending status, will process it');
+                        $isPending = true;
+                        // Get the existing email data for processing
+                        $existingEmail = $this->db->select(
+                            "SELECT * FROM EmailInbox WHERE id = :id",
+                            ['id' => $emailInboxId]
+                        );
+                        if ($existingEmail) {
+                            $emailData = $existingEmail[0];
+                        }
+                    }
                 }
                 
-                // Store in EmailInbox
-                $emailData = [
-                    'message_id' => $email['id'],
-                    'subject' => $email['subject'],
-                    'from_address' => $email['from']['emailAddress']['address'],
-                    'to_address' => $supportEmail,
-                    'body_text' => strip_tags($email['body']['content']),
-                    'body_html' => $email['body']['content'],
-                    'email_date' => date('Y-m-d H:i:s', strtotime($email['receivedDateTime'])),
-                    'processing_status' => 'pending'
-                ];
-                
-                // Check for attachments
-                $hasAttachments = isset($email['hasAttachments']) && $email['hasAttachments'] === true;
-                $attachmentCount = 0;
-                
-                error_log('processEmailsToTickets: Inserting email into EmailInbox');
-                $emailInboxId = $this->db->insert(
-                    "INSERT INTO EmailInbox (message_id, subject, from_address, to_address, body_text, body_html, email_date, processing_status, has_attachments, attachment_count) 
-                     VALUES (:message_id, :subject, :from_address, :to_address, :body_text, :body_html, :email_date, :processing_status, :has_attachments, :attachment_count)",
+                // For new emails, store in EmailInbox first
+                if ($isNewEmail) {
+                    $emailData = [
+                        'message_id' => $email['id'],
+                        'subject' => $email['subject'],
+                        'from_address' => $email['from']['emailAddress']['address'],
+                        'to_address' => $supportEmail,
+                        'body_text' => strip_tags($email['body']['content']),
+                        'body_html' => $email['body']['content'],
+                        'email_date' => date('Y-m-d H:i:s', strtotime($email['receivedDateTime'])),
+                        'processing_status' => 'pending'
+                    ];
+                    
+                    // Check for attachments
+                    $hasAttachments = isset($email['hasAttachments']) && $email['hasAttachments'] === true;
+                    $attachmentCount = 0;
+                    
+                    error_log('processEmailsToTickets: Inserting new email into EmailInbox');
+                    $emailInboxId = $this->db->insert(
+                        "INSERT INTO EmailInbox (message_id, subject, from_address, to_address, body_text, body_html, email_date, processing_status, has_attachments, attachment_count) 
+                         VALUES (:message_id, :subject, :from_address, :to_address, :body_text, :body_html, :email_date, :processing_status, :has_attachments, :attachment_count)",
                     array_merge($emailData, [
                         'has_attachments' => $hasAttachments ? 1 : 0,
                         'attachment_count' => $attachmentCount
                     ])
                 );
-                error_log('processEmailsToTickets: Insert result: ' . ($emailInboxId ? 'ID=' . $emailInboxId : 'Failed'));
+                }
                 
-                // Process attachments if email was inserted successfully
-                if ($emailInboxId && $hasAttachments) {
+                error_log('processEmailsToTickets: EmailInbox ID: ' . ($emailInboxId ? $emailInboxId : 'Failed'));
+                
+                // Process attachments for new emails
+                if ($emailInboxId && $isNewEmail && isset($email['hasAttachments']) && $email['hasAttachments'] === true) {
                     try {
                         $attachments = $this->getEmailAttachments($supportEmail, $email['id']);
                         error_log('processEmailsToTickets: Found ' . count($attachments) . ' attachments');
@@ -718,7 +743,10 @@ class MicrosoftGraphService {
                 
                 // Check if this is a reply to existing ticket
                 $ticketId = null;
-                $subjectOriginal = $email['subject'];
+                $subjectOriginal = $emailData['subject'] ?? $email['subject'];
+                $fromAddress = $emailData['from_address'] ?? $email['from']['emailAddress']['address'];
+                $messageId = $emailData['message_id'] ?? $email['id'];
+                
                 if (preg_match('/\[TKT-\d{4}-\d{6}\]/', $subjectOriginal, $matches)) {
                     $ticketNumber = trim($matches[0], '[]');
                     $existingTicket = $ticketModel->getByNumber($ticketNumber);
@@ -733,12 +761,14 @@ class MicrosoftGraphService {
                             'subject' => $subjectOriginal,
                             'content' => !empty($emailData['body_html']) ? $emailData['body_html'] : $emailData['body_text'],
                             'content_format' => !empty($emailData['body_html']) ? 'html' : 'text',
-                            'email_message_id' => $email['id'],
-                            'email_from' => $email['from']['emailAddress']['address'],
+                            'email_message_id' => $messageId,
+                            'email_from' => $fromAddress,
                             'email_to' => $supportEmail,
                             'email_cc' => null,
                             'email_headers' => null,
-                            'is_public' => 1
+                            'is_public' => 1,
+                            'created_at' => ($emailData['email_date'] ?? null) ?: date('Y-m-d H:i:s', strtotime($email['receivedDateTime'])),
+                            'suppress_ticket_touch' => true
                         ]);
                     }
                 }
@@ -811,12 +841,14 @@ class MicrosoftGraphService {
                                 'subject' => $subjectOriginal,
                                 'content' => !empty($emailData['body_html']) ? $emailData['body_html'] : $emailData['body_text'],
                                 'content_format' => !empty($emailData['body_html']) ? 'html' : 'text',
-                                'email_message_id' => $email['id'],
-                                'email_from' => $email['from']['emailAddress']['address'],
+                                'email_message_id' => $messageId,
+                                'email_from' => $fromAddress,
                                 'email_to' => $supportEmail,
                                 'email_cc' => null,
                                 'email_headers' => null,
-                                'is_public' => 1
+                                'is_public' => 1,
+                                'created_at' => ($emailData['email_date'] ?? null) ?: date('Y-m-d H:i:s', strtotime($email['receivedDateTime'])),
+                                'suppress_ticket_touch' => true
                             ]);
                         }
                     }
@@ -824,16 +856,58 @@ class MicrosoftGraphService {
                 
                 // Create new ticket if not a reply (also create an inbound email message)
                 if (!$ticketId) {
-                    $ticketId = $ticketModel->createFromEmail([
-                        'message_id' => $email['id'],
-                        'subject' => $email['subject'],
-                        'from_address' => $email['from']['emailAddress']['address'],
-                        'to_address' => $supportEmail,
-                        'body_text' => $emailData['body_text'],
-                        'body_html' => $emailData['body_html'],
-                        'headers' => [],
-                        'email_date' => date('Y-m-d H:i:s', strtotime($email['receivedDateTime']))
-                    ]);
+                    // Check for existing ticket with same subject and sender to prevent duplicates
+                    $recentTicket = $this->db->select(
+                        "SELECT TOP 1 t.id, t.ticket_number 
+                         FROM Tickets t 
+                         WHERE t.subject = :subject 
+                         AND t.inbound_email_address = :email 
+                         AND t.created_at >= DATEADD(hour, -24, GETDATE())
+                         ORDER BY t.created_at DESC",
+                        ['subject' => $subjectOriginal, 'email' => $fromAddress]
+                    );
+                    
+                    if (!empty($recentTicket)) {
+                        $ticketId = $recentTicket[0]['id'];
+                        error_log("processEmailsToTickets: Found existing recent ticket {$recentTicket[0]['ticket_number']} for email: $subjectOriginal");
+                        
+                        // Add as message to existing ticket
+                        $ticketModel->addMessage($ticketId, [
+                            'user_id' => null,
+                            'message_type' => 'email_inbound',
+                            'subject' => $subjectOriginal,
+                            'content' => !empty($emailData['body_html']) ? $emailData['body_html'] : $emailData['body_text'],
+                            'content_format' => !empty($emailData['body_html']) ? 'html' : 'text',
+                            'email_message_id' => $messageId,
+                            'email_from' => $fromAddress,
+                            'email_to' => $supportEmail,
+                            'email_cc' => null,
+                            'email_headers' => null,
+                            'is_public' => 1,
+                            'created_at' => ($emailData['email_date'] ?? null) ?: date('Y-m-d H:i:s', strtotime($email['receivedDateTime'])),
+                            'suppress_ticket_touch' => true
+                        ]);
+                    } else {
+                        // For pending emails, use data from database; for new emails, use Graph API data
+                        $emailDate = $emailData['email_date'] ?? date('Y-m-d H:i:s', strtotime($email['receivedDateTime']));
+                        
+                        $ticketId = $ticketModel->createFromEmail([
+                            'message_id' => $messageId,
+                            'subject' => $subjectOriginal,
+                            'from_address' => $fromAddress,
+                            'to_address' => $supportEmail,
+                            'body_text' => $emailData['body_text'],
+                            'body_html' => $emailData['body_html'],
+                            'headers' => [],
+                            'email_date' => $emailDate
+                        ]);
+                        
+                        if ($ticketId) {
+                            error_log("processEmailsToTickets: Created ticket ID $ticketId for email: $subjectOriginal from $fromAddress");
+                        } else {
+                            error_log("processEmailsToTickets: Failed to create ticket for email: $subjectOriginal");
+                        }
+                    }
                 }
                 
                 // Update EmailInbox with ticket link

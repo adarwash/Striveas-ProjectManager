@@ -4,6 +4,7 @@ class Dashboard extends Controller {
     private $projectModel;
     private $taskModel;
     private $departmentModel;
+    private $clientModel;
     
     public function __construct() {
         // Load models
@@ -11,6 +12,7 @@ class Dashboard extends Controller {
         $this->projectModel = $this->model('Project');
         $this->taskModel = $this->model('Task');
         $this->departmentModel = $this->model('Department');
+        $this->clientModel = $this->model('Client');
     }
     
     public function index() {
@@ -41,6 +43,14 @@ class Dashboard extends Controller {
         // Get dashboard statistics
         $dashboardStats = $this->getDashboardStats();
         
+        // Determine range for top clients by tickets (today|week|month), capped at 90 days
+        $range = isset($_GET['top_client_range']) ? strtolower(trim($_GET['top_client_range'])) : 'month';
+        if (!in_array($range, ['today', 'week', 'month'])) {
+            $range = 'month';
+        }
+        // Get top clients by ticket volume within range
+        $topClients = $this->clientModel->getTopClientsByTickets($range, 5, 90);
+        
         $data = [
             'title' => 'Dashboard',
             'projects' => $projects,
@@ -50,7 +60,9 @@ class Dashboard extends Controller {
             'project_counts' => $projectCounts,
             'task_counts' => $taskCounts,
             'user_projects' => $userProjects,
-            'stats' => $dashboardStats
+            'stats' => $dashboardStats,
+            'top_clients' => $topClients,
+            'top_client_range' => $range
         ];
         
         $this->view('dashboard/index', $data);

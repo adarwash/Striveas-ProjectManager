@@ -72,14 +72,78 @@ class Clients extends Controller {
         
         // Get sites assigned to this client
         $sites = $this->clientModel->getSiteClients($id);
+
+        // Get client domains
+        try {
+            if (!class_exists('ClientDomain')) {
+                require_once APPROOT . '/app/models/ClientDomain.php';
+            }
+            $clientDomainModel = new ClientDomain();
+            $domains = $clientDomainModel->getDomainsByClient($id);
+        } catch (Exception $e) {
+            $domains = [];
+        }
         
         $data = [
             'title' => $client['name'],
             'client' => $client,
-            'sites' => $sites
+            'sites' => $sites,
+            'domains' => $domains
         ];
         
         $this->view('clients/view', $data);
+    }
+
+    /**
+     * Manage client domains (add/remove)
+     */
+    public function manageDomains($id = null) {
+        // Permissions: update clients
+        if (!hasPermission('clients.update')) {
+            flash('client_error', 'You do not have permission to manage client domains', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+        if (!$id) {
+            redirect('clients');
+            return;
+        }
+        // Load client
+        $client = $this->clientModel->getClientById($id);
+        if (!$client) {
+            flash('client_error', 'Client not found', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+        if (!class_exists('ClientDomain')) {
+            require_once APPROOT . '/app/models/ClientDomain.php';
+        }
+        $clientDomainModel = new ClientDomain();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+            if ($action === 'add') {
+                $domain = trim($_POST['domain'] ?? '');
+                $isPrimary = !empty($_POST['is_primary']);
+                if ($domain && $clientDomainModel->addDomain($id, $domain, $isPrimary)) {
+                    flash('client_success', 'Domain added successfully');
+                } else {
+                    flash('client_error', 'Failed to add domain', 'alert-danger');
+                }
+            } elseif ($action === 'remove') {
+                $domainId = (int)($_POST['domain_id'] ?? 0);
+                if ($domainId && $clientDomainModel->removeById($domainId)) {
+                    flash('client_success', 'Domain removed successfully');
+                } else {
+                    flash('client_error', 'Failed to remove domain', 'alert-danger');
+                }
+            }
+            redirect('clients/viewClient/' . $id);
+            return;
+        }
+
+        // GET fallback shows the view page
+        redirect('clients/viewClient/' . $id);
     }
     
     /**

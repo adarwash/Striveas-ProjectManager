@@ -19,19 +19,25 @@ class Ticket {
      */
     public function create($data) {
         try {
-            $query = "INSERT INTO Tickets (
-                subject, description, status_id, priority_id, category_id,
-                created_by, assigned_to, client_id, source, tags, is_internal,
-                project_id, task_id, due_date, inbound_email_address, 
-                email_thread_id, original_message_id
-            ) VALUES (
-                :subject, :description, :status_id, :priority_id, :category_id,
-                :created_by, :assigned_to, :client_id, :source, :tags, :is_internal,
-                :project_id, :task_id, :due_date, :inbound_email_address,
-                :email_thread_id, :original_message_id
-            )";
+            // Generate ticket number
+            $ticketNumber = $this->generateTicketNumber();
+            
+            // Build insert dynamically to optionally include created_at/updated_at overrides
+            $columns = [
+                'ticket_number', 'subject', 'description', 'status_id', 'priority_id', 'category_id',
+                'created_by', 'assigned_to', 'client_id', 'source', 'tags',
+                'project_id', 'task_id', 'due_date', 'inbound_email_address',
+                'email_thread_id', 'original_message_id'
+            ];
+            $placeholders = [
+                ':ticket_number', ':subject', ':description', ':status_id', ':priority_id', ':category_id',
+                ':created_by', ':assigned_to', ':client_id', ':source', ':tags',
+                ':project_id', ':task_id', ':due_date', ':inbound_email_address',
+                ':email_thread_id', ':original_message_id'
+            ];
             
             $params = [
+                'ticket_number' => $ticketNumber,
                 'subject' => $data['subject'],
                 'description' => $data['description'] ?? null,
                 'status_id' => $data['status_id'] ?? 1, // Default to 'new'
@@ -42,7 +48,6 @@ class Ticket {
                 'client_id' => $data['client_id'] ?? null,
                 'source' => $data['source'] ?? 'web',
                 'tags' => $data['tags'] ?? null,
-                'is_internal' => $data['is_internal'] ?? 0,
                 'project_id' => $data['project_id'] ?? null,
                 'task_id' => $data['task_id'] ?? null,
                 // If no due_date provided, derive from SLA policy (category-based) when available
@@ -52,7 +57,22 @@ class Ticket {
                 'original_message_id' => $data['original_message_id'] ?? null
             ];
             
+            if (!empty($data['created_at'])) {
+                $columns[] = 'created_at';
+                $placeholders[] = ':created_at';
+                $params['created_at'] = $data['created_at'];
+            }
+            if (!empty($data['updated_at'])) {
+                $columns[] = 'updated_at';
+                $placeholders[] = ':updated_at';
+                $params['updated_at'] = $data['updated_at'];
+            }
+            
+            $query = 'INSERT INTO Tickets (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
+            
+            error_log("TICKET: About to execute SQL insert with params: " . json_encode($params));
             $ticketId = $this->db->insert($query, $params);
+            error_log("TICKET: SQL insert returned: " . ($ticketId ?: 'false'));
             
             // Add initial message if description provided
             if ($ticketId && !empty($data['description'])) {
@@ -68,6 +88,38 @@ class Ticket {
         } catch (Exception $e) {
             error_log('Ticket Create Error: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Generate next ticket number
+     * Format: TKT-YYYY-NNNNNN
+     */
+    private function generateTicketNumber() {
+        try {
+            $year = date('Y');
+            
+            // Get the highest ticket number for current year
+            $result = $this->db->select(
+                "SELECT TOP 1 ticket_number FROM Tickets WHERE ticket_number LIKE :pattern ORDER BY id DESC",
+                ['pattern' => "TKT-{$year}-%"]
+            );
+            
+            if ($result && !empty($result[0]['ticket_number'])) {
+                $lastNumber = $result[0]['ticket_number'];
+                if (preg_match("/TKT-(\d{4})-(\d{6})/", $lastNumber, $matches)) {
+                    $number = intval($matches[2]) + 1;
+                } else {
+                    $number = 1;
+                }
+            } else {
+                $number = 1;
+            }
+            
+            return sprintf("TKT-%s-%06d", $year, $number);
+        } catch (Exception $e) {
+            error_log('generateTicketNumber Error: ' . $e->getMessage());
+            return 'TKT-' . date('Y') . '-' . str_pad(rand(1, 999999), 6, '0', STR_PAD_LEFT);
         }
     }
 
@@ -90,6 +142,28 @@ class Ticket {
             return $dueTs;
         } catch (Exception $e) {
             return null;
+        }
+    }
+
+    /**
+     * Permanently delete a ticket and related records
+     * Note: EmailInbox rows keep the email history; we null their ticket link first
+     *
+     * @param int $id Ticket ID
+     * @return bool Success
+     */
+    public function delete($id) {
+        try {
+            // Unlink emails from this ticket to satisfy FK without cascade
+            $this->db->update("UPDATE EmailInbox SET ticket_id = NULL WHERE ticket_id = :id", ['id' => $id]);
+            // Remove queued outbound emails tied to this ticket (no cascade)
+            $this->db->remove("DELETE FROM EmailQueue WHERE ticket_id = :id", ['id' => $id]);
+            // TicketMessages, TicketAttachments, TicketAssignments are set with ON DELETE CASCADE
+            $this->db->remove("DELETE FROM Tickets WHERE id = :id", ['id' => $id]);
+            return true;
+        } catch (Exception $e) {
+            error_log('Ticket Delete Error: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -261,16 +335,17 @@ class Ticket {
      */
     public function addMessage($ticketId, $data) {
         try {
-            $query = "INSERT INTO TicketMessages (
-                ticket_id, user_id, message_type, subject, content, content_format,
-                email_message_id, email_from, email_to, email_cc, email_headers,
-                is_public, is_system_message
-            ) VALUES (
-                :ticket_id, :user_id, :message_type, :subject, :content, :content_format,
-                :email_message_id, :email_from, :email_to, :email_cc, :email_headers,
-                :is_public, :is_system_message
-            )";
-            
+            // Build insert for TicketMessages with optional created_at
+            $columns = [
+                'ticket_id', 'user_id', 'message_type', 'subject', 'content', 'content_format',
+                'email_message_id', 'email_from', 'email_to', 'email_cc', 'email_headers',
+                'is_public', 'is_system_message'
+            ];
+            $placeholders = [
+                ':ticket_id', ':user_id', ':message_type', ':subject', ':content', ':content_format',
+                ':email_message_id', ':email_from', ':email_to', ':email_cc', ':email_headers',
+                ':is_public', ':is_system_message'
+            ];
             $params = [
                 'ticket_id' => $ticketId,
                 'user_id' => $data['user_id'] ?? null,
@@ -286,11 +361,18 @@ class Ticket {
                 'is_public' => $data['is_public'] ?? 1,
                 'is_system_message' => $data['is_system_message'] ?? 0
             ];
+            if (!empty($data['created_at'])) {
+                $columns[] = 'created_at';
+                $placeholders[] = ':created_at';
+                $params['created_at'] = $data['created_at'];
+            }
+            $query = 'INSERT INTO TicketMessages (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
             
             $messageId = $this->db->insert($query, $params);
             
-            // Update ticket's updated_at timestamp
-            if ($messageId) {
+            // Update ticket's updated_at timestamp unless suppressed
+            $suppressTouch = !empty($data['suppress_ticket_touch']);
+            if ($messageId && !$suppressTouch) {
                 $this->db->update("UPDATE Tickets SET updated_at = GETDATE() WHERE id = :id", ['id' => $ticketId]);
             }
             
@@ -483,16 +565,36 @@ class Ticket {
         try {
             // Extract or find user by email
             $userId = $this->getUserByEmail($emailData['from_address']);
+            $emailDate = $emailData['email_date'] ?? null;
             
             $ticketData = [
                 'subject' => $emailData['subject'],
                 'description' => $emailData['body_text'] ?: $emailData['body_html'],
                 'created_by' => $userId ?: 1, // Default to system user if not found
                 'source' => 'email',
+                'status_id' => 1, // New ticket
+                'priority_id' => 3, // Normal priority
                 'inbound_email_address' => $emailData['from_address'],
                 'email_thread_id' => $emailData['message_id'],
                 'original_message_id' => $emailData['message_id']
             ];
+            // Auto-link client by sender email domain when mapping exists
+            try {
+                if (!class_exists('ClientDomain')) {
+                    require_once APPROOT . '/app/models/ClientDomain.php';
+                }
+                $clientDomainModel = new ClientDomain();
+                $mappedClientId = $clientDomainModel->getClientIdByEmail($emailData['from_address']);
+                if (!empty($mappedClientId)) {
+                    $ticketData['client_id'] = (int)$mappedClientId;
+                }
+            } catch (Exception $e) {
+                // ignore mapping errors
+            }
+            if ($emailDate) {
+                $ticketData['created_at'] = $emailDate;
+                $ticketData['updated_at'] = $emailDate;
+            }
             
             $ticketId = $this->create($ticketData);
             
@@ -509,8 +611,14 @@ class Ticket {
                     'email_to' => $emailData['to_address'],
                     'email_cc' => $emailData['cc_address'],
                     'email_headers' => json_encode($emailData['headers'] ?? []),
-                    'is_public' => 1
+                    'is_public' => 1,
+                    'created_at' => $emailDate ?: null,
+                    // Do not bump ticket updated_at to now; already set to email date above
+                    'suppress_ticket_touch' => true
                 ]);
+                
+                // Send auto-acknowledgment email if enabled
+                $this->sendAutoAcknowledgmentEmail($ticketId, $emailData['from_address']);
             }
             
             return $ticketId;
@@ -533,6 +641,165 @@ class Ticket {
             return $result[0]['id'] ?? false;
         } catch (Exception $e) {
             error_log('GetUserByEmail Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check if a customer has any tickets
+     * 
+     * @param string $customerEmail Customer email address
+     * @return bool True if customer has tickets, false otherwise
+     */
+    public function hasCustomerTickets($customerEmail) {
+        try {
+            $query = "SELECT COUNT(*) as count 
+                     FROM Tickets t
+                     WHERE t.inbound_email_address = ? 
+                     OR t.created_by IN (SELECT id FROM Users WHERE email = ?)";
+            
+            $result = $this->db->select($query, [$customerEmail, $customerEmail]);
+            
+            return $result && (int)$result[0]['count'] > 0;
+            
+        } catch (Exception $e) {
+            error_log('HasCustomerTickets Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get ticket messages for a specific ticket
+     * 
+     * @param int $ticketId Ticket ID
+     * @return array Array of ticket messages
+     */
+    public function getTicketMessages($ticketId) {
+        try {
+            $query = "SELECT 
+                        tm.*,
+                        u.full_name as user_name,
+                        u.email as user_email
+                      FROM TicketMessages tm
+                      LEFT JOIN Users u ON tm.user_id = u.id
+                      WHERE tm.ticket_id = ?
+                      ORDER BY tm.created_at ASC";
+            
+            $result = $this->db->select($query, [$ticketId]);
+            
+            return $result ?: [];
+            
+        } catch (Exception $e) {
+            error_log('GetTicketMessages Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Send auto-acknowledgment email for new ticket created from email
+     */
+    private function sendAutoAcknowledgmentEmail($ticketId, $requesterEmail) {
+        error_log("sendAutoAcknowledgmentEmail called for ticket $ticketId, email $requesterEmail");
+        try {
+            // Validate inputs
+            if (empty($ticketId) || empty($requesterEmail)) {
+                error_log("Invalid parameters: ticketId=$ticketId, email=$requesterEmail");
+                return false;
+            }
+            
+            // Validate email format
+            if (!filter_var($requesterEmail, FILTER_VALIDATE_EMAIL)) {
+                error_log("Invalid email format: $requesterEmail");
+                return false;
+            }
+            
+            // Check if auto-acknowledgment is enabled
+            require_once APPROOT . '/app/models/Setting.php';
+            $settingModel = new Setting();
+            $autoAcknowledge = $settingModel->get('auto_acknowledge_tickets', true);
+            
+            error_log("Auto acknowledge setting: " . ($autoAcknowledge ? 'enabled' : 'disabled'));
+            
+            if (!$autoAcknowledge) {
+                error_log("Auto acknowledgment is disabled, skipping email");
+                return false;
+            }
+            
+            // Get ticket details
+            $ticket = $this->getById($ticketId);
+            if (!$ticket) {
+                error_log("Ticket not found: $ticketId");
+                return false;
+            }
+            
+            // Check if acknowledgment was already sent for this ticket
+            $existingAck = $this->db->select(
+                "SELECT TOP 1 id, status FROM EmailQueue 
+                 WHERE ticket_id = :ticket_id 
+                 AND subject LIKE '%Thank you%' 
+                 AND to_address = :email",
+                ['ticket_id' => $ticketId, 'email' => $requesterEmail]
+            );
+            
+            if (!empty($existingAck)) {
+                error_log("Acknowledgment already queued/sent for ticket {$ticket['ticket_number']} to {$requesterEmail} (Status: {$existingAck[0]['status']})");
+                return true;
+            }
+            
+            // Extract customer name from email
+            $requesterName = strstr($requesterEmail, '@', true);
+            $requesterName = ucwords(str_replace(['.', '_', '-'], ' ', $requesterName));
+            
+            // Get priority display name
+            $priorityNames = [
+                1 => 'Low',
+                2 => 'Normal', 
+                3 => 'High',
+                4 => 'Critical'
+            ];
+            $priorityDisplay = $priorityNames[$ticket['priority_id']] ?? 'Normal';
+            
+            // Prepare email data
+            require_once APPROOT . '/app/services/EmailService.php';
+            $emailService = new EmailService();
+            
+            $emailData = $emailService->createTicketEmail('ticket_acknowledgment', [
+                'ticket_id' => $ticket['id'],
+                'ticket_number' => $ticket['ticket_number'],
+                'subject' => $ticket['subject'],
+                'priority' => $priorityDisplay,
+                'requester_name' => $requesterName,
+                'inbound_email_address' => $requesterEmail,
+                'created_by_email' => $requesterEmail
+            ]);
+            
+            // Queue the acknowledgment email
+            $result = $emailService->queueEmail($emailData, 2); // High priority
+            
+            if ($result) {
+                error_log("Auto-acknowledgment queued successfully (Queue ID: $result) for ticket {$ticket['ticket_number']} to {$requesterEmail}");
+                
+                // Process email queue immediately to send the acknowledgment
+                try {
+                    $processed = $emailService->processEmailQueue(1); // Process just one email
+                    if ($processed > 0) {
+                        error_log("Auto-acknowledgment sent immediately for ticket {$ticket['ticket_number']}");
+                    } else {
+                        error_log("Auto-acknowledgment queued for later processing for ticket {$ticket['ticket_number']}");
+                    }
+                } catch (Exception $e) {
+                    error_log('Failed to process acknowledgment email queue immediately: ' . $e->getMessage());
+                    // Still success as email is queued
+                }
+                return true;
+            } else {
+                error_log("Failed to queue auto-acknowledgment for ticket {$ticket['ticket_number']}");
+                return false;
+            }
+            
+        } catch (Exception $e) {
+            error_log('SendAutoAcknowledgmentEmail Error: ' . $e->getMessage());
+            error_log('SendAutoAcknowledgmentEmail Stack: ' . $e->getTraceAsString());
             return false;
         }
     }

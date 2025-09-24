@@ -52,6 +52,107 @@ class App {
             exit;
         }
         
+        // Customer-friendly alias: allow customers to use /tickets/show/{id}
+        if (!empty($url) && is_array($url)
+            && strtolower($url[0]) === 'tickets'
+            && isset($url[1]) && strtolower($url[1]) === 'show'
+            && isset($url[2])
+            && function_exists('isCustomerLoggedIn') && isCustomerLoggedIn()
+            && (!function_exists('isLoggedIn') || !isLoggedIn())) {
+            // Route to Customer controller's ticket view
+            require_once '../app/controllers/Customer.php';
+            $this->controller = 'Customer';
+            $this->method = 'ticket';
+            $this->params = [$url[2]];
+            $this->controller = new $this->controller;
+            call_user_func_array([$this->controller, $this->method], $this->params);
+            return;
+        }
+
+        // Handle customer portal routing
+        if (!empty($url) && is_array($url) && strtolower($url[0]) === 'customer') {
+            // Check if customer authentication is enabled (with safe fallback)
+            $customerAuthEnabled = false;
+            try {
+                $customerAuthEnabled = isCustomerAuthEnabled();
+            } catch (Exception $e) {
+                error_log('Error checking customer auth status in routing: ' . $e->getMessage());
+                $customerAuthEnabled = false;
+            }
+            
+            if (!$customerAuthEnabled && (!isset($url[1]) || $url[1] !== 'auth')) {
+                // Customer portal is disabled, show 404
+                $this->controller = 'Home';
+                $this->method = 'notFound';
+                $this->params = [];
+                require_once '../app/controllers/Home.php';
+                $this->controller = new $this->controller;
+                call_user_func_array([$this->controller, $this->method], $this->params);
+                return;
+            }
+            
+            if (isset($url[1])) {
+                if ($url[1] === 'auth') {
+                    // Customer authentication routes
+                    $this->controller = 'CustomerAuth';
+                    $this->method = isset($url[2]) ? $url[2] : 'index';
+                    $this->params = array_slice($url, 3);
+                } else {
+                    // Other customer routes - require authentication
+                    if (!isCustomerLoggedIn()) {
+                        header('Location: ' . URLROOT . '/customer/auth');
+                        exit;
+                    }
+                    
+                    $this->controller = 'Customer';
+                    $this->method = $url[1];
+                    $this->params = array_slice($url, 2);
+                }
+            } else {
+                // Default customer route
+                if (!isCustomerLoggedIn()) {
+                    header('Location: ' . URLROOT . '/customer/auth');
+                    exit;
+                }
+                
+                $this->controller = 'Customer';
+                $this->method = 'index';
+                $this->params = [];
+            }
+            
+            // Load the appropriate controller
+            $controllerFile = '../app/controllers/' . $this->controller . '.php';
+            if (!file_exists($controllerFile)) {
+                die('Customer controller file not found: ' . $controllerFile);
+            }
+            
+            require_once $controllerFile;
+            if (!class_exists($this->controller)) {
+                die('Customer controller class not found: ' . $this->controller);
+            }
+            
+            $this->controller = new $this->controller;
+            
+            // Validate session for authenticated customer routes
+            if ($this->controller instanceof Customer && !validateCustomerSession()) {
+                header('Location: ' . URLROOT . '/customer/auth');
+                exit;
+            }
+            
+            // Call the method
+            if (method_exists($this->controller, $this->method)) {
+                call_user_func_array([$this->controller, $this->method], $this->params);
+            } else {
+                // Method not found, try index
+                if (method_exists($this->controller, 'index')) {
+                    call_user_func_array([$this->controller, 'index'], [$this->method]);
+                } else {
+                    die('Customer method not found: ' . $this->method);
+                }
+            }
+            return;
+        }
+        
         // Check if controller exists
         if (!empty($url) && is_array($url)) {
             // Only use the first URL segment as a controller if it's not numeric

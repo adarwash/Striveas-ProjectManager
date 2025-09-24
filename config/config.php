@@ -27,9 +27,9 @@
     }
     
     // Site Name
-    define('SITENAME', 'Hive IT Portal');
+    define('SITENAME', 'Meraki Tech IT Portal');
     
-    define('DEFAULT_TITLE', 'Hive IT Portal');
+    define('DEFAULT_TITLE', 'Meraki Tech IT Portal');
     
     // SQL Server connection
     define('DB1', [

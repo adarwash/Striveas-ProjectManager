@@ -37,7 +37,7 @@
                                     <i class="bi bi-users text-success" style="font-size: 2rem;"></i>
                                     <h5 class="card-title mt-3">User Management</h5>
                                     <p class="card-text text-muted">Manage system users, roles, and permissions.</p>
-                                    <a href="<?= URLROOT ?>/users" class="btn btn-success">
+                                    <a href="<?= URLROOT ?>/admin/users" class="btn btn-success">
                                         <i class="bi bi-people me-2"></i>Manage Users
                                     </a>
                                 </div>
@@ -48,8 +48,8 @@
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
                                     <i class="bi bi-ticket text-warning" style="font-size: 2rem;"></i>
-                                    <h5 class="card-title mt-3">Ticket Settings</h5>
-                                    <p class="card-text text-muted">Configure ticket categories, priorities, and statuses.</p>
+                                    <h5 class="card-title mt-3">Ticket Management</h5>
+                                    <p class="card-text text-muted">View and manage all support tickets in the system.</p>
                                     <a href="<?= URLROOT ?>/tickets" class="btn btn-warning">
                                         <i class="bi bi-ticket-detailed me-2"></i>Manage Tickets
                                     </a>
@@ -63,7 +63,7 @@
                                     <i class="bi bi-envelope text-info" style="font-size: 2rem;"></i>
                                     <h5 class="card-title mt-3">Email Settings</h5>
                                     <p class="card-text text-muted">Configure email notifications and Microsoft Graph integration.</p>
-                                    <a href="<?= URLROOT ?>/settings" class="btn btn-info">
+                                    <a href="<?= URLROOT ?>/admin/emailSettings" class="btn btn-info">
                                         <i class="bi bi-gear me-2"></i>Email Settings
                                     </a>
                                 </div>
@@ -86,11 +86,11 @@
                         <div class="col-md-6 col-lg-4 mb-4">
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
-                                    <i class="bi bi-shield text-secondary" style="font-size: 2rem;"></i>
-                                    <h5 class="card-title mt-3">System Logs</h5>
-                                    <p class="card-text text-muted">View system logs and activity history.</p>
-                                    <a href="<?= URLROOT ?>/logs" class="btn btn-secondary">
-                                        <i class="bi bi-journal-text me-2"></i>View Logs
+                                    <i class="bi bi-gear-wide-connected text-secondary" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-3">System Settings</h5>
+                                    <p class="card-text text-muted">Configure application settings, defaults, and system behavior.</p>
+                                    <a href="<?= URLROOT ?>/admin/settings" class="btn btn-secondary">
+                                        <i class="bi bi-gear me-2"></i>System Settings
                                     </a>
                                 </div>
                             </div>

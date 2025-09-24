@@ -24,7 +24,7 @@
                                 </a>
                             </div>
                             <?php endif; ?>
-                            <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center flex-wrap gap-2">
                                 <span class="badge fs-6" style="background-color: <?= $data['ticket']['status_color'] ?>">
                                     <?= htmlspecialchars($data['ticket']['status_display']) ?>
                                 </span>
@@ -35,6 +35,13 @@
                                     <span class="badge bg-danger fs-6">
                                         <i class="bi bi-exclamation-triangle me-1"></i>Overdue
                                     </span>
+                                <?php endif; ?>
+                                <?php if (!empty($data['client'])): ?>
+                                    <a href="<?= URLROOT ?>/clients/viewClient/<?= (int)$data['client']['id'] ?>" class="badge rounded-pill text-bg-primary text-decoration-none">
+                                        <i class="bi bi-building me-1"></i><?= htmlspecialchars($data['client']['name']) ?>
+                                    </a>
+                                <?php elseif (!empty($data['ticket']['client_id'])): ?>
+                                    <span class="badge rounded-pill text-bg-secondary">Client #<?= (int)$data['ticket']['client_id'] ?></span>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -68,6 +75,25 @@
                                 <li><a class="dropdown-item" href="#" onclick="window.print()">
                                     <i class="bi bi-printer me-2"></i>Print
                                 </a></li>
+                                <?php if (hasPermission('tickets.delete')): ?>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li>
+                                    <form method="POST" action="<?= URLROOT ?>/tickets/delete" onsubmit="return confirm('Delete this ticket permanently? This cannot be undone.');">
+                                        <input type="hidden" name="ticket_id" value="<?= $data['ticket']['id'] ?>">
+                                        <?php 
+                                            if (!isset($_SESSION['csrf_token'])) { 
+                                                $_SESSION['csrf_token'] = bin2hex(random_bytes(16)); 
+                                            }
+                                        ?>
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="bi bi-trash me-2"></i>Delete Ticket
+                                        </button>
+                                    </form>
+                                </li>
+                                <?php endif; ?>
                             </ul>
                         </div>
                     </div>

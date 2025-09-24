@@ -230,7 +230,9 @@ class Projects extends Controller {
                     'title' => 'Create Project',
                     'data' => $data,
                     'departments' => $this->departmentModel->getAllDepartments(),
-                    'sites' => $this->siteModel->getAllSites()
+                    'sites' => $this->siteModel->getAllSites(),
+                    // Ensure currency is always available to the view
+                    'currency' => $this->settingModel->getCurrency()
                 ]);
             }
         } else {
@@ -424,7 +426,9 @@ class Projects extends Controller {
                 $this->view('projects/edit', [
                     'title' => 'Edit Project',
                     'project' => (object)$data,
-                    'departments' => $this->departmentModel->getAllDepartments()
+                    'departments' => $this->departmentModel->getAllDepartments(),
+                    // Ensure currency is always available to the view
+                    'currency' => $this->settingModel->getCurrency()
                 ]);
             }
         } else {
