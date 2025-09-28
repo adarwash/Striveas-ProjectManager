@@ -73,6 +73,13 @@ class Clients extends Controller {
         // Get sites assigned to this client
         $sites = $this->clientModel->getSiteClients($id);
 
+        // Get recent site visits for this client
+        try {
+            $recentVisits = $this->clientModel->getRecentSiteVisits($id, 10);
+        } catch (Exception $e) {
+            $recentVisits = [];
+        }
+
         // Get client domains
         try {
             if (!class_exists('ClientDomain')) {
@@ -88,7 +95,8 @@ class Clients extends Controller {
             'title' => $client['name'],
             'client' => $client,
             'sites' => $sites,
-            'domains' => $domains
+            'domains' => $domains,
+            'recent_visits' => $recentVisits
         ];
         
         $this->view('clients/view', $data);

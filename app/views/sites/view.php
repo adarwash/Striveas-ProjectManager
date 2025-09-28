@@ -295,6 +295,78 @@
         </div>
     </div>
 
+    <!-- Technician Visits -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="card-title mb-0">Technician Visits</h5>
+                <p class="text-muted small mb-0">Reports logged for this site</p>
+            </div>
+            <div class="d-flex align-items-center">
+                <a href="/sitevisits/create/<?= $site['id'] ?>" class="btn btn-sm btn-primary">
+                    <i class="bi bi-journal-plus"></i> Log Visit
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <?php if (!empty($visits ?? [])): ?>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Technician</th>
+                            <th>Title</th>
+                            <th>Summary</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach (($visits ?? []) as $visit): ?>
+                        <tr>
+                            <td><?= date('M j, Y H:i', strtotime($visit['visit_date'])) ?></td>
+                            <td><?= htmlspecialchars($visit['full_name'] ?? $visit['username'] ?? 'Technician') ?></td>
+                            <td><?= htmlspecialchars($visit['title'] ?? '') ?></td>
+                            <td>
+                                <?php if (!empty($visit['summary'])): ?>
+                                <span class="d-inline-block text-truncate" style="max-width: 500px;" data-bs-toggle="tooltip" title="<?= htmlspecialchars($visit['summary']) ?>">
+                                    <?= nl2br(htmlspecialchars($visit['summary'])) ?>
+                                </span>
+                                <?php else: ?>
+                                <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-end">
+                                <a href="/sitevisits/show/<?= (int)$visit['id'] ?>" class="btn btn-sm btn-light" title="Preview">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <?php $canEditVisit = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') || ((int)($_SESSION['user_id'] ?? 0) === (int)$visit['technician_id']); ?>
+                                <?php if ($canEditVisit): ?>
+                                <a href="/sitevisits/edit/<?= (int)$visit['id'] ?>" class="btn btn-sm btn-primary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php else: ?>
+            <div class="p-5 text-center">
+                <div class="empty-state mb-3">
+                    <i class="bi bi-journal-text fs-1 text-muted"></i>
+                </div>
+                <h4>No visits logged</h4>
+                <p class="text-muted">Click "Log Visit" to add the first report for this site.</p>
+                <a href="/sitevisits/create/<?= $site['id'] ?>" class="btn btn-primary">
+                    <i class="bi bi-journal-plus"></i> Log Visit
+                </a>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <!-- Linked Projects -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">

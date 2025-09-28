@@ -12,6 +12,8 @@ class Setting {
      */
     public function __construct() {
         $this->db = new EasySQL(DB1);
+        // Ensure the settings table exists (idempotent)
+        $this->createSettingsTable();
     }
 
     /**

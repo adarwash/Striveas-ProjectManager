@@ -46,6 +46,35 @@ class Client {
         
         return $this->db->select($query, [$clientId]);
     }
+
+    /**
+     * Get top-N recent site visits for a client across all linked sites
+     */
+    public function getRecentSiteVisits(int $clientId, int $limit = 10): array {
+        try {
+            // Ensure SiteVisits and SiteClients exist
+            $check1 = $this->db->select("SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SiteVisits'");
+            $check2 = $this->db->select("SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SiteClients'");
+            if (!$check1 || (int)($check1[0]['table_count'] ?? 0) === 0 || !$check2 || (int)($check2[0]['table_count'] ?? 0) === 0) {
+                return [];
+            }
+
+            // SQL Server TOP usage for limit
+            $top = (int)$limit > 0 ? 'TOP ' . (int)$limit . ' ' : '';
+            $query = "SELECT ${top}v.id, v.site_id, v.technician_id, v.visit_date, v.title, v.summary,
+                             s.name AS site_name, s.location AS site_location,
+                             u.full_name, u.username
+                      FROM SiteVisits v
+                      INNER JOIN SiteClients sc ON sc.site_id = v.site_id AND sc.client_id = ?
+                      LEFT JOIN Sites s ON s.id = v.site_id
+                      LEFT JOIN Users u ON u.id = v.technician_id
+                      ORDER BY v.visit_date DESC, v.created_at DESC";
+            return $this->db->select($query, [$clientId]) ?: [];
+        } catch (Exception $e) {
+            error_log('Error fetching recent site visits for client: ' . $e->getMessage());
+            return [];
+        }
+    }
     
     /**
      * Add a new client

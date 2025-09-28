@@ -78,12 +78,21 @@ class Sites extends Controller {
         // Get projects linked to this site
         $linkedProjects = $this->siteModel->getLinkedProjects($id);
         
+        // Get technician visits
+        try {
+            $siteVisitModel = $this->model('SiteVisit');
+            $visits = $siteVisitModel->getVisitsBySite($id, 100);
+        } catch (Exception $e) {
+            $visits = [];
+        }
+        
         $data = [
             'title' => $site['name'],
             'site' => $site,
             'employees' => $employees,
             'clients' => $clients,
-            'linked_projects' => $linkedProjects
+            'linked_projects' => $linkedProjects,
+            'visits' => $visits
         ];
         
         $this->view('sites/view', $data);

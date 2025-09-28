@@ -95,6 +95,29 @@ class Admin extends Controller {
                 
                 // Use the updateSystemSettings method which handles validation
                 $success = $settingModel->updateSystemSettings($settings);
+
+                // Also handle currency settings explicitly (they are stored as a JSON blob under the 'currency' key)
+                $hasCurrencyPayload = (
+                    isset($_POST['currency_code']) ||
+                    isset($_POST['currency_symbol']) ||
+                    isset($_POST['currency_position']) ||
+                    isset($_POST['decimals']) ||
+                    isset($_POST['thousands_separator']) ||
+                    isset($_POST['decimal_separator'])
+                );
+
+                if ($hasCurrencyPayload) {
+                    $currencyPayload = [
+                        'code' => sanitize_input($_POST['currency_code'] ?? 'USD'),
+                        'symbol' => sanitize_input($_POST['currency_symbol'] ?? '$'),
+                        'position' => sanitize_input($_POST['currency_position'] ?? 'before'),
+                        'decimals' => (int)($_POST['decimals'] ?? 2),
+                        'thousands_separator' => sanitize_input($_POST['thousands_separator'] ?? ','),
+                        'decimal_separator' => sanitize_input($_POST['decimal_separator'] ?? '.')
+                    ];
+                    $currencySaved = $settingModel->setCurrency($currencyPayload);
+                    $success = $success && $currencySaved;
+                }
                 
                 if ($success) {
                     flash('settings_success', 'Settings updated successfully.');
@@ -110,10 +133,17 @@ class Admin extends Controller {
         
         // Get current settings
         $systemSettings = $settingModel->getSystemSettings();
+        $currency = $settingModel->getCurrency();
         
         $viewData = [
             'title' => 'System Settings',
-            'systemSettings' => $systemSettings
+            'systemSettings' => $systemSettings,
+            'currency' => $currency,
+            // Provide a nested $data array for views that expect $data[...] structure
+            'data' => [
+                'systemSettings' => $systemSettings,
+                'currency' => $currency
+            ]
         ];
         
         $this->view('admin/settings_clean', $viewData);

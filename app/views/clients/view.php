@@ -260,7 +260,10 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="d-flex justify-content-end">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <a href="/sitevisits/create/<?= $site['id'] ?>" class="btn btn-sm btn-primary" title="Log Visit">
+                                                <i class="bi bi-journal-plus"></i>
+                                            </a>
                                             <a href="/sites/viewSite/<?= $site['id'] ?>" class="btn btn-sm btn-outline-primary" title="View Site">
                                                 <i class="bi bi-eye"></i>
                                             </a>
@@ -409,6 +412,92 @@
                 </div>
             </div>
             
+            <!-- Recent Site Visits -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-journal-text text-primary me-2"></i>
+                        Recent Site Visits
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-dark border">Top 10</span>
+                        <?php if (!empty($sites)): ?>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#logVisitModal">
+                            <i class="bi bi-journal-plus"></i> Log Visit
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($recent_visits)): ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($recent_visits as $rv): ?>
+                        <a href="/sitevisits/show/<?= (int)$rv['id'] ?>" class="list-group-item list-group-item-action d-flex align-items-start gap-3">
+                            <div class="rounded bg-primary bg-opacity-10 p-2">
+                                <i class="bi bi-clipboard-check text-primary"></i>
+                            </div>
+                            <div class="flex-fill">
+                                <div class="d-flex justify-content-between">
+                                    <strong class="text-truncate" style="max-width: 180px;">
+                                        <?= htmlspecialchars($rv['title'] ?: ($rv['site_name'] ?? 'Visit')) ?>
+                                    </strong>
+                                    <small class="text-muted"><?= date('M j, Y H:i', strtotime($rv['visit_date'])) ?></small>
+                                </div>
+                                <div class="small text-muted">
+                                    <?= htmlspecialchars($rv['site_name'] ?? 'Unknown Site') ?>
+                                    <?php if (!empty($rv['site_location'])): ?>
+                                        • <?= htmlspecialchars($rv['site_location']) ?>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if (!empty($rv['summary'])): ?>
+                                <div class="small text-truncate" style="max-width: 100%;">
+                                    <?= htmlspecialchars($rv['summary']) ?>
+                                </div>
+                                <?php endif; ?>
+                                <div class="small text-muted mt-1">By <?= htmlspecialchars($rv['full_name'] ?? $rv['username'] ?? 'Technician') ?></div>
+                            </div>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="text-center py-3">
+                        <i class="bi bi-journal-x text-muted" style="font-size: 1.5rem;"></i>
+                        <div class="mt-2 small text-muted">No recent visits</div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Log Visit Modal -->
+            <div class="modal fade" id="logVisitModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Log Site Visit</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <?php if (!empty($sites)): ?>
+                            <div class="mb-3">
+                                <label for="logVisitSiteSelect" class="form-label">Select Site</label>
+                                <select id="logVisitSiteSelect" class="form-select">
+                                    <?php foreach ($sites as $s): ?>
+                                    <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars($s['name']) ?><?= !empty($s['location']) ? ' - ' . htmlspecialchars($s['location']) : '' ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <?php else: ?>
+                            <div class="alert alert-info mb-0">No sites assigned to this client.</div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="goLogVisitFromModal()">Continue</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Client Stats -->
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3">
@@ -434,4 +523,13 @@
             </div>
         </div>
     </div>
-</div> 
+</div>
+<script>
+(function(){
+    window.goLogVisitFromModal = function() {
+        var sel = document.getElementById('logVisitSiteSelect');
+        if (!sel || !sel.value) return;
+        window.location.href = '/sitevisits/create/' + sel.value;
+    }
+})();
+</script> 
