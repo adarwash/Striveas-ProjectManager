@@ -81,6 +81,60 @@
                 </div>
             </div>
 
+            <!-- Attachments -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Attachments</h6>
+                </div>
+                <div class="card-body">
+                    <?php $canEdit = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') || ((int)($_SESSION['user_id'] ?? 0) === (int)$visit['technician_id']); ?>
+                    <?php if ($canEdit): ?>
+                    <form action="/sitevisits/uploadAttachment/<?= (int)$visit['id'] ?>" method="post" enctype="multipart/form-data" class="mb-3">
+                        <div class="input-group">
+                            <input type="file" name="attachment" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif" required>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Upload</button>
+                        </div>
+                        <div class="form-text">Max 10MB. Allowed: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF</div>
+                    </form>
+                    <?php endif; ?>
+
+                    <?php if (!empty($attachments ?? [])): ?>
+                    <ul class="list-group list-group-flush">
+                        <?php foreach ($attachments as $att): ?>
+                        <li class="list-group-item d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-paperclip text-secondary"></i>
+                                <div>
+                                    <div class="fw-semibold text-truncate" style="max-width:200px;" title="<?= htmlspecialchars($att['file_name']) ?>">
+                                        <?= htmlspecialchars($att['file_name']) ?>
+                                    </div>
+                                    <small class="text-muted">
+                                        <?= !empty($att['uploaded_at']) ? date('M j, Y', strtotime($att['uploaded_at'])) : '' ?>
+                                        <?php if (!empty($att['file_size'])): ?>
+                                            • <?= number_format((int)$att['file_size']/1024, 1) ?> KB
+                                        <?php endif; ?>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <a class="btn btn-sm btn-outline-primary" href="/sitevisits/downloadAttachment/<?= (int)$att['id'] ?>" title="Download">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <?php if ($canEdit): ?>
+                                <a class="btn btn-sm btn-outline-danger" href="/sitevisits/deleteAttachment/<?= (int)$att['id'] ?>" title="Delete" onclick="return confirm('Delete this file?');">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                <?php endif; ?>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php else: ?>
+                    <div class="text-center py-2 text-muted small">No attachments uploaded.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <?php if (!empty($related_visits ?? [])): ?>
             <div class="card border-0 shadow-sm mt-4">
                 <div class="card-header bg-white py-3">

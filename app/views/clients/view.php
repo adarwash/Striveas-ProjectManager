@@ -214,6 +214,7 @@
                                     <th>Location</th>
                                     <th>Type</th>
                                     <th>Relationship</th>
+                                    <th>Services</th>
                                     <th>Status</th>
                                     <th class="text-end">Actions</th>
                                 </tr>
@@ -239,6 +240,30 @@
                                         <span class="badge text-bg-info rounded-pill">
                                             <?= htmlspecialchars($site['relationship_type'] ?? 'Standard') ?>
                                         </span>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($site['services'])): ?>
+                                            <div class="d-flex flex-column small" style="max-width: 220px;">
+                                                <?php 
+                                                $maxShow = 3;
+                                                $count = 0;
+                                                foreach ($site['services'] as $svc):
+                                                    if ($count++ >= $maxShow) break;
+                                                ?>
+                                                    <div class="text-truncate" title="<?= htmlspecialchars($svc['service_name']) ?>">
+                                                        <i class="bi bi-tools text-muted me-1"></i><?= htmlspecialchars($svc['service_name']) ?>
+                                                        <?php if (!empty($svc['service_type'])): ?>
+                                                            <span class="text-muted">(<?= htmlspecialchars($svc['service_type']) ?>)</span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                                <?php if (count($site['services']) > $maxShow): ?>
+                                                    <div class="text-muted">+ <?= count($site['services']) - $maxShow ?> more</div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="text-muted">—</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <?php 
@@ -369,6 +394,62 @@
         
         <!-- Quick Actions -->
         <div class="col-lg-4">
+            <!-- Contracts -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                        Contracts
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <?php if (hasPermission('clients.update')): ?>
+                    <form action="/clients/uploadContract/<?= (int)$client['id'] ?>" method="post" enctype="multipart/form-data" class="mb-3">
+                        <div class="input-group">
+                            <input type="file" name="contract" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" required>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Upload</button>
+                        </div>
+                        <div class="form-text">Max 10MB. Allowed: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</div>
+                    </form>
+                    <?php endif; ?>
+
+                    <?php if (!empty($contracts)): ?>
+                    <ul class="list-group list-group-flush">
+                        <?php foreach ($contracts as $contract): ?>
+                        <li class="list-group-item d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-file-earmark-text text-secondary"></i>
+                                <div>
+                                    <div class="fw-semibold text-truncate" style="max-width:200px;" title="<?= htmlspecialchars($contract['file_name']) ?>">
+                                        <?= htmlspecialchars($contract['file_name']) ?>
+                                    </div>
+                                    <small class="text-muted">
+                                        <?= !empty($contract['uploaded_at']) ? date('M j, Y', strtotime($contract['uploaded_at'])) : '' ?>
+                                        <?php if (!empty($contract['file_size'])): ?>
+                                            • <?= number_format((int)$contract['file_size']/1024, 1) ?> KB
+                                        <?php endif; ?>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <a class="btn btn-sm btn-outline-primary" href="/clients/downloadContract/<?= (int)$contract['id'] ?>" title="Download">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <?php if (hasPermission('clients.update')): ?>
+                                <a class="btn btn-sm btn-outline-danger" href="/clients/deleteContract/<?= (int)$contract['id'] ?>" title="Delete" onclick="return confirm('Delete this contract?');">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                <?php endif; ?>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php else: ?>
+                    <div class="text-center py-2 text-muted small">No contracts uploaded.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3">
                     <h6 class="card-title mb-0">

@@ -3,6 +3,7 @@
 class Clients extends Controller {
     private $clientModel;
     private $siteModel;
+    private $contractModel;
     
     /**
      * Initialize controller and load models
@@ -16,6 +17,7 @@ class Clients extends Controller {
         // Load models
         $this->clientModel = $this->model('Client');
         $this->siteModel = $this->model('Site');
+        $this->contractModel = $this->model('ClientContract');
         
         // Set the page for sidebar highlighting
         $_SESSION['page'] = 'clients';
@@ -73,6 +75,17 @@ class Clients extends Controller {
         // Get sites assigned to this client
         $sites = $this->clientModel->getSiteClients($id);
 
+        // Load services per site for quick overview
+        $sitesWithServices = $sites;
+        try {
+            $siteServiceModel = $this->model('SiteService');
+            foreach ($sitesWithServices as &$s) {
+                $s['services'] = $siteServiceModel->listBySite((int)$s['id']);
+            }
+        } catch (Exception $e) {
+            // Fallback without services
+        }
+
         // Get recent site visits for this client
         try {
             $recentVisits = $this->clientModel->getRecentSiteVisits($id, 10);
@@ -90,16 +103,202 @@ class Clients extends Controller {
         } catch (Exception $e) {
             $domains = [];
         }
+
+        // Get contracts
+        try {
+            $contracts = $this->contractModel->getContractsByClient($id);
+        } catch (Exception $e) {
+            $contracts = [];
+        }
         
         $data = [
             'title' => $client['name'],
             'client' => $client,
-            'sites' => $sites,
+            'sites' => $sitesWithServices,
             'domains' => $domains,
-            'recent_visits' => $recentVisits
+            'recent_visits' => $recentVisits,
+            'contracts' => $contracts
         ];
         
         $this->view('clients/view', $data);
+    }
+
+    /**
+     * Upload client contract
+     */
+    public function uploadContract($clientId) {
+        if (!hasPermission('clients.update')) {
+            flash('client_error', 'You do not have permission to upload contracts', 'alert-danger');
+            redirect('clients/viewClient/' . (int)$clientId);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('clients/viewClient/' . (int)$clientId);
+        }
+
+        if (!isset($_FILES['contract']) || $_FILES['contract']['error'] !== UPLOAD_ERR_OK) {
+            $err = $_FILES['contract']['error'] ?? 'no_file';
+            error_log('Contract upload: initial upload error. client_id=' . (int)$clientId . ' err=' . print_r($err, true));
+            flash('client_error', 'Error uploading contract. Please try again.', 'alert-danger');
+            redirect('clients/viewClient/' . (int)$clientId);
+            return;
+        }
+
+        $file = $_FILES['contract'];
+
+        // Validate file size (10MB max)
+        if ($file['size'] > 10 * 1024 * 1024) {
+            error_log('Contract upload: file too large (' . (int)$file['size'] . ' bytes) client_id=' . (int)$clientId);
+            flash('client_error', 'File size exceeds 10MB limit.', 'alert-danger');
+            redirect('clients/viewClient/' . (int)$clientId);
+            return;
+        }
+
+        // Validate file type
+        $allowedTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png'];
+        $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($fileExt, $allowedTypes, true)) {
+            error_log('Contract upload: invalid extension .' . $fileExt . ' client_id=' . (int)$clientId . ' name=' . ($file['name'] ?? ''));
+            flash('client_error', 'Invalid file type. Allowed: ' . implode(', ', $allowedTypes), 'alert-danger');
+            redirect('clients/viewClient/' . (int)$clientId);
+            return;
+        }
+
+        // Resolve document root and ensure upload directory
+        $docRoot = (isset($_SERVER['DOCUMENT_ROOT']) && $_SERVER['DOCUMENT_ROOT'])
+            ? rtrim($_SERVER['DOCUMENT_ROOT'], '/')
+            : (APPROOT . '/public');
+        $uploadDir = $docRoot . '/uploads/clients/' . (int)$clientId . '/contracts/';
+        if (!file_exists($uploadDir)) {
+            $mkOk = @mkdir($uploadDir, 0775, true);
+            if (!$mkOk) {
+                $lastErr = error_get_last();
+                error_log('Contract upload: mkdir failed at ' . $uploadDir . ' err=' . ($lastErr['message'] ?? 'unknown'));
+                flash('client_error', 'Server cannot create upload directory. Please contact admin.', 'alert-danger');
+                redirect('clients/viewClient/' . (int)$clientId);
+                return;
+            }
+        }
+        if (!is_writable($uploadDir)) {
+            error_log('Contract upload: directory not writable ' . $uploadDir . ' perms=' . substr(sprintf('%o', fileperms($uploadDir)), -4));
+            flash('client_error', 'Upload directory is not writable. Please contact admin.', 'alert-danger');
+            redirect('clients/viewClient/' . (int)$clientId);
+            return;
+        }
+
+        // Unique filename
+        $safeBaseName = preg_replace('/[^A-Za-z0-9_\.-]/', '_', $file['name']);
+        $fileName = uniqid('contract_') . '_' . $safeBaseName;
+        $filePath = $uploadDir . $fileName;
+
+        if (!move_uploaded_file($file['tmp_name'], $filePath)) {
+            $lastErr = error_get_last();
+            error_log('Contract upload: move_uploaded_file failed. tmp=' . ($file['tmp_name'] ?? '') . ' dest=' . $filePath . ' dir_writable=' . (int)is_writable($uploadDir) . ' err=' . ($lastErr['message'] ?? 'none'));
+            flash('client_error', 'Error saving uploaded file.', 'alert-danger');
+            redirect('clients/viewClient/' . (int)$clientId);
+            return;
+        }
+
+        // Public path to serve the file
+        $publicPath = '/uploads/clients/' . (int)$clientId . '/contracts/' . $fileName;
+
+        $fileData = [
+            'name' => $file['name'],
+            'path' => $publicPath,
+            'type' => $file['type'] ?? null,
+            'size' => (int)$file['size']
+        ];
+
+        if ($this->contractModel->addContract((int)$clientId, $fileData, (int)($_SESSION['user_id'] ?? 0))) {
+            flash('client_success', 'Contract uploaded successfully.');
+        } else {
+            // Rollback file if DB failed
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+            error_log('Contract upload: DB insert failed for client_id=' . (int)$clientId . ' file=' . $publicPath);
+            flash('client_error', 'Error saving contract metadata.', 'alert-danger');
+        }
+
+        redirect('clients/viewClient/' . (int)$clientId);
+    }
+
+    /**
+     * Download a specific contract
+     */
+    public function downloadContract($contractId) {
+        $contract = $this->contractModel->getContractById((int)$contractId);
+        if (!$contract) {
+            flash('client_error', 'Contract not found.', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+
+        $absPath = $_SERVER['DOCUMENT_ROOT'] . $contract['file_path'];
+        if (!file_exists($absPath)) {
+            flash('client_error', 'File not found on server.', 'alert-danger');
+            redirect('clients/viewClient/' . (int)$contract['client_id']);
+            return;
+        }
+
+        // Clear output buffers
+        while (ob_get_level()) { ob_end_clean(); }
+
+        $ext = strtolower(pathinfo($contract['file_name'], PATHINFO_EXTENSION));
+        $mime = 'application/octet-stream';
+        $map = [
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png'
+        ];
+        if (isset($map[$ext])) { $mime = $map[$ext]; }
+
+        header('Content-Type: ' . $mime);
+        header('Content-Disposition: attachment; filename="' . $contract['file_name'] . '"');
+        header('Content-Length: ' . filesize($absPath));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        readfile($absPath);
+        exit;
+    }
+
+    /**
+     * Delete a contract
+     */
+    public function deleteContract($contractId) {
+        if (!hasPermission('clients.update')) {
+            flash('client_error', 'You do not have permission to delete contracts', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+
+        $contract = $this->contractModel->getContractById((int)$contractId);
+        if (!$contract) {
+            flash('client_error', 'Contract not found.', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+
+        $absPath = $_SERVER['DOCUMENT_ROOT'] . $contract['file_path'];
+        if (file_exists($absPath)) {
+            @unlink($absPath);
+        }
+
+        if ($this->contractModel->deleteContract((int)$contractId)) {
+            flash('client_success', 'Contract deleted successfully.');
+        } else {
+            flash('client_error', 'Error deleting contract.', 'alert-danger');
+        }
+
+        redirect('clients/viewClient/' . (int)$contract['client_id']);
     }
 
     /**

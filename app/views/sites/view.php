@@ -295,6 +295,113 @@
         </div>
     </div>
 
+    <!-- Services Provided -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="card-title mb-0">Services Provided</h5>
+                <p class="text-muted small mb-0">What we provide at this site</p>
+            </div>
+            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+            <form action="/sites/addService/<?= (int)$site['id'] ?>" method="post" class="d-flex align-items-end gap-2 flex-wrap">
+                <div>
+                    <label class="form-label small mb-1">Service Name</label>
+                    <input type="text" name="service_name" class="form-control form-control-sm" placeholder="e.g., Managed IT" required>
+                </div>
+                <div>
+                    <label class="form-label small mb-1">Type</label>
+                    <select name="service_type" class="form-select form-select-sm">
+                        <option value="">—</option>
+                        <option value="Managed">Managed</option>
+                        <option value="Project">Project</option>
+                        <option value="Support">Support</option>
+                        <option value="Subscription">Subscription</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label small mb-1">Start</label>
+                    <input type="date" name="start_date" class="form-control form-control-sm">
+                </div>
+                <div>
+                    <label class="form-label small mb-1">End</label>
+                    <input type="date" name="end_date" class="form-control form-control-sm">
+                </div>
+                <div class="flex-grow-1">
+                    <label class="form-label small mb-1">Notes</label>
+                    <input type="text" name="notes" class="form-control form-control-sm" placeholder="Optional notes">
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Add</button>
+                </div>
+            </form>
+            <?php endif; ?>
+        </div>
+        <div class="card-body p-0">
+            <?php if (!empty($services ?? [])): ?>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Service</th>
+                            <th>Type</th>
+                            <th>Period</th>
+                            <th>Notes</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($services as $svc): ?>
+                        <tr>
+                            <td class="fw-semibold">
+                                <i class="bi bi-tools text-primary me-1"></i>
+                                <?= htmlspecialchars($svc['service_name']) ?>
+                            </td>
+                            <td><?= htmlspecialchars($svc['service_type'] ?? '—') ?></td>
+                            <td>
+                                <?php if (!empty($svc['start_date']) || !empty($svc['end_date'])): ?>
+                                    <div class="small text-muted">
+                                        <?php if (!empty($svc['start_date'])): ?>Start: <?= date('M j, Y', strtotime($svc['start_date'])) ?><?php endif; ?>
+                                        <?php if (!empty($svc['end_date'])): ?>
+                                            <span class="ms-2">End: <?= date('M j, Y', strtotime($svc['end_date'])) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($svc['notes'])): ?>
+                                <span class="d-inline-block text-truncate" style="max-width: 250px;" data-bs-toggle="tooltip" title="<?= htmlspecialchars($svc['notes']) ?>">
+                                    <?= htmlspecialchars($svc['notes']) ?>
+                                </span>
+                                <?php else: ?>
+                                <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-end">
+                                <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+                                <a class="btn btn-sm btn-light" href="/sites/deleteService/<?= (int)$svc['id'] ?>?site_id=<?= (int)$site['id'] ?>" onclick="return confirm('Delete this service?');">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php else: ?>
+            <div class="p-5 text-center">
+                <div class="empty-state mb-3">
+                    <i class="bi bi-tools fs-1 text-muted"></i>
+                </div>
+                <h4>No services recorded</h4>
+                <p class="text-muted mb-0">Use the form above to add services provided at this site.</p>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <!-- Technician Visits -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">

@@ -4,6 +4,7 @@ class Sites extends Controller {
     private $siteModel;
     private $userModel;
     private $clientModel;
+    private $siteServiceModel;
     
     /**
      * Initialize controller and load models
@@ -18,6 +19,7 @@ class Sites extends Controller {
         $this->siteModel = $this->model('Site');
         $this->userModel = $this->model('User');
         $this->clientModel = $this->model('Client');
+        $this->siteServiceModel = $this->model('SiteService');
         
         // Set the page for sidebar highlighting
         $_SESSION['page'] = 'sites';
@@ -85,6 +87,13 @@ class Sites extends Controller {
         } catch (Exception $e) {
             $visits = [];
         }
+
+        // Get services for this site
+        try {
+            $services = $this->siteServiceModel->listBySite((int)$id);
+        } catch (Exception $e) {
+            $services = [];
+        }
         
         $data = [
             'title' => $site['name'],
@@ -92,10 +101,73 @@ class Sites extends Controller {
             'employees' => $employees,
             'clients' => $clients,
             'linked_projects' => $linkedProjects,
-            'visits' => $visits
+            'visits' => $visits,
+            'services' => $services
         ];
         
         $this->view('sites/view', $data);
+    }
+
+    /**
+     * Add a service for a site
+     */
+    public function addService($siteId = null) {
+        if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'manager'])) {
+            flash('site_error', 'You do not have permission to manage services', 'alert-danger');
+            redirect('sites');
+            return;
+        }
+        if (!$siteId) { redirect('sites'); return; }
+        $site = $this->siteModel->getSiteById((int)$siteId);
+        if (!$site) { flash('site_error', 'Site not found', 'alert-danger'); redirect('sites'); return; }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            $payload = [
+                'service_name' => trim($_POST['service_name'] ?? ''),
+                'service_type' => trim($_POST['service_type'] ?? ''),
+                'start_date' => !empty($_POST['start_date']) ? date('Y-m-d', strtotime($_POST['start_date'])) : null,
+                'end_date' => !empty($_POST['end_date']) ? date('Y-m-d', strtotime($_POST['end_date'])) : null,
+                'notes' => trim($_POST['notes'] ?? '')
+            ];
+            if ($payload['service_name'] === '') {
+                flash('site_error', 'Service name is required', 'alert-danger');
+                redirect('/sites/viewSite/' . (int)$siteId);
+                return;
+            }
+            if ($this->siteServiceModel->add((int)$siteId, $payload)) {
+                flash('site_success', 'Service added');
+            } else {
+                flash('site_error', 'Failed to add service', 'alert-danger');
+            }
+            redirect('/sites/viewSite/' . (int)$siteId);
+            return;
+        }
+        redirect('/sites/viewSite/' . (int)$siteId);
+    }
+
+    /**
+     * Delete a service record
+     */
+    public function deleteService($serviceId = null) {
+        if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'manager'])) {
+            flash('site_error', 'You do not have permission to manage services', 'alert-danger');
+            redirect('sites');
+            return;
+        }
+        if (!$serviceId) { redirect('sites'); return; }
+        // Optional: find site by service to redirect back properly
+        $siteId = isset($_GET['site_id']) ? (int)$_GET['site_id'] : null;
+        if ($this->siteServiceModel->delete((int)$serviceId)) {
+            flash('site_success', 'Service deleted');
+        } else {
+            flash('site_error', 'Failed to delete service', 'alert-danger');
+        }
+        if ($siteId) {
+            redirect('/sites/viewSite/' . $siteId);
+        } else {
+            redirect('sites');
+        }
     }
     
     /**

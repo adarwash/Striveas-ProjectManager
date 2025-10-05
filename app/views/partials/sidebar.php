@@ -48,6 +48,21 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
     </div>
     
     <!-- Time Tracking Status Widget -->
+    <?php
+    // Check settings to determine if the time status widget should be shown
+    $showTimeStatusWidget = true;
+    try {
+        require_once __DIR__ . '/../../models/Setting.php';
+        if (class_exists('Setting')) {
+            $settingModelForSidebar = new Setting();
+            $showTimeStatusWidget = (bool)$settingModelForSidebar->get('show_sidebar_time_status', true);
+        }
+    } catch (Exception $e) {
+        error_log('Sidebar settings check error: ' . $e->getMessage());
+        $showTimeStatusWidget = true; // fail open to avoid breaking UX
+    }
+    ?>
+    <?php if ($showTimeStatusWidget): ?>
     <div class="time-tracking-widget">
         <?php if (isset($_SESSION['user_id'])): ?>
             <?php
@@ -188,6 +203,7 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
             <?php endif; ?>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <!-- User Profile Section -->
     <div class="team-section">

@@ -61,7 +61,7 @@ class Client {
 
             // SQL Server TOP usage for limit
             $top = (int)$limit > 0 ? 'TOP ' . (int)$limit . ' ' : '';
-            $query = "SELECT ${top}v.id, v.site_id, v.technician_id, v.visit_date, v.title, v.summary,
+            $query = "SELECT {$top}v.id, v.site_id, v.technician_id, v.visit_date, v.title, v.summary,
                              s.name AS site_name, s.location AS site_location,
                              u.full_name, u.username
                       FROM SiteVisits v
@@ -432,7 +432,7 @@ class Client {
 
             // Build query (SQL Server TOP needs literal integer)
             $top = (int)$limit > 0 ? "TOP $limit " : '';
-            $query = "SELECT ${top}c.id, c.name, COUNT(*) AS ticket_count
+            $query = "SELECT {$top}c.id, c.name, COUNT(*) AS ticket_count
                       FROM Tickets t
                       INNER JOIN Clients c ON c.id = t.client_id
                       WHERE t.client_id IS NOT NULL

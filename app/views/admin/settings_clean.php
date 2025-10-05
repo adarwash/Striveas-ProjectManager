@@ -110,6 +110,18 @@
                                         </div>
                                     </div>
                                     
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="show_sidebar_time_status" value="0">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="show_sidebar_time_status" name="show_sidebar_time_status" value="1"
+                                                <?= !isset($data['systemSettings']['show_sidebar_time_status']) || $data['systemSettings']['show_sidebar_time_status'] ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="show_sidebar_time_status">
+                                                Sidebar Time Status
+                                            </label>
+                                            <div class="form-text">Show the time tracking status widget in the sidebar.</div>
+                                        </div>
+                                    </div>
+                                    
                                     <div class="mb-0">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" role="switch" id="enable_api" name="enable_api" 
