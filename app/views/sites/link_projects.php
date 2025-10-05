@@ -1,6 +1,6 @@
 <div class="container-fluid">
     <!-- Page Header -->
-    <div class="bg-light rounded-3 p-4 mb-4">
+    <div class="rounded-3 p-4 mb-4 page-header-solid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-2">
                 <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none">Dashboard</a></li>
@@ -12,10 +12,8 @@
         
         <div class="d-flex justify-content-between align-items-center flex-wrap">
             <div>
-                <h1 class="h3 mb-1">Link Projects to <?= $site['name'] ?></h1>
-                <p class="text-muted">
-                    <i class="bi bi-geo-alt me-1"></i> <?= $site['location'] ?>
-                </p>
+                <h1 class="h4 mb-1 text-dark">Link Projects to <?= $site['name'] ?></h1>
+                <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i> <?= $site['location'] ?></div>
             </div>
             <div class="d-flex flex-wrap mt-2 mt-md-0 gap-2">
                 <a href="/sites/viewSite/<?= $site['id'] ?>" class="btn btn-light">

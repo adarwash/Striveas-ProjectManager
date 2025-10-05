@@ -32,6 +32,8 @@
             position: fixed;
             top: 0;
             bottom: 0;
+            margin:25px;
+            margin-top: 75px;
         }
         
         .sidebar-header {
@@ -119,6 +121,7 @@
             padding: 0px 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             margin-top: auto;
+            margin-bottom: inherit !important;
         }
         
         .team-member {
@@ -306,7 +309,9 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-bottom: none;
             padding: 0.75rem 1rem;
-            position: relative;
+            /* position: relative; */
+            position: fixed;
+            width: 100%;
             z-index: 10;
             box-shadow: 0 2px 16px rgba(0,0,0,0.1);
             margin: -20px;
@@ -622,6 +627,7 @@
             
             .team-section {
                 padding: 0px 20px;
+                margin-bottom: inherit !important;
             }
             
             .team-member {
@@ -738,11 +744,12 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
-        <?php require_once '../app/views/partials/sidebar.php'; ?>
+
         
         <!-- Main Content -->
         <div class="main-content">
+        <!-- Sidebar -->
+        <?php require_once '../app/views/partials/sidebar.php'; ?>
             <!-- Universal Search Bar -->
             <div class="search-header">
                 <div class="search-container">

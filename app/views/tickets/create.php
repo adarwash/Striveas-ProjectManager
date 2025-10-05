@@ -8,7 +8,7 @@
     </nav>
 
     <div class="row">
-        <div class="col-lg-8 mx-auto">
+        <div class="col-lg-12 mx-auto">
             <!-- Page Header -->
             <div class="text-center mb-4">
                 <h1 class="h3 mb-2">Create New Ticket</h1>

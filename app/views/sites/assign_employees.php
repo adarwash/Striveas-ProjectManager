@@ -1,23 +1,24 @@
 <div class="container-fluid">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
+    <div class="rounded-3 p-3 mb-3 page-header-solid">
+    <nav aria-label="breadcrumb" class="mb-2">
+        <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
             <li class="breadcrumb-item"><a href="/sites">Sites</a></li>
             <li class="breadcrumb-item"><a href="/sites/viewSite/<?= $data['site']['id'] ?>"><?= $data['site']['name'] ?></a></li>
             <li class="breadcrumb-item active" aria-current="page">Assign Employees</li>
         </ol>
     </nav>
-    
-    <div class="mb-4 d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center">
         <div>
-            <h1 class="h3 mb-0">Assign Employees to Site</h1>
-            <p class="text-muted"><?= $data['site']['name'] ?> - <?= $data['site']['location'] ?></p>
+            <h1 class="h4 mb-0 text-dark">Assign Employees to Site</h1>
+            <div class="text-muted small"><?= $data['site']['name'] ?> • <?= $data['site']['location'] ?></div>
         </div>
         <div class="d-flex">
             <a href="/sites/viewSite/<?= $data['site']['id'] ?>" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Site
             </a>
         </div>
+    </div>
     </div>
     
     <!-- Flash Messages -->

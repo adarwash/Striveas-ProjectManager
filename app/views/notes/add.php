@@ -20,7 +20,7 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-8 mx-auto">
+        <div class="col-lg-12 mx-auto">
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
                     <h5 class="mb-0">Create New Note</h5>

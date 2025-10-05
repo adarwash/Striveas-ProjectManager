@@ -1,6 +1,6 @@
 <div class="container-fluid">
     <!-- Page Header with Background -->
-    <div class="bg-light rounded-3 p-4 mb-4">
+    <div class="rounded-3 p-4 mb-4 page-header-solid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-2">
                 <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none">Dashboard</a></li>

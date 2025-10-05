@@ -1088,7 +1088,7 @@
             <!-- Currency Tab -->
             <div class="tab-pane fade" id="currency" role="tabpanel" aria-labelledby="currency-tab">
                 <div class="row">
-                    <div class="col-lg-8 mx-auto">
+                    <div class="col-lg-12 mx-auto">
                         <div class="card border-0 shadow-sm mb-4">
                             <div class="card-header bg-white py-3">
                                 <div class="d-flex align-items-center">

@@ -19,7 +19,6 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
     <!-- Navigation Menu -->
     <div class="sidebar-menu">
         <!-- Main Menu -->
-        <div class="menu-category">Menu</div>
         <ul class="nav flex-column">
             <?php foreach ($menuItems['main'] as $item): ?>
             <li class="nav-item">
@@ -250,7 +249,7 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
 <style>
 /* Main content margin */
 .main-content {
-    margin-left: 250px !important;
+    margin-left: 0px !important;
     padding: 20px !important;
 }
 
@@ -268,7 +267,7 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
 /* Sidebar general styling */
 .sidebar {
     width: 250px;
-    height: 100vh;
+    height: 90vh;
     background: #ffffff;
     border-right: 1px solid rgba(0,0,0,0.08);
     overflow-y: auto;
@@ -276,6 +275,8 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
     left: 0;
     top: 0;
     z-index: 1000;
+    margin-top: 94px;
+    border-radius: 1rem;
 }
 
 .sidebar-header {
@@ -596,6 +597,20 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
     background-color: #fff;
     border-color: #6a5acd;
     box-shadow: 0 0 0 0.2rem rgba(106, 90, 205, 0.25);
+}
+
+/* Hide scrollbars in sidebar while preserving scroll behavior */
+.sidebar,
+.sidebar-menu {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none;    /* Firefox */
+}
+
+.sidebar::-webkit-scrollbar,
+.sidebar-menu::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;            /* Chrome, Safari */
 }
 </style>
 

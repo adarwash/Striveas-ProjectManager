@@ -1,6 +1,6 @@
 <div class="container-fluid">
-    <!-- Page Header with Background -->
-    <div class="bg-light rounded-3 p-4 mb-4">
+    <!-- Page Header -->
+    <div class="rounded-3 p-4 mb-4 page-header-solid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-2">
                 <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none">Dashboard</a></li>
@@ -12,8 +12,8 @@
         
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h1 class="h3 mb-1">Edit Site</h1>
-                <p class="text-muted">Update information for <?= $data['name'] ?></p>
+                <h1 class="h4 mb-1 text-dark">Edit Site</h1>
+                <div class="text-muted small">Update information for <?= $data['name'] ?></div>
             </div>
             <a href="/sites/viewSite/<?= $data['id'] ?>" class="btn btn-light">
                 <i class="bi bi-arrow-left me-1"></i> Back to Site

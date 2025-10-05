@@ -1,6 +1,6 @@
 <div class="container-fluid">
     <!-- Page Header -->
-    <div class="bg-light rounded-3 p-4 mb-4">
+    <div class="rounded-3 p-4 mb-4 client-header-solid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-2">
                 <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none">Dashboard</a></li>
@@ -11,8 +11,8 @@
         
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h1 class="h3 mb-1"><?= htmlspecialchars($client['name']) ?></h1>
-                <p class="text-muted">Client details and site assignments</p>
+                <h1 class="h3 mb-1 text-dark"><?= htmlspecialchars($client['name']) ?></h1>
+                <p class="text-muted mb-0">Client details and site assignments</p>
             </div>
             <div class="d-flex gap-2">
                 <?php if (hasPermission('clients.assign_sites')): ?>

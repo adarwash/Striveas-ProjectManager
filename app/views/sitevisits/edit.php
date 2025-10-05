@@ -1,5 +1,5 @@
 <div class="container-fluid">
-    <div class="bg-light rounded-3 p-4 mb-4">
+    <div class="rounded-3 p-4 mb-4 page-header-solid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-2">
                 <li class="breadcrumb-item"><a href="/sites" class="text-decoration-none">Sites</a></li>
@@ -9,8 +9,8 @@
         </nav>
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h1 class="h3 mb-1">Edit Visit</h1>
-                <p class="text-muted">Update the logged visit</p>
+                <h1 class="h4 mb-1 text-dark">Edit Visit</h1>
+                <div class="text-muted small">Update the logged visit</div>
             </div>
             <a href="/sitevisits/show/<?= (int)$id ?>" class="btn btn-light"><i class="bi bi-arrow-left me-1"></i>Back</a>
         </div>
