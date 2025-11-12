@@ -262,6 +262,13 @@
                                                 <?= htmlspecialchars($project->title) ?>
                                             </a>
                                         </h5>
+                                        <?php if (!empty($project->client_id) && !empty($project->client_name)): ?>
+                                        <div class="text-muted small mt-1">
+                                            <a href="<?= URLROOT ?>/clients/viewClient/<?= (int)$project->client_id ?>" class="text-decoration-none text-muted">
+                                                <i class="fas fa-briefcase me-1"></i><?= htmlspecialchars($project->client_name) ?>
+                                            </a>
+                                        </div>
+                                        <?php endif; ?>
                                         
                                         <div class="project-meta">
                                             <div class="meta-item">
@@ -272,6 +279,46 @@
                                             <div class="meta-item">
                                                 <i class="fas fa-user"></i>
                                                 <span><?= htmlspecialchars($project->created_by) ?></span>
+                                            </div>
+                                            <?php 
+                                            $completedTasks = (int)($project->completed_tasks ?? 0);
+                                            $totalTasks = (int)($project->task_count ?? 0);
+                                            $outstanding = max(0, $totalTasks - $completedTasks);
+                                            $now = new DateTime();
+                                            $startDt = !empty($project->start_date) ? new DateTime($project->start_date) : null;
+                                            $endDt = !empty($project->end_date) ? new DateTime($project->end_date) : null;
+                                            $timeline = 0;
+                                            if ($startDt && $endDt && $endDt > $startDt) {
+                                                if ($now <= $startDt) { $timeline = 0; }
+                                                elseif ($now >= $endDt) { $timeline = 100; }
+                                                else {
+                                                    $timeline = ($startDt->diff($now)->days / max(1, $startDt->diff($endDt)->days)) * 100;
+                                                }
+                                            }
+                                            $progressCalc = ($totalTasks > 0) ? ($completedTasks / $totalTasks) * 100 : 0;
+                                            // Determine health status
+                                            if ($totalTasks === 0) {
+                                                $healthClass = 'bg-secondary';
+                                                $healthText = 'No tasks';
+                                            } else {
+                                                $healthClass = 'bg-success';
+                                                $healthText = 'On Track';
+                                                if ($endDt && $now > $endDt && $progressCalc < 100) {
+                                                    $healthClass = 'bg-danger';
+                                                    $healthText = 'Behind';
+                                                } elseif (($progressCalc + 5) < $timeline) { // allow small buffer
+                                                    $healthClass = 'bg-warning';
+                                                    $healthText = 'At Risk';
+                                                }
+                                            }
+                                            ?>
+                                            <div class="meta-item">
+                                                <i class="fas fa-tasks"></i>
+                                                <span><?= $outstanding ?> outstanding</span>
+                                            </div>
+                                            <div class="meta-item">
+                                                <i class="fas fa-flag"></i>
+                                                <span><span class="badge <?= $healthClass ?>"><?= $healthText ?></span></span>
                                             </div>
                                         </div>
                                         
@@ -331,6 +378,13 @@
                                                                 <?= htmlspecialchars($project->title) ?>
                                                             </a>
                                                         </h6>
+                                                        <?php if (!empty($project->client_id) && !empty($project->client_name)): ?>
+                                                        <div class="text-muted small mt-1">
+                                                            <a href="<?= URLROOT ?>/clients/viewClient/<?= (int)$project->client_id ?>" class="text-decoration-none text-muted">
+                                                                <i class="fas fa-briefcase me-1"></i><?= htmlspecialchars($project->client_name) ?>
+                                                            </a>
+                                                        </div>
+                                                        <?php endif; ?>
                                                         <div class="project-id">ID: <?= $project->id ?></div>
                                                     </div>
                                                 </td>
@@ -355,6 +409,32 @@
                                                     if (!empty($project->task_count) && $project->task_count > 0) {
                                                         $progress = ($project->completed_tasks / $project->task_count) * 100;
                                                     }
+                                                        $completedTasks = (int)($project->completed_tasks ?? 0);
+                                                        $totalTasks = (int)($project->task_count ?? 0);
+                                                        $outstanding = max(0, $totalTasks - $completedTasks);
+                                                        $now = new DateTime();
+                                                        $startDt = !empty($project->start_date) ? new DateTime($project->start_date) : null;
+                                                        $endDt = !empty($project->end_date) ? new DateTime($project->end_date) : null;
+                                                        $timeline = 0;
+                                                        if ($startDt && $endDt && $endDt > $startDt) {
+                                                            if ($now <= $startDt) { $timeline = 0; }
+                                                            elseif ($now >= $endDt) { $timeline = 100; }
+                                                            else { $timeline = ($startDt->diff($now)->days / max(1, $startDt->diff($endDt)->days)) * 100; }
+                                                        }
+                                                        if ($totalTasks === 0) {
+                                                            $healthClass = 'bg-secondary';
+                                                            $healthText = 'No tasks';
+                                                        } else {
+                                                            $healthClass = 'bg-success';
+                                                            $healthText = 'On Track';
+                                                            if ($endDt && $now > $endDt && $progress < 100) {
+                                                                $healthClass = 'bg-danger';
+                                                                $healthText = 'Behind';
+                                                            } elseif (($progress + 5) < $timeline) {
+                                                                $healthClass = 'bg-warning';
+                                                                $healthText = 'At Risk';
+                                                            }
+                                                        }
                                                     ?>
                                                     <div class="progress-display">
                                                         <div class="progress-bar-small">
@@ -365,6 +445,8 @@
                                                     <div class="task-summary">
                                                         <?= $project->completed_tasks ?? 0 ?>/<?= $project->task_count ?? 0 ?> tasks
                                                     </div>
+                                                        <div class="small text-muted">Outstanding: <?= $outstanding ?></div>
+                                                        <div class="mt-1"><span class="badge <?= $healthClass ?>"><?= $healthText ?></span></div>
                                                 </td>
                                                 <td>
                                                     <div class="timeline-info">

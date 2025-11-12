@@ -75,6 +75,19 @@ $title = 'Dashboard - HiveIT Portal';
 <!-- Additional Stats Row -->
 <div class="row g-4 mb-5">
     <div class="col-lg-3 col-md-6">
+        <div class="stats-card purple clickable-card" data-href="/clients?status=Prospect">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stats-number"><?= $stats['prospect_clients'] ?? 0 ?></div>
+                    <div class="stats-label">Prospect Clients</div>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
         <div class="stats-card red clickable-card" data-href="/tickets?status=open">
             <div class="d-flex align-items-center justify-content-between">
                     <div>
@@ -100,19 +113,7 @@ $title = 'Dashboard - HiveIT Portal';
             </div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="stats-card blue clickable-card" data-href="/requests?status=pending">
-            <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                    <div class="stats-number"><?= $stats['pending_requests'] ?? 0 ?></div>
-                    <div class="stats-label">Pending Requests</div>
-                </div>
-                <div class="stats-icon">
-                    <i class="fas fa-laptop"></i>
-                </div>
-            </div>
-        </div>
-                    </div>
+    
     <div class="col-lg-3 col-md-6">
         <div class="stats-card green clickable-card" data-href="/time/dashboard">
             <div class="d-flex align-items-center justify-content-between">

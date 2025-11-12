@@ -10,6 +10,7 @@ class Projects extends Controller {
     private $userModel;
     private $siteModel;
     private $settingModel;
+    private $clientModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -33,12 +34,16 @@ class Projects extends Controller {
         $this->userModel = $this->model('User');
         $this->siteModel = $this->model('Site');
         $this->settingModel = $this->model('Setting');
+        $this->clientModel = $this->model('Client');
         
         // Create project_users table if it doesn't exist
         $this->projectModel->createProjectUsersTable();
         
         // Create project_sites table if it doesn't exist
         $this->projectModel->createProjectSitesTable();
+
+        // Ensure projects table has client_id column
+        $this->projectModel->ensureClientColumn();
     }
     
     // List all projects
@@ -73,12 +78,16 @@ class Projects extends Controller {
         // Get currency settings
         $currency = $this->settingModel->getCurrency();
         
+        // Get all clients for the dropdown
+        $clients = $this->clientModel->getAllClients();
+        
         $this->view('projects/create', [
             'title' => 'Create Project',
             'departments' => $departments,
             'sites' => $sites,
             'selected_site_id' => $selectedSiteId,
-            'currency' => $currency
+            'currency' => $currency,
+            'clients' => $clients
         ]);
     }
     
@@ -90,7 +99,7 @@ class Projects extends Controller {
         // Process form data if POST request
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            $_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
             
             // Initialize data array
             $data = [
@@ -99,8 +108,9 @@ class Projects extends Controller {
                 'start_date' => trim($_POST['start_date']),
                 'end_date' => trim($_POST['end_date']),
                 'status' => trim($_POST['status']),
-                'department_id' => isset($_POST['department_id']) ? intval($_POST['department_id']) : null,
-                'budget' => floatval(str_replace(['$', ','], '', $_POST['budget'])),
+                'department_id' => (isset($_POST['department_id']) && trim($_POST['department_id']) !== '') ? intval($_POST['department_id']) : null,
+                'budget' => (isset($_POST['budget']) && trim($_POST['budget']) !== '') ? floatval(str_replace(['$', ','], '', $_POST['budget'])) : null,
+                'client_id' => (isset($_POST['client_id']) && trim($_POST['client_id']) !== '') ? intval($_POST['client_id']) : null,
                 'title_err' => '',
                 'description_err' => '',
                 'start_date_err' => '',
@@ -136,16 +146,11 @@ class Projects extends Controller {
                 $data['status_err'] = 'Please select a status';
             }
             
-            // Validate department
-            if (empty($data['department_id'])) {
-                $data['department_id_err'] = 'Please select a department';
-            }
+            // Department is optional
             
-            // Validate budget
-            if (empty($data['budget'])) {
-                $data['budget_err'] = 'Please enter a budget amount';
-            } elseif ($data['budget'] <= 0) {
-                $data['budget_err'] = 'Budget must be greater than zero';
+            // Validate budget (optional; if provided, it must not be negative)
+            if ($data['budget'] !== null && $data['budget'] < 0) {
+                $data['budget_err'] = 'Budget cannot be negative';
             }
             
             // Check if there are no errors
@@ -156,6 +161,11 @@ class Projects extends Controller {
                 
                 // Add the user_id from the session
                 $data['user_id'] = $_SESSION['user_id'];
+
+                // Default budget to 0 if not provided (DB column is NOT NULL)
+                if ($data['budget'] === null) {
+                    $data['budget'] = 0;
+                }
                 
                 // Create project
                 $projectId = $this->projectModel->create($data);
@@ -232,7 +242,8 @@ class Projects extends Controller {
                     'departments' => $this->departmentModel->getAllDepartments(),
                     'sites' => $this->siteModel->getAllSites(),
                     // Ensure currency is always available to the view
-                    'currency' => $this->settingModel->getCurrency()
+                    'currency' => $this->settingModel->getCurrency(),
+                    'clients' => $this->clientModel->getAllClients()
                 ]);
             }
         } else {
@@ -297,6 +308,16 @@ class Projects extends Controller {
         // Get currency settings
         $currency = $this->settingModel->getCurrency();
         
+        // Get client info if linked
+        $client = null;
+        if (!empty($project->client_id)) {
+            try {
+                $client = $this->clientModel->getClientById((int)$project->client_id);
+            } catch (Exception $e) {
+                $client = null;
+            }
+        }
+        
         $this->view('projects/view', [
             'title' => $project->title,
             'project' => $project,
@@ -307,7 +328,8 @@ class Projects extends Controller {
             'risks' => $risks,
             'documents' => $documents,
             'linked_sites' => $linkedSites,
-            'currency' => $currency
+            'currency' => $currency,
+            'client' => $client
         ]);
     }
     
@@ -331,11 +353,15 @@ class Projects extends Controller {
         // Get currency settings
         $currency = $this->settingModel->getCurrency();
         
+        // Get all clients for the dropdown
+        $clients = $this->clientModel->getAllClients();
+        
         $this->view('projects/edit', [
             'title' => 'Edit Project',
             'project' => $project,
             'departments' => $departments,
-            'currency' => $currency
+            'currency' => $currency,
+            'clients' => $clients
         ]);
     }
     
@@ -347,7 +373,7 @@ class Projects extends Controller {
         // Process form data if POST request
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            $_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
             
             // Initialize data array
             $data = [
@@ -357,8 +383,9 @@ class Projects extends Controller {
                 'start_date' => trim($_POST['start_date']),
                 'end_date' => trim($_POST['end_date']),
                 'status' => trim($_POST['status']),
-                'department_id' => isset($_POST['department_id']) ? intval($_POST['department_id']) : null,
-                'budget' => floatval(str_replace(['$', ','], '', $_POST['budget'])),
+                'department_id' => (isset($_POST['department_id']) && trim($_POST['department_id']) !== '') ? intval($_POST['department_id']) : null,
+                'budget' => (isset($_POST['budget']) && trim($_POST['budget']) !== '') ? floatval(str_replace(['$', ','], '', $_POST['budget'])) : null,
+                'client_id' => (isset($_POST['client_id']) && trim($_POST['client_id']) !== '') ? intval($_POST['client_id']) : null,
                 'title_err' => '',
                 'description_err' => '',
                 'start_date_err' => '',
@@ -394,16 +421,11 @@ class Projects extends Controller {
                 $data['status_err'] = 'Please select a status';
             }
             
-            // Validate department
-            if (empty($data['department_id'])) {
-                $data['department_id_err'] = 'Please select a department';
-            }
+            // Department is optional
             
-            // Validate budget
-            if (empty($data['budget'])) {
-                $data['budget_err'] = 'Please enter a budget amount';
-            } elseif ($data['budget'] <= 0) {
-                $data['budget_err'] = 'Budget must be greater than zero';
+            // Validate budget (optional; if provided, it must not be negative)
+            if ($data['budget'] !== null && $data['budget'] < 0) {
+                $data['budget_err'] = 'Budget cannot be negative';
             }
             
             // Check if there are no errors
@@ -412,6 +434,11 @@ class Projects extends Controller {
                 empty($data['status_err']) && empty($data['department_id_err']) && 
                 empty($data['budget_err'])) {
                 
+                // Default budget to 0 if not provided (DB column is NOT NULL)
+                if ($data['budget'] === null) {
+                    $data['budget'] = 0;
+                }
+
                 // Update project
                 $this->projectModel->update($data);
                 
@@ -428,7 +455,8 @@ class Projects extends Controller {
                     'project' => (object)$data,
                     'departments' => $this->departmentModel->getAllDepartments(),
                     // Ensure currency is always available to the view
-                    'currency' => $this->settingModel->getCurrency()
+                    'currency' => $this->settingModel->getCurrency(),
+                    'clients' => $this->clientModel->getAllClients()
                 ]);
             }
         } else {
@@ -514,7 +542,7 @@ class Projects extends Controller {
         }
         
         // Sanitize POST data
-        $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+        $_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
         
         // Get the selected user IDs and roles
         $userIds = isset($_POST['user_ids']) ? $_POST['user_ids'] : [];
@@ -638,7 +666,7 @@ class Projects extends Controller {
         }
         
         // Sanitize POST data
-        $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+        $_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
         
         $siteId = isset($_POST['site_id']) ? (int)$_POST['site_id'] : 0;
         $notes = isset($_POST['notes']) ? trim($_POST['notes']) : '';

@@ -7,6 +7,29 @@ class Task {
         $this->db = new EasySQL(DB1);
     }
     
+    /**
+     * Ensure parent_task_id column exists for subtasks
+     */
+    private function ensureParentTaskColumn() {
+        $sql = "
+        IF COL_LENGTH('dbo.tasks', 'parent_task_id') IS NULL
+        BEGIN
+            ALTER TABLE [dbo].[tasks] ADD [parent_task_id] INT NULL;
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.foreign_keys WHERE name = 'fk_tasks_parent'
+            )
+            BEGIN
+                ALTER TABLE [dbo].[tasks] 
+                ADD CONSTRAINT fk_tasks_parent FOREIGN KEY (parent_task_id) REFERENCES tasks(id) ON DELETE SET NULL;
+            END
+        END";
+        try {
+            $this->db->query($sql);
+        } catch (Exception $e) {
+            error_log('ensureParentTaskColumn error: ' . $e->getMessage());
+        }
+    }
+    
     // Get all tasks
     public function getAllTasks() {
         $query = "SELECT t.*, p.title as project_title, u1.username as assigned_to_name, u2.username as created_by_name
@@ -105,8 +128,9 @@ class Task {
     
     // Create new task
     public function create($data) {
-        $query = "INSERT INTO tasks (project_id, title, description, status, priority, due_date, assigned_to, created_by, created_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
+        $this->ensureParentTaskColumn();
+        $query = "INSERT INTO tasks (project_id, title, description, status, priority, due_date, assigned_to, created_by, created_at, parent_task_id) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?)";
         
         return $this->db->insert($query, [
             $data['project_id'],
@@ -116,14 +140,85 @@ class Task {
             $data['priority'],
             $data['due_date'],
             $data['assigned_to'],
-            $data['created_by']
+            $data['created_by'],
+            $data['parent_task_id'] ?? null
         ]);
+    }
+
+    /**
+     * Ensure task_sites table exists (MS SQL Server)
+     */
+    public function createTaskSitesTable() {
+        $sql = "
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='task_sites' AND xtype='U')
+        BEGIN
+            CREATE TABLE task_sites (
+                id INT IDENTITY(1,1) PRIMARY KEY,
+                task_id INT NOT NULL,
+                site_id INT NOT NULL,
+                created_at DATETIME DEFAULT GETDATE(),
+                CONSTRAINT fk_task_sites_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+                CONSTRAINT fk_task_sites_site FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+                CONSTRAINT uk_task_site UNIQUE (task_id, site_id)
+            )
+        END";
+        try {
+            $this->db->query($sql);
+            return true;
+        } catch (Exception $e) {
+            error_log('Error creating task_sites table: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Link a task to multiple sites
+     *
+     * @param int $taskId
+     * @param array<int,int> $siteIds
+     * @return bool
+     */
+    public function linkTaskToSites($taskId, $siteIds) {
+        $this->createTaskSitesTable();
+        if (empty($siteIds)) {
+            return true;
+        }
+        $ok = true;
+        foreach (array_unique(array_map('intval', (array)$siteIds)) as $siteId) {
+            if ($siteId <= 0) continue;
+            try {
+                $this->db->insert("INSERT INTO task_sites (task_id, site_id) VALUES (?, ?)", [$taskId, $siteId]);
+            } catch (Exception $e) {
+                // Ignore duplicates or FK errors silently in this context, but record logs
+                error_log('linkTaskToSites insert error: task=' . (int)$taskId . ' site=' . (int)$siteId . ' err=' . $e->getMessage());
+                $ok = false; // mark if any failure
+            }
+        }
+        return $ok;
+    }
+
+    /**
+     * Get sites linked to a task
+     *
+     * @param int $taskId
+     * @return array<int, array>
+     */
+    public function getTaskSites($taskId) {
+        try {
+            $this->createTaskSitesTable();
+            $query = "SELECT s.* FROM sites s JOIN task_sites ts ON s.id = ts.site_id WHERE ts.task_id = ? ORDER BY s.name";
+            return $this->db->select($query, [$taskId]) ?: [];
+        } catch (Exception $e) {
+            error_log('getTaskSites error: ' . $e->getMessage());
+            return [];
+        }
     }
     
     // Update task
     public function update($data) {
+        $this->ensureParentTaskColumn();
         $query = "UPDATE tasks 
-                 SET project_id = ?, title = ?, description = ?, status = ?, priority = ?, due_date = ?, assigned_to = ?, updated_at = GETDATE()
+                 SET project_id = ?, title = ?, description = ?, status = ?, priority = ?, due_date = ?, assigned_to = ?, parent_task_id = ?, updated_at = GETDATE()
                  WHERE id = ?";
         
         return $this->db->update($query, [
@@ -134,6 +229,7 @@ class Task {
             $data['priority'],
             $data['due_date'],
             $data['assigned_to'],
+            $data['parent_task_id'] ?? null,
             $data['id']
         ]);
     }
@@ -630,6 +726,32 @@ class Task {
             return $activities;
         } catch (Exception $e) {
             error_log('GetRecentTaskActivityByProject Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get subtasks for a given task
+     *
+     * @param int $taskId
+     * @return array
+     */
+    public function getSubtasks($taskId) {
+        try {
+            $this->ensureParentTaskColumn();
+            $query = "SELECT t.*, u.username as assigned_to_name
+                      FROM tasks t
+                      LEFT JOIN users u ON t.assigned_to = u.id
+                      WHERE t.parent_task_id = ?
+                      ORDER BY t.due_date ASC, t.priority DESC, t.created_at ASC";
+            $rows = $this->db->select($query, [$taskId]) ?: [];
+            $subtasks = [];
+            foreach ($rows as $r) {
+                $subtasks[] = (object)$r;
+            }
+            return $subtasks;
+        } catch (Exception $e) {
+            error_log('getSubtasks error: ' . $e->getMessage());
             return [];
         }
     }

@@ -17,33 +17,36 @@ class User {
      * @param string $password
      * @return array|bool User data if authenticated, false otherwise
      */
-    public function authenticate(string $username, string $password): array|bool {
+    public function authenticate(string $identifier, string $password): array|bool {
         try {
-            // Query to find the user by username
-            // Adjust this query based on your actual database schema
-            $query = "SELECT * FROM [Users] WHERE username = ?";
-            $result = $this->db->select($query, [$username]);
+            // Allow login using either username OR email
+            $query = "SELECT * FROM [Users] WHERE username = ? OR email = ?";
+            $result = $this->db->select($query, [$identifier, $identifier]);
             
             if (empty($result)) {
                 return false; // User not found
             }
             
             $user = $result[0];
+            $stored = $user['password'] ?? '';
             
-            // Verify password - this assumes passwords are stored as hashes
-            // In a real application, you should use password_hash() and password_verify()
-            // For demo purposes, we're doing a simple comparison
-            // IMPORTANT: In production, always use secure password hashing
-            if ($user['password'] === $password) {
-                // Remove password from the user data before returning
+            // Support hashed passwords (preferred) and legacy plain-text fallback
+            $isValid = false;
+            if (is_string($stored) && $stored !== '') {
+                if (password_get_info($stored)['algo'] !== 0) {
+                    $isValid = password_verify($password, $stored);
+                } else {
+                    $isValid = hash_equals((string)$stored, (string)$password);
+                }
+            }
+            
+            if ($isValid) {
                 unset($user['password']);
                 return $user;
             }
             
-            return false; // Invalid password
-            
+            return false;
         } catch (Exception $e) {
-            // Log the error
             error_log('Authentication Error: ' . $e->getMessage());
             return false;
         }
@@ -315,15 +318,22 @@ class User {
     public function createUserSettingsTable(): bool {
         try {
             // Get the SQL to create the UserSettings table
-            $sql = file_get_contents('../app/sql/create_user_settings_table.sql');
-            
-            if (!$sql) {
-                error_log('Could not read create_user_settings_table.sql file');
-                return false;
+            $paths = [
+                APPROOT . '/sql/create_user_settings_table.sql',
+                APPROOT . '/../sql/create_user_settings_table.sql'
+            ];
+            $sql = '';
+            foreach ($paths as $p) {
+                if (file_exists($p)) { $sql = file_get_contents($p); break; }
             }
-            
-            // Use query() instead of execute()
-            $this->db->query($sql);
+            if ($sql) {
+                // Use query() instead of execute()
+                $this->db->query($sql);
+            } else {
+                // Graceful fallback: create a minimal table if missing
+                $fallback = "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserSettings')\nBEGIN\n    CREATE TABLE UserSettings (\n        id INT IDENTITY(1,1) PRIMARY KEY,\n        user_id INT NOT NULL,\n        settings NVARCHAR(MAX) NULL,\n        created_at DATETIME DEFAULT GETDATE(),\n        updated_at DATETIME DEFAULT GETDATE()\n    )\nEND";
+                $this->db->query($fallback);
+            }
             return true;
         } catch (Exception $e) {
             error_log('CreateUserSettingsTable Error: ' . $e->getMessage());
@@ -501,15 +511,20 @@ class User {
     public function initializeExampleSkills(): bool {
         try {
             // Get the SQL to add example skills
-            $sql = file_get_contents('../app/sql/add_example_skills.sql');
-            
-            if (!$sql) {
-                error_log('Could not read add_example_skills.sql file');
-                return false;
+            $paths = [
+                APPROOT . '/sql/add_example_skills.sql',
+                APPROOT . '/../sql/add_example_skills.sql'
+            ];
+            $sql = '';
+            foreach ($paths as $p) {
+                if (file_exists($p)) { $sql = file_get_contents($p); break; }
             }
-            
-            // Use query() to execute the SQL
-            $this->db->query($sql);
+            if ($sql) {
+                $this->db->query($sql);
+            } else {
+                // No sample SQL present; silently succeed to avoid warnings
+                return true;
+            }
             return true;
         } catch (Exception $e) {
             error_log('InitializeExampleSkills Error: ' . $e->getMessage());

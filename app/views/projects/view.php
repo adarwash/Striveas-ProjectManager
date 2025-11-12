@@ -376,6 +376,13 @@
             <div class="row mb-0">
                 <div class="col-md-8">
                     <h1 class="project-title"><?= htmlspecialchars($project->title) ?></h1>
+                    <?php if (!empty($client) && !empty($client['id'])): ?>
+                        <div class="mt-1">
+                            <a href="<?= URLROOT ?>/clients/viewClient/<?= (int)$client['id'] ?>" class="text-decoration-none text-muted">
+                                <i class="bi bi-briefcase me-1"></i><?= htmlspecialchars($client['name'] ?? 'Client') ?>
+                            </a>
+                        </div>
+                    <?php endif; ?>
                     <div class="d-flex align-items-center gap-3 mt-3">
                         <?php
                         $statusClass = 'bg-secondary';
@@ -630,6 +637,17 @@
                             </div>
                             <div class="card-body p-0">
                                 <ul class="list-group list-group-flush">
+                                    <?php if (!empty($client) && !empty($client['id'])): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="text-muted d-block small">Client</span>
+                                            <a href="<?= URLROOT ?>/clients/viewClient/<?= (int)$client['id'] ?>" class="fw-semibold text-decoration-none">
+                                                <?= htmlspecialchars($client['name'] ?? 'Client') ?>
+                                            </a>
+                                        </div>
+                                        <i class="bi bi-briefcase text-muted"></i>
+                                    </li>
+                                    <?php endif; ?>
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <span class="text-muted d-block small">Department</span>
@@ -637,6 +655,18 @@
                                         </div>
                                         <i class="bi bi-building text-muted"></i>
                                     </li>
+                                    <?php if (!empty($linked_sites)): ?>
+                                    <?php $primarySite = $linked_sites[0]; ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="text-muted d-block small">Site</span>
+                                            <a href="<?= URLROOT ?>/sites/viewSite/<?= (int)$primarySite['id'] ?>" class="fw-semibold text-decoration-none">
+                                                <?= htmlspecialchars($primarySite['name']) ?>
+                                            </a>
+                                        </div>
+                                        <i class="bi bi-geo-alt text-muted"></i>
+                                    </li>
+                                    <?php endif; ?>
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <span class="text-muted d-block small">Created By</span>
@@ -652,17 +682,31 @@
                                         <i class="bi bi-calendar-date text-muted"></i>
                                     </li>
                                     <li class="list-group-item">
+                                        <?php 
+                                            $budgetAmount = isset($project->budget) ? (float)$project->budget : 0.0; 
+                                            $hasBudget = $budgetAmount > 0; 
+                                        ?>
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <span class="text-muted small">Budget</span>
-                                            <h5 class="card-title text-primary mb-0"><?= $currency['symbol'] ?><?= number_format($project->budget, 2) ?></h5>
+                                            <h5 class="card-title text-primary mb-0">
+                                                <?php if ($hasBudget): ?>
+                                                    <?= $currency['symbol'] ?><?= number_format($budgetAmount, 2) ?>
+                                                <?php else: ?>
+                                                    <span class="text-muted">No budget</span>
+                                                <?php endif; ?>
+                                            </h5>
                                         </div>
+                                        <?php if ($hasBudget): ?>
                                         <div class="progress mb-2" style="height: 8px;">
-                                            <div class="progress-bar bg-primary" role="progressbar" style="width: 45%"></div>
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <small class="text-muted">45% of budget used</small>
-                                            <strong><?= $currency['symbol'] ?><?= number_format($project->budget * 0.45, 2) ?></strong>
+                                            <small class="text-muted">0% of budget used</small>
+                                            <strong><?= $currency['symbol'] ?><?= number_format(0, 2) ?></strong>
                                         </div>
+                                        <?php else: ?>
+                                        <small class="text-muted">You can set a budget when creating or editing the project.</small>
+                                        <?php endif; ?>
                                     </li>
                                     <li class="list-group-item">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -870,7 +914,7 @@
                                                     ?>
                                                     <span class="badge <?= $priorityClass ?>"><?= $task->priority ?></span>
                                                 </td>
-                                                <td><?= htmlspecialchars($task->assigned_to ?? 'Unassigned') ?></td>
+                                                <td><?= htmlspecialchars($task->assigned_to_name ?? 'Unassigned') ?></td>
                                                 <td><?= !empty($task->due_date) ? date('M j, Y', strtotime($task->due_date)) : '—' ?></td>
                                                 <td>
                                                     <div class="btn-group">

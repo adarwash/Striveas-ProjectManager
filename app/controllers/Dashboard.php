@@ -16,6 +16,11 @@ class Dashboard extends Controller {
     }
     
     public function index() {
+        // Require login to view dashboard
+        if (!isLoggedIn()) {
+            redirect('users/login');
+            return;
+        }
         // Get user ID from session
         $userId = $_SESSION['user_id'];
         
@@ -84,6 +89,8 @@ class Dashboard extends Controller {
             // Get active clients count
             $clientModel = $this->model('Client');
             $stats['active_clients'] = $clientModel->getActiveClientsCount() ?? 0;
+            // Get prospect clients count
+            $stats['prospect_clients'] = $clientModel->getClientsCountByStatus('Prospect') ?? 0;
         } catch (Exception $e) {
             // If clients table doesn't exist, default to 0
             $stats['active_clients'] = 0;
@@ -108,13 +115,7 @@ class Dashboard extends Controller {
         // Get open tasks count from existing task counts
         $stats['open_tasks'] = $this->taskModel->getOpenTasksCount() ?? 0;
         
-        try {
-            // Get pending requests count
-            $requestModel = $this->model('Request');
-            $stats['pending_requests'] = $requestModel->getPendingRequestsCount() ?? 0;
-        } catch (Exception $e) {
-            $stats['pending_requests'] = 0;
-        }
+        // Removed pending requests from dashboard
         
         try {
             // Get currently working count (from time tracking)

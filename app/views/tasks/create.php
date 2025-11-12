@@ -92,6 +92,15 @@ $title = 'Create Task - HiveITPortal';
                             </div>
                         </div>
                     </div>
+
+                    <!-- Client Sites (Optional, supports multiple) -->
+                    <div class="mb-3">
+                        <label for="site_ids" class="form-label">Client Sites (Optional)</label>
+                        <select class="form-select" id="site_ids" name="site_ids[]" multiple size="5" aria-describedby="sitesHelp">
+                            <!-- Options will be populated based on Project selection -->
+                        </select>
+                        <div id="sitesHelp" class="form-text">Select one or more sites linked to the project's client.</div>
+                    </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -106,7 +115,7 @@ $title = 'Create Task - HiveITPortal';
                                 <option value="">Unassigned</option>
                                 <?php foreach ($users as $user): ?>
                                     <option value="<?= $user['id'] ?>" <?= (isset($data['assigned_to']) && $data['assigned_to'] == $user['id']) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($user['username']) ?>
+                                        <?= htmlspecialchars($user['full_name'] ?? $user['name'] ?? $user['username'] ?? 'User') ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -138,6 +147,10 @@ $title = 'Create Task - HiveITPortal';
         const form = document.querySelector('form');
         const statusSelect = document.getElementById('status');
         const prioritySelect = document.getElementById('priority');
+        const projectSelect = document.getElementById('project_id');
+        const siteSelect = document.getElementById('site_ids');
+        const sitesByProjectId = <?php echo json_encode($sitesByProjectId ?? []); ?>;
+        const preselectedSites = <?php echo json_encode($data['site_ids'] ?? []); ?>;
         
         // Set default values if not already set
         if (!statusSelect.value) {
@@ -147,5 +160,39 @@ $title = 'Create Task - HiveITPortal';
         if (!prioritySelect.value) {
             prioritySelect.value = 'Medium';
         }
+
+        function populateSites(projectId) {
+            // Clear options
+            siteSelect.innerHTML = '';
+            const sites = sitesByProjectId[projectId] || [];
+            if (!sites.length) {
+                const opt = document.createElement('option');
+                opt.textContent = 'No sites available';
+                opt.disabled = true;
+                siteSelect.appendChild(opt);
+                return;
+            }
+            sites.forEach(function(site) {
+                const opt = document.createElement('option');
+                opt.value = site.id;
+                opt.textContent = site.name + (site.location ? ' (' + site.location + ')' : '');
+                if (preselectedSites.includes(String(site.id)) || preselectedSites.includes(site.id)) {
+                    opt.selected = true;
+                }
+                siteSelect.appendChild(opt);
+            });
+        }
+
+        // Initial population
+        if (projectSelect && projectSelect.value) {
+            populateSites(projectSelect.value);
+        }
+
+        // Update when project changes
+        projectSelect.addEventListener('change', function() {
+            // Clear any previous selection
+            siteSelect.innerHTML = '';
+            populateSites(this.value);
+        });
     });
 </script> 

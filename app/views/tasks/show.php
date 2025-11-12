@@ -96,14 +96,24 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
                     <div class="col-md-6 mb-3">
                         <h6>Assigned To</h6>
                         <p class="mb-0">
-                            <?= !empty($task->assigned_to) ? htmlspecialchars($task->assigned_to) : '<span class="text-muted">Unassigned</span>' ?>
+                            <?php 
+                                $assignee = $task->assigned_to_name ?? '';
+                                echo $assignee !== '' 
+                                    ? htmlspecialchars($assignee) 
+                                    : '<span class="text-muted">Unassigned</span>';
+                            ?>
                         </p>
                     </div>
                     
                     <div class="col-md-6 mb-3">
                         <h6>Created By</h6>
                         <p class="mb-0">
-                            <?= !empty($task->created_by) ? htmlspecialchars($task->created_by) : '<span class="text-muted">Unknown</span>' ?>
+                            <?php 
+                                $creator = $task->created_by_name ?? '';
+                                echo $creator !== '' 
+                                    ? htmlspecialchars($creator) 
+                                    : '<span class="text-muted">Unknown</span>';
+                            ?>
                         </p>
                     </div>
                 </div>
@@ -160,6 +170,114 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
             </div>
         </div>
         
+        <!-- Subtasks -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Subtasks</h5>
+                <span class="badge bg-light text-dark border"><?= isset($subtasks) ? count($subtasks) : 0 ?></span>
+            </div>
+            <div class="card-body">
+                <?php if (!empty($subtasks)): ?>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Assignee</th>
+                                <th>Priority</th>
+                                <th>Due</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($subtasks as $st): ?>
+                            <?php
+                                $stStatusClass = 'bg-secondary';
+                                if (($st->status ?? '') === 'Pending') $stStatusClass = 'bg-secondary';
+                                if (($st->status ?? '') === 'In Progress') $stStatusClass = 'bg-primary';
+                                if (($st->status ?? '') === 'Completed') $stStatusClass = 'bg-success';
+                                if (($st->status ?? '') === 'Testing') $stStatusClass = 'bg-info';
+                                if (($st->status ?? '') === 'Blocked') $stStatusClass = 'bg-danger';
+                                
+                                $stPriorityClass = 'bg-secondary';
+                                if (($st->priority ?? '') === 'Low') $stPriorityClass = 'bg-success';
+                                if (($st->priority ?? '') === 'Medium') $stPriorityClass = 'bg-info';
+                                if (($st->priority ?? '') === 'High') $stPriorityClass = 'bg-warning';
+                                if (($st->priority ?? '') === 'Critical') $stPriorityClass = 'bg-danger';
+                            ?>
+                            <tr>
+                                <td>
+                                    <a href="/tasks/show/<?= (int)$st->id ?>" class="text-decoration-none fw-semibold">
+                                        <?= htmlspecialchars($st->title ?? '') ?>
+                                    </a>
+                                </td>
+                                <td><span class="badge <?= $stStatusClass ?>"><?= htmlspecialchars($st->status ?? 'Pending') ?></span></td>
+                                <td><?= htmlspecialchars($st->assigned_to_name ?? '—') ?></td>
+                                <td><span class="badge <?= $stPriorityClass ?>"><?= htmlspecialchars($st->priority ?? 'Medium') ?></span></td>
+                                <td><?= !empty($st->due_date) ? date('M j, Y', strtotime($st->due_date)) : '—' ?></td>
+                                <td class="text-end">
+                                    <?php if (($st->status ?? '') !== 'Completed'): ?>
+                                    <form action="/tasks/updateStatus/<?= (int)$st->id ?>" method="post" class="d-inline">
+                                        <input type="hidden" name="status" value="Completed">
+                                        <button class="btn btn-sm btn-outline-success"><i class="bi bi-check2-circle"></i></button>
+                                    </form>
+                                    <?php endif; ?>
+                                    <a href="/tasks/edit/<?= (int)$st->id ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php else: ?>
+                <div class="text-muted">No subtasks yet.</div>
+                <?php endif; ?>
+                <hr>
+                <h6 class="mb-3">Add Subtask</h6>
+                <form action="/tasks/addSubtask/<?= (int)$task->id ?>" method="post">
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <input type="text" name="title" class="form-control" placeholder="Subtask title" required>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="assigned_to" class="form-select">
+                                <option value="">Unassigned</option>
+                                <?php if (!empty($users)): ?>
+                                    <?php foreach ($users as $u): 
+                                        $displayName = $u['full_name'] ?? ($u['name'] ?? ($u['username'] ?? 'User'));
+                                    ?>
+                                        <option value="<?= (int)$u['id'] ?>"><?= htmlspecialchars($displayName) ?></option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" name="due_date" class="form-control">
+                        </div>
+                        <div class="col-md-2">
+                            <select name="priority" class="form-select">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mt-2">
+                        <div class="col-12">
+                            <textarea name="description" class="form-control" rows="2" placeholder="Optional details"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-lg"></i> Add Subtask
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
         <!-- Task Comments/Activity -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-light">
@@ -179,7 +297,10 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
                             <small class="text-muted"><?= date('M j, Y g:i A', strtotime($task->created_at)) ?></small>
                         </div>
                         <p class="mb-0 text-muted small">
-                            <?= !empty($task->created_by) ? htmlspecialchars($task->created_by) : 'Unknown user' ?> created this task.
+                            <?php 
+                                $creator = $task->created_by_name ?? '';
+                                echo ($creator !== '' ? htmlspecialchars($creator) : 'Unknown user') . ' created this task.';
+                            ?>
                         </p>
                     </div>
                 </div>

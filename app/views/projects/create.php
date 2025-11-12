@@ -65,9 +65,9 @@ $title = 'Create Project - HiveITPortal';
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="department_id" class="form-label">Department</label>
-                            <select class="form-select <?= isset($data['department_id_err']) ? 'is-invalid' : '' ?>" 
-                                    id="department_id" name="department_id" required>
-                                <option value="">Select Department</option>
+                            <select class="form-select <?= !empty($data['department_id_err'] ?? '') ? 'is-invalid' : '' ?>" 
+                                    id="department_id" name="department_id">
+                                <option value="" <?= empty($data['department_id'] ?? '') ? 'selected' : '' ?>>None</option>
                                 <?php
                                 // Use departments data passed from controller
                                 if (isset($departments) && !empty($departments)):
@@ -89,8 +89,8 @@ $title = 'Create Project - HiveITPortal';
                             <label for="budget" class="form-label">Project Budget</label>
                             <div class="input-group">
                                 <span class="input-group-text"><?= $currency['symbol'] ?></span>
-                                <input type="text" class="form-control <?= isset($data['budget_err']) ? 'is-invalid' : '' ?>" 
-                                       id="budget" name="budget" value="<?= $data['budget'] ?? '0.00' ?>" required>
+                                <input type="text" class="form-control <?= !empty($data['budget_err'] ?? '') ? 'is-invalid' : '' ?>" 
+                                       id="budget" name="budget" value="<?= isset($data['budget']) ? $data['budget'] : '' ?>">
                                 <div class="invalid-feedback">
                                     <?= $data['budget_err'] ?? '' ?>
                                 </div>
@@ -110,6 +110,25 @@ $title = 'Create Project - HiveITPortal';
                         </select>
                         <div class="invalid-feedback">
                             <?= $data['status_err'] ?? '' ?>
+                        </div>
+                    </div>
+
+                    <!-- Client Selection -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">Link to Client (Optional)</h5>
+                        <div class="mb-3">
+                            <label for="client_id" class="form-label">Select Client</label>
+                            <select class="form-select" id="client_id" name="client_id">
+                                <option value="" <?= empty($data['client_id'] ?? '') ? 'selected' : '' ?>>None</option>
+                                <?php if (isset($clients) && !empty($clients)): ?>
+                                    <?php foreach ($clients as $client): ?>
+                                        <option value="<?= $client['id'] ?>" <?= (!empty($data['client_id']) && $data['client_id'] == $client['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($client['name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                            <small class="text-muted">You can link or change client later from project edit</small>
                         </div>
                     </div>
                     

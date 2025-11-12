@@ -292,8 +292,9 @@
                                             <div class="d-flex align-items-center">
                                                 <?php
                                                 // Get user data
-                                                $userId = $task->assigned_user_id ?? 0;
-                                                $userName = htmlspecialchars($task->assigned_to);
+                                                $userId = (int)($task->assigned_to ?? 0);
+                                                $displayNameRaw = $task->assigned_to_name ?? '';
+                                                $userName = htmlspecialchars($displayNameRaw !== '' ? $displayNameRaw : (string)$userId);
                                                 
                                                 // Extract initials properly
                                                 if (strpos($userName, ' ') !== false) {
@@ -331,7 +332,7 @@
                                                         <?= $initials ?>
                                                     </div>
                                                 <?php endif; ?>
-                                                <span class="text-truncate" style="max-width: 120px;"><?= htmlspecialchars($task->assigned_to) ?></span>
+                                                <span class="text-truncate" style="max-width: 120px;"><?= $userName ?></span>
                                             </div>
                                         <?php else: ?>
                                             <span class="text-muted small">Unassigned</span>

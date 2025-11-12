@@ -18,6 +18,19 @@ class Client {
     }
 
     /**
+     * Get clients by status
+     */
+    public function getClientsByStatus(string $status) {
+        try {
+            $query = "SELECT * FROM Clients WHERE status = ? ORDER BY name ASC";
+            return $this->db->select($query, [$status]);
+        } catch (Exception $e) {
+            error_log('getClientsByStatus error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Get client by ID
      *
      * @param int $id Client ID
@@ -277,6 +290,20 @@ class Client {
             return $result[0]['count'] ?? 0;
         } catch (Exception $e) {
             error_log('GetActiveClientsCount Error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Get clients count by status (e.g., 'Prospect')
+     */
+    public function getClientsCountByStatus(string $status) {
+        try {
+            $query = "SELECT COUNT(*) as count FROM Clients WHERE status = ?";
+            $result = $this->db->select($query, [$status]);
+            return $result[0]['count'] ?? 0;
+        } catch (Exception $e) {
+            error_log('GetClientsCountByStatus Error: ' . $e->getMessage());
             return 0;
         }
     }

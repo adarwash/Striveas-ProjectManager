@@ -318,6 +318,38 @@
             margin-bottom: 10px;
         }
         
+        .header-actions {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-actions .btn-light {
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .dropdown-menu-notifications {
+            min-width: 340px;
+            max-width: 360px;
+        }
+        .notification-item {
+            padding: 0.75rem 0.75rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        .notification-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .notification-meta {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        
         .search-container {
             max-width: 100%;
             margin: 0;
@@ -785,6 +817,114 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                <?php
+                // Build notifications for logged-in user (upcoming callbacks)
+                $notifCount = 0;
+                $notifItems = [];
+                if (function_exists('isLoggedIn') && isLoggedIn()) {
+                    try {
+                        if (!class_exists('ClientCallback')) {
+                            require_once APPROOT . '/app/models/ClientCallback.php';
+                        }
+                        $cbModel = new ClientCallback();
+                        $notifItems = $cbModel->getUpcomingByUser((int)($_SESSION['user_id'] ?? 0), 5);
+                        if (!is_array($notifItems)) { $notifItems = []; }
+                        $notifCount = count($notifItems);
+                    } catch (Exception $e) {
+                        $notifItems = [];
+                        $notifCount = 0;
+                    }
+                }
+                ?>
+                <div class="header-actions">
+                    <div class="dropdown">
+                        <button class="btn btn-light position-relative" type="button" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                            <i class="bi bi-bell"></i>
+                            <?php if (!empty($notifCount)): ?>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                <?= (int)$notifCount ?>
+                                <span class="visually-hidden">unread notifications</span>
+                            </span>
+                            <?php endif; ?>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-notifications shadow" aria-labelledby="notificationsDropdown">
+                            <div class="px-3 py-2 border-bottom bg-light">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="fw-semibold">Notifications</span>
+                                    <span class="badge bg-light text-dark border"><?= (int)$notifCount ?></span>
+                                </div>
+                            </div>
+                            <?php if (!empty($notifItems)): ?>
+                                <?php
+                                // Attempt to load client names
+                                $clientNameCache = [];
+                                if (!class_exists('Client')) {
+                                    require_once APPROOT . '/app/models/Client.php';
+                                }
+                                $clientModelTmp = new Client();
+                                ?>
+                                <?php foreach ($notifItems as $ni): ?>
+                                    <?php
+                                    $clientId = (int)($ni['client_id'] ?? 0);
+                                    $clientName = 'Client #' . $clientId;
+                                    if ($clientId) {
+                                        if (!isset($clientNameCache[$clientId])) {
+                                            try {
+                                                $c = $clientModelTmp->getClientById($clientId);
+                                                $clientNameCache[$clientId] = $c ? ($c['name'] ?? $clientName) : $clientName;
+                                            } catch (Exception $e) {
+                                                $clientNameCache[$clientId] = $clientName;
+                                            }
+                                        }
+                                        $clientName = $clientNameCache[$clientId];
+                                    }
+                                    $remindAt = !empty($ni['remind_at']) ? date('M j, Y g:i A', strtotime($ni['remind_at'])) : '';
+                                    $title = htmlspecialchars($ni['title'] ?? 'Callback');
+                                    ?>
+                                    <div class="notification-item">
+                                        <div class="d-flex">
+                                            <div class="me-2">
+                                                <span class="badge rounded-circle bg-primary" style="width:10px;height:10px;">&nbsp;</span>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="notification-title text-truncate" title="<?= $title ?>"><?= $title ?></div>
+                                                <div class="notification-meta">
+                                                    <i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($clientName) ?>
+                                                    <?php if ($remindAt): ?> • <i class="bi bi-clock ms-1 me-1"></i><?= $remindAt ?><?php endif; ?>
+                                                </div>
+                                            </div>
+                                            <div class="ms-2 d-flex align-items-center">
+                                                <a class="btn btn-sm btn-outline-success" href="/clients/completeCallback/<?= (int)$ni['id'] ?>" title="Mark Completed">
+                                                    <i class="bi bi-check2-circle"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 d-flex gap-2">
+                                            <?php if (!empty($clientId)): ?>
+                                            <a class="btn btn-sm btn-outline-primary" href="/clients/viewClient/<?= (int)$clientId ?>">Open Client</a>
+                                            <?php endif; ?>
+                                            <?php if (!empty($ni['notes'])): ?>
+                                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#cb-notes-<?= (int)$ni['id'] ?>" aria-expanded="false" aria-controls="cb-notes-<?= (int)$ni['id'] ?>">
+                                                Notes
+                                            </button>
+                                            <div class="collapse w-100" id="cb-notes-<?= (int)$ni['id'] ?>">
+                                                <div class="card card-body border-0 p-2 mt-1" style="background:#f8fafc;">
+                                                    <div class="small text-muted"><?= nl2br(htmlspecialchars($ni['notes'])) ?></div>
+                                                </div>
+                                            </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="p-3 text-center text-muted">
+                                    <i class="bi bi-bell-slash" style="font-size:1.25rem;"></i>
+                                    <div class="small mt-1">No upcoming callbacks</div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

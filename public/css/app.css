@@ -186,6 +186,7 @@ body {
 
 .stats-card .stats-label {
     font-size: 0.9rem;
+    color: white;
     opacity: 0.95;
     font-weight: 500;
     line-height: 1.2;
@@ -1584,4 +1585,11 @@ body {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* ================================================
+   Bootstrap Overrides
+   ================================================ */
+.rounded-circle {
+    border-radius: 10px !important;
 }

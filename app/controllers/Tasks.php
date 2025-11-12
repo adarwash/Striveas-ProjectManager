@@ -4,6 +4,7 @@ class Tasks extends Controller {
     private $projectModel;
     private $userModel;
     private $noteModel;
+    private $clientModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -21,9 +22,12 @@ class Tasks extends Controller {
         $this->projectModel = $this->model('Project');
         $this->userModel = $this->model('User');
         $this->noteModel = $this->model('Note');
+        $this->clientModel = $this->model('Client');
         
         // Create task_users table if it doesn't exist
         $this->taskModel->createTaskUsersTable();
+        // Create task_sites table if it doesn't exist
+        $this->taskModel->createTaskSitesTable();
     }
     
     // List all tasks (can be filtered by project)
@@ -75,8 +79,24 @@ class Tasks extends Controller {
     
     // Show form to create a new task (optionally with project pre-selected)
     public function create($projectId = null) {
+        // Support preselect via query string: /tasks/create?project_id=123
+        if ($projectId === null && isset($_GET['project_id']) && $_GET['project_id'] !== '') {
+            $projectId = (int)$_GET['project_id'];
+        }
         // Get all projects for dropdown
         $projects = $this->projectModel->getAllProjects();
+        // Build a map of project_id => sites for the project's client (if any)
+        $sitesByProjectId = [];
+        foreach ($projects as $p) {
+            $sitesByProjectId[$p->id] = [];
+            if (!empty($p->client_id)) {
+                try {
+                    $sitesByProjectId[$p->id] = $this->clientModel->getSiteClients((int)$p->client_id);
+                } catch (Exception $e) {
+                    $sitesByProjectId[$p->id] = [];
+                }
+            }
+        }
         
         // Get all users for assignments
         $users = $this->userModel->getAllUsers();
@@ -85,7 +105,8 @@ class Tasks extends Controller {
             'title' => 'Create Task',
             'projects' => $projects,
             'users' => $users,
-            'project_id' => $projectId
+            'project_id' => $projectId,
+            'sitesByProjectId' => $sitesByProjectId
         ]);
     }
     
@@ -94,7 +115,7 @@ class Tasks extends Controller {
         // Process form data if POST request
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            $_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
             
             // Initialize data array
             $data = [
@@ -105,6 +126,7 @@ class Tasks extends Controller {
                 'priority' => trim($_POST['priority']),
                 'due_date' => !empty($_POST['due_date']) ? trim($_POST['due_date']) : null,
                 'assigned_to' => !empty($_POST['assigned_to']) ? trim($_POST['assigned_to']) : null,
+                'site_ids' => isset($_POST['site_ids']) ? (array)$_POST['site_ids'] : [],
                 'project_id_err' => '',
                 'title_err' => '',
                 'status_err' => '',
@@ -139,7 +161,12 @@ class Tasks extends Controller {
                 $data['created_by'] = $_SESSION['user_id'];
                 
                 // Create task
-                $this->taskModel->create($data);
+                $taskId = $this->taskModel->create($data);
+                // Link selected client sites (optional)
+                if (!empty($taskId) && !empty($data['site_ids'])) {
+                    $siteIds = array_map('intval', $data['site_ids']);
+                    $this->taskModel->linkTaskToSites((int)$taskId, $siteIds);
+                }
                 
                 // Set flash message
                 flash('task_message', 'Task created successfully');
@@ -149,19 +176,31 @@ class Tasks extends Controller {
                 exit;
             } else {
                 // Get all projects for dropdown
-                // Placeholder: $projects = $this->projectModel->getAllProjects();
-                $projects = [];
+                $projects = $this->projectModel->getAllProjects();
                 
                 // Get all users for assignments
-                // Placeholder: $users = $this->userModel->getAllUsers();
-                $users = [];
+                $users = $this->userModel->getAllUsers();
+
+                // Build sites map again for redisplay with errors
+                $sitesByProjectId = [];
+                foreach ($projects as $p) {
+                    $sitesByProjectId[$p->id] = [];
+                    if (!empty($p->client_id)) {
+                        try {
+                            $sitesByProjectId[$p->id] = $this->clientModel->getSiteClients((int)$p->client_id);
+                        } catch (Exception $e) {
+                            $sitesByProjectId[$p->id] = [];
+                        }
+                    }
+                }
                 
                 // Load view with errors
                 $this->view('tasks/create', [
                     'title' => 'Create Task',
                     'projects' => $projects,
                     'users' => $users,
-                    'data' => $data
+                    'data' => $data,
+                    'sitesByProjectId' => $sitesByProjectId
                 ]);
             }
         } else {
@@ -189,16 +228,72 @@ class Tasks extends Controller {
         // Get users assigned to this task
         $assignedUsers = $this->taskModel->getTaskUsers($id);
         
+        // Get subtasks for this task
+        $subtasks = $this->taskModel->getSubtasks((int)$id);
+        // Users for subtask assignment dropdown
+        $users = $this->userModel->getAllUsers();
+        
         $data = [
             'task' => $task,
             'project' => $project,
             'notes' => $notes,
             'type' => 'task',
             'reference_id' => $id,
-            'assigned_users' => $assignedUsers
+            'assigned_users' => $assignedUsers,
+            'subtasks' => $subtasks,
+            'users' => $users
         ];
         
         $this->view('tasks/show', $data);
+    }
+    
+    /**
+     * Add a subtask to a task
+     */
+    public function addSubtask($parentId = null) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$parentId) {
+            redirect('tasks/show/' . (int)$parentId);
+            return;
+        }
+        $task = $this->taskModel->getTaskById((int)$parentId);
+        if (!$task) {
+            flash('task_error', 'Parent task not found', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
+        $_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
+        $title = trim($_POST['title'] ?? '');
+        $assignedTo = !empty($_POST['assigned_to']) ? (int)$_POST['assigned_to'] : null;
+        $dueDate = !empty($_POST['due_date']) ? trim($_POST['due_date']) : null;
+        $priority = !empty($_POST['priority']) ? trim($_POST['priority']) : 'Medium';
+        $status = !empty($_POST['status']) ? trim($_POST['status']) : 'Pending';
+        $description = trim($_POST['description'] ?? '');
+        
+        if ($title === '') {
+            flash('task_error', 'Subtask title is required', 'alert-danger');
+            redirect('tasks/show/' . (int)$parentId);
+            return;
+        }
+        
+        $data = [
+            'project_id' => $task->project_id,
+            'title' => $title,
+            'description' => $description,
+            'status' => $status,
+            'priority' => $priority,
+            'due_date' => $dueDate,
+            'assigned_to' => $assignedTo,
+            'created_by' => $_SESSION['user_id'],
+            'parent_task_id' => (int)$parentId
+        ];
+        
+        $subtaskId = $this->taskModel->create($data);
+        if ($subtaskId) {
+            flash('task_message', 'Subtask created');
+        } else {
+            flash('task_error', 'Failed to create subtask', 'alert-danger');
+        }
+        redirect('tasks/show/' . (int)$parentId);
     }
     
     // Show form to edit task
@@ -233,7 +328,7 @@ class Tasks extends Controller {
         // Process form data if POST request
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            $_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
             
             // Initialize data array
             $data = [

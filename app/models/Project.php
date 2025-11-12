@@ -9,12 +9,13 @@ class Project {
     
     // Get all projects
     public function getAllProjects() {
-        $query = "SELECT p.*, u.username as created_by, d.name as department_name,
+        $query = "SELECT p.*, u.username as created_by, d.name as department_name, c.name as client_name,
                  (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as task_count,
                  (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND status = 'Completed') as completed_tasks
                  FROM projects p
                  LEFT JOIN users u ON p.user_id = u.id
                  LEFT JOIN departments d ON p.department_id = d.id
+                 LEFT JOIN Clients c ON p.client_id = c.id
                  ORDER BY p.created_at DESC";
         
         $results = $this->db->select($query);
@@ -27,6 +28,35 @@ class Project {
             }
         }
         
+        return $projects;
+    }
+
+    /**
+     * Get projects by client ID
+     * Returns array of project objects with department and task counts
+     *
+     * @param int $clientId
+     * @return array<int, object>
+     */
+    public function getProjectsByClient($clientId) {
+        $query = "SELECT p.*, u.username as created_by, d.name as department_name,
+                 (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as task_count,
+                 (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND status = 'Completed') as completed_tasks
+                 FROM projects p
+                 LEFT JOIN users u ON p.user_id = u.id
+                 LEFT JOIN departments d ON p.department_id = d.id
+                 WHERE p.client_id = ?
+                 ORDER BY p.end_date ASC, p.start_date ASC";
+
+        $results = $this->db->select($query, [$clientId]);
+
+        $projects = [];
+        if (!empty($results)) {
+            foreach ($results as $result) {
+                $projects[] = (object)$result;
+            }
+        }
+
         return $projects;
     }
 
@@ -128,10 +158,10 @@ class Project {
     
     // Create new project
     public function create($data) {
-        $query = "INSERT INTO projects (title, description, start_date, end_date, status, user_id, department_id, budget, created_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
+		$query = "INSERT INTO projects (title, description, start_date, end_date, status, user_id, department_id, budget, client_id, created_at) 
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
         
-        return $this->db->insert($query, [
+		return $this->db->insert($query, [
             $data['title'],
             $data['description'],
             $data['start_date'],
@@ -139,28 +169,49 @@ class Project {
             $data['status'],
             $data['user_id'],
             $data['department_id'],
-            $data['budget']
+			$data['budget'],
+			$data['client_id']
         ]);
     }
     
     // Update project
     public function update($data) {
-        $query = "UPDATE projects 
-                 SET title = ?, description = ?, start_date = ?, end_date = ?, status = ?, 
-                 department_id = ?, budget = ?, updated_at = GETDATE()
-                 WHERE id = ?";
+		$query = "UPDATE projects 
+				 SET title = ?, description = ?, start_date = ?, end_date = ?, status = ?, 
+				 department_id = ?, budget = ?, client_id = ?, updated_at = GETDATE()
+				 WHERE id = ?";
         
-        return $this->db->update($query, [
+		return $this->db->update($query, [
             $data['title'],
             $data['description'],
             $data['start_date'],
             $data['end_date'],
             $data['status'],
             $data['department_id'],
-            $data['budget'],
-            $data['id']
+			$data['budget'],
+			$data['client_id'],
+			$data['id']
         ]);
     }
+
+	/**
+	 * Ensure projects.client_id column exists (MS SQL Server)
+	 * Adds a nullable client_id column if missing
+	 */
+	public function ensureClientColumn() {
+		try {
+			$check = "SELECT COUNT(*) AS col_count FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'projects' AND COLUMN_NAME = 'client_id'";
+			$result = $this->db->select($check);
+			$exists = ($result && isset($result[0]['col_count']) && (int)$result[0]['col_count'] > 0);
+			if (!$exists) {
+				$this->db->query("ALTER TABLE projects ADD client_id INT NULL");
+			}
+			return true;
+		} catch (Exception $e) {
+			error_log('Error ensuring client_id column on projects: ' . $e->getMessage());
+			return false;
+		}
+	}
     
     // Delete project
     public function delete($id) {

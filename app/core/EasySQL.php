@@ -44,7 +44,8 @@ class EasySQL {
                 return $this->connection->lastInsertId();
             } else if ($this->driver === 'sqlsrv') {
                 // For SQL Server, check if table has triggers that conflict with OUTPUT clause
-                $tablePattern = '/INSERT\s+INTO\s+(?:dbo\.)?(\w+)/i';
+                // Support bracketed table names like [Users]
+                $tablePattern = '/INSERT\s+INTO\s+(?:dbo\.)?\[?(\w+)\]?/i';
                 preg_match($tablePattern, $statement, $tableMatches);
                 $tableName = $tableMatches[1] ?? '';
                 
@@ -68,10 +69,11 @@ class EasySQL {
                 } else {
                     // For other tables, use OUTPUT clause approach
                     if (stripos($statement, 'OUTPUT') === false) {
-                        $pattern = '/INSERT\s+INTO\s+\w+\s*\([^)]+\)\s*VALUES/i';
-                        if (preg_match($pattern, $statement, $matches)) {
+                        // Accept bracketed or unbracketed table names
+                        $pattern = '/INSERT\s+INTO\s+\[?\w+\]?\s*\(([^)]+)\)\s*VALUES/i';
+                        if (preg_match($pattern, $statement)) {
                             $statement = preg_replace(
-                                '/INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES/i',
+                                '/INSERT\s+INTO\s+(\[?\w+\]?)\s*\(([^)]+)\)\s*VALUES/i',
                                 'INSERT INTO $1 ($2) OUTPUT INSERTED.id VALUES',
                                 $statement
                             );

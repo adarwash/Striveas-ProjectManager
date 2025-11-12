@@ -4,6 +4,10 @@ class Clients extends Controller {
     private $clientModel;
     private $siteModel;
     private $contractModel;
+    private $projectModel;
+    private $settingModel;
+	private $callbackModel;
+	private $auditModel;
     
     /**
      * Initialize controller and load models
@@ -18,6 +22,10 @@ class Clients extends Controller {
         $this->clientModel = $this->model('Client');
         $this->siteModel = $this->model('Site');
         $this->contractModel = $this->model('ClientContract');
+        $this->projectModel = $this->model('Project');
+        $this->settingModel = $this->model('Setting');
+		$this->callbackModel = $this->model('ClientCallback');
+		$this->auditModel = $this->model('Networkaudit');
         
         // Set the page for sidebar highlighting
         $_SESSION['page'] = 'clients';
@@ -75,6 +83,33 @@ class Clients extends Controller {
         // Get sites assigned to this client
         $sites = $this->clientModel->getSiteClients($id);
 
+        // Ensure projects table has client_id column, then get projects for this client
+        try {
+            if (method_exists($this->projectModel, 'ensureClientColumn')) {
+                $this->projectModel->ensureClientColumn();
+            }
+        } catch (Exception $e) { /* ignore */ }
+        $projects = [];
+        try {
+            $projects = $this->projectModel->getProjectsByClient($id);
+        } catch (Exception $e) { $projects = []; }
+
+		// Get callbacks/reminders
+		$callbacks = [];
+		try {
+			$callbacks = $this->callbackModel->getByClientId((int)$id);
+		} catch (Exception $e) {
+			$callbacks = [];
+		}
+
+		// Get network audits for this client
+		$audits = [];
+		try {
+			$audits = $this->auditModel->getByClient((int)$id);
+		} catch (Exception $e) {
+			$audits = [];
+		}
+
         // Load services per site for quick overview
         $sitesWithServices = $sites;
         try {
@@ -117,7 +152,11 @@ class Clients extends Controller {
             'sites' => $sitesWithServices,
             'domains' => $domains,
             'recent_visits' => $recentVisits,
-            'contracts' => $contracts
+            'contracts' => $contracts,
+			'projects' => $projects,
+			'callbacks' => $callbacks,
+			'audits' => $audits,
+            'currency' => $this->settingModel->getCurrency()
         ];
         
         $this->view('clients/view', $data);
@@ -639,5 +678,220 @@ class Clients extends Controller {
             $this->view('clients/assign_sites', $data);
         }
     }
+
+	/**
+	 * Add a client callback/reminder
+	 */
+	public function addCallback($clientId = null) {
+		if (!isLoggedIn()) {
+			redirect('users/login');
+			return;
+		}
+		if (!hasPermission('clients.update')) {
+			flash('client_error', 'You do not have permission to add callbacks', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$clientId) {
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		$title = trim($_POST['title'] ?? '');
+		$notes = trim($_POST['notes'] ?? '');
+		$remindAtRaw = trim($_POST['remind_at'] ?? '');
+
+		if ($title === '' || $remindAtRaw === '') {
+			flash('client_error', 'Title and reminder date/time are required.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		// Parse datetime-local input
+		$remindTs = strtotime($remindAtRaw);
+		if ($remindTs === false) {
+			flash('client_error', 'Invalid reminder date/time.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+		$remindAt = date('Y-m-d H:i:s', $remindTs);
+
+		$insertId = $this->callbackModel->add([
+			'client_id' => (int)$clientId,
+			'title' => $title,
+			'notes' => $notes,
+			'remind_at' => $remindAt,
+			'created_by' => (int)($_SESSION['user_id'] ?? 0),
+			'notify_all' => !empty($_POST['notify_all']) ? 1 : 0,
+		]);
+
+		if (!$insertId) {
+			flash('client_error', 'Failed to create callback.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		// Queue reminder email to creator
+		try {
+			$userModel = $this->model('User');
+			$user = $userModel->getUserById((int)($_SESSION['user_id'] ?? 0));
+			$client = $this->clientModel->getClientById((int)$clientId);
+			$toEmail = $user && !empty($user['email']) ? $user['email'] : null;
+
+			if ($toEmail) {
+				require_once APPROOT . '/app/services/EmailService.php';
+				$emailService = new EmailService();
+
+				$subject = '[Reminder] Client callback: ' . ($client['name'] ?? 'Client') . ' - ' . $title;
+				$link = URLROOT . '/clients/viewClient/' . (int)$clientId;
+				$html = "
+				<h2>Client Callback Reminder</h2>
+				<p><strong>Client:</strong> " . htmlspecialchars($client['name'] ?? 'Client') . "</p>
+				<p><strong>When:</strong> " . date('M j, Y g:i A', $remindTs) . "</p>
+				<p><strong>Title:</strong> " . htmlspecialchars($title) . "</p>
+				" . (!empty($notes) ? "<p><strong>Notes:</strong><br>" . nl2br(htmlspecialchars($notes)) . "</p>" : "") . "
+				<p><a href=\"" . $link . "\">Open client</a></p>
+				";
+				$emailData = [
+					'to' => $toEmail,
+					'subject' => $subject,
+					'html_body' => $html,
+					'body' => strip_tags($html),
+				];
+				$queueId = $emailService->queueEmail($emailData, 3, new DateTime($remindAt));
+				if ($queueId) {
+					$this->callbackModel->setReminderQueueId((int)$insertId, (int)$queueId);
+				}
+			}
+		} catch (Exception $e) {
+			error_log('Queue callback reminder email failed: ' . $e->getMessage());
+		}
+
+		flash('client_success', 'Callback created. Reminder scheduled for ' . date('M j, Y g:i A', $remindTs) . '.');
+		redirect('clients/viewClient/' . (int)$clientId);
+	}
+
+	/**
+	 * Mark a callback as completed
+	 */
+	public function completeCallback($callbackId = null) {
+		if (!isLoggedIn()) {
+			redirect('users/login');
+			return;
+		}
+		if (!hasPermission('clients.update')) {
+			flash('client_error', 'You do not have permission to update callbacks', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		if (!$callbackId) {
+			redirect('clients');
+			return;
+		}
+		$cb = $this->callbackModel->getById((int)$callbackId);
+		if (!$cb) {
+			flash('client_error', 'Callback not found', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		$this->callbackModel->markCompleted((int)$callbackId);
+		flash('client_success', 'Callback marked as completed.');
+		$redirectClient = (int)($cb['client_id'] ?? 0);
+		redirect('clients/viewClient/' . $redirectClient);
+	}
+
+	/**
+	 * View callbacks history for a client (completed and missed)
+	 */
+	public function callbacksHistory($clientId = null) {
+		// Auth
+		if (!isLoggedIn()) {
+			redirect('users/login');
+			return;
+		}
+		if (!hasPermission('clients.read')) {
+			flash('client_error', 'You do not have permission to view callbacks', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		if (!$clientId) {
+			redirect('clients');
+			return;
+		}
+
+		// Client
+		$client = $this->clientModel->getClientById((int)$clientId);
+		if (!$client) {
+			flash('client_error', 'Client not found', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+
+		// Fetch callbacks
+		$all = [];
+		try {
+			$all = $this->callbackModel->getByClientId((int)$clientId);
+		} catch (Exception $e) {
+			$all = [];
+		}
+
+		// Categorize
+		$now = time();
+		$completed = [];
+		$missed = [];
+		$pending = [];
+		foreach ($all as $cb) {
+			$status = $cb['status'] ?? 'Pending';
+			$rt = isset($cb['remind_at']) ? strtotime($cb['remind_at']) : null;
+			if ($status === 'Completed') {
+				$completed[] = $cb;
+			} elseif ($status === 'Pending' && $rt !== false && $rt !== null && $rt < $now) {
+				$missed[] = $cb; // reminder in the past but not completed
+			} else {
+				$pending[] = $cb;
+			}
+		}
+
+		// Filter param (?status=completed|missed|pending|all). Default: history (completed+missed)
+		$filter = strtolower(trim($_GET['status'] ?? 'history'));
+		switch ($filter) {
+			case 'completed':
+				$list = $completed;
+				break;
+			case 'missed':
+				$list = $missed;
+				break;
+			case 'pending':
+				$list = $pending;
+				break;
+			case 'all':
+				$list = $all;
+				break;
+			case 'history':
+			default:
+				$list = array_merge($completed, $missed);
+				break;
+		}
+
+		// Sort by remind_at desc for history by default
+		usort($list, function($a, $b) {
+			return strtotime($b['remind_at'] ?? '') <=> strtotime($a['remind_at'] ?? '');
+		});
+
+		$data = [
+			'title' => 'Callback History - ' . ($client['name'] ?? 'Client'),
+			'client' => $client,
+			'callbacks' => $list,
+			'counts' => [
+				'all' => count($all),
+				'completed' => count($completed),
+				'missed' => count($missed),
+				'pending' => count($pending)
+			],
+			'active_filter' => $filter
+		];
+
+		$this->view('clients/callbacks_history', $data);
+	}
 }
 ?> 
