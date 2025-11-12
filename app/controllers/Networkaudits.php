@@ -140,7 +140,10 @@ class Networkaudits extends Controller {
 		$endpointsWorkstationsJson = null;
 		if (!empty($_POST['endpoints_workstations']) && is_array($_POST['endpoints_workstations'])) {
 			$rows = array_values(array_filter($_POST['endpoints_workstations'], function($r) {
-				return !empty($r['user_location']) || !empty($r['existing_pc']) || !empty($r['replacement_model']) || !empty($r['software_deps']) || !empty($r['notes']);
+				return !empty($r['machine_name']) || !empty($r['manufacturer']) || !empty($r['model_number']) || 
+				       !empty($r['cpu']) || !empty($r['ram']) || !empty($r['graphics_card']) || 
+				       !empty($r['location']) || !empty($r['current_os']) || !empty($r['needs_replacing']) || 
+				       !empty($r['os_status']) || !empty($r['notes']);
 			}));
 			if ($rows) { $endpointsWorkstationsJson = json_encode($rows); }
 		}
@@ -198,6 +201,17 @@ class Networkaudits extends Controller {
 			'cloud_file_sharing_tools' => trim($_POST['cloud_file_sharing_tools'] ?? ''),
 			'cloud_linked_systems' => trim($_POST['cloud_linked_systems'] ?? ''),
 			'cloud_additional_info' => trim($_POST['cloud_additional_info'] ?? ''),
+
+			'web_has_website' => trim($_POST['web_has_website'] ?? ''),
+			'web_url' => trim($_POST['web_url'] ?? ''),
+			'web_hosting_location' => trim($_POST['web_hosting_location'] ?? ''),
+			'web_hosting_provider' => trim($_POST['web_hosting_provider'] ?? ''),
+			'web_managed_by' => trim($_POST['web_managed_by'] ?? ''),
+			'web_management_company' => trim($_POST['web_management_company'] ?? ''),
+			'web_cms' => trim($_POST['web_cms'] ?? ''),
+			'web_ssl_certificate' => trim($_POST['web_ssl_certificate'] ?? ''),
+			'web_notes' => trim($_POST['web_notes'] ?? ''),
+			'web_additional_info' => trim($_POST['web_additional_info'] ?? ''),
 
 			'observations' => trim($_POST['observations'] ?? ''),
 			'created_by' => (int)($_SESSION['user_id'] ?? 0),

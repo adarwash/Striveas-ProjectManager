@@ -242,34 +242,72 @@ $c = $client;
 			<h5 class="card-title mb-0"><i class="bi bi-pc-display me-2 text-primary"></i>Workstations & Endpoints</h5>
 		</div>
 		<div class="card-body">
-			<?php if (!empty($a['endpoints_workstations_decoded'])): ?>
-			<div class="table-responsive">
-				<table class="table table-sm table-bordered">
-					<thead class="table-light">
-						<tr>
-							<th>User/Location</th>
-							<th>Existing PC</th>
-							<th>Replacement Model</th>
-							<th>Software Dependencies</th>
-							<th>Notes</th>
-						</tr>
-					</thead>
-					<tbody>
-						<?php foreach ($a['endpoints_workstations_decoded'] as $ep): ?>
-						<tr>
-							<td><?= htmlspecialchars($ep['user_location'] ?? '') ?></td>
-							<td><?= htmlspecialchars($ep['existing_pc'] ?? '') ?></td>
-							<td><?= htmlspecialchars($ep['replacement_model'] ?? '') ?></td>
-							<td><?= htmlspecialchars($ep['software_deps'] ?? '') ?></td>
-							<td><?= htmlspecialchars($ep['notes'] ?? '') ?></td>
-						</tr>
-						<?php endforeach; ?>
-					</tbody>
-				</table>
-		</div>
-		<?php else: ?>
-		<p class="text-muted">No workstation data recorded.</p>
-		<?php endif; ?>
+		<?php if (!empty($a['endpoints_workstations_decoded'])): ?>
+		<div class="table-responsive">
+			<table class="table table-sm table-bordered" style="font-size: 0.85rem;">
+				<thead class="table-light">
+					<tr>
+						<th>Machine Name</th>
+						<th>Manufacturer</th>
+						<th>Model Number</th>
+						<th>CPU</th>
+						<th>RAM</th>
+						<th>Graphics Card</th>
+						<th>Location</th>
+						<th>Current OS</th>
+						<th>Needs Replacing?</th>
+						<th>OS Status</th>
+						<th>Notes</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ($a['endpoints_workstations_decoded'] as $ep): ?>
+					<tr>
+						<td><?= htmlspecialchars($ep['machine_name'] ?? '') ?></td>
+						<td><?= htmlspecialchars($ep['manufacturer'] ?? '') ?></td>
+						<td><?= htmlspecialchars($ep['model_number'] ?? '') ?></td>
+						<td><?= htmlspecialchars($ep['cpu'] ?? '') ?></td>
+						<td><?= htmlspecialchars($ep['ram'] ?? '') ?></td>
+						<td><?= htmlspecialchars($ep['graphics_card'] ?? '') ?></td>
+						<td><?= htmlspecialchars($ep['location'] ?? '') ?></td>
+						<td><?= htmlspecialchars($ep['current_os'] ?? '') ?></td>
+						<td>
+							<?php 
+							$needs = $ep['needs_replacing'] ?? '';
+							if ($needs === 'Yes') {
+								echo '<span class="badge bg-danger">Yes</span>';
+							} elseif ($needs === 'Soon') {
+								echo '<span class="badge bg-warning">Soon</span>';
+							} elseif ($needs === 'No') {
+								echo '<span class="badge bg-success">No</span>';
+							} else {
+								echo '<span class="text-muted">—</span>';
+							}
+							?>
+						</td>
+						<td>
+							<?php 
+							$os_status = $ep['os_status'] ?? '';
+							if ($os_status === 'Current') {
+								echo '<span class="badge bg-success">Current</span>';
+							} elseif ($os_status === 'Needs Upgrade') {
+								echo '<span class="badge bg-warning">Needs Upgrade</span>';
+							} elseif ($os_status === 'End of Life') {
+								echo '<span class="badge bg-danger">End of Life</span>';
+							} else {
+								echo '<span class="text-muted">—</span>';
+							}
+							?>
+						</td>
+						<td><?= htmlspecialchars($ep['notes'] ?? '') ?></td>
+					</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+	</div>
+	<?php else: ?>
+	<p class="text-muted">No workstation data recorded.</p>
+	<?php endif; ?>
 		<?php if (!empty($a['endpoints_additional_info'])): ?>
 		<div class="mt-3">
 			<strong>Additional Information:</strong>
@@ -432,16 +470,133 @@ $c = $client;
 					<p class="mb-0"><?= !empty($a['cloud_linked_systems']) ? nl2br(htmlspecialchars($a['cloud_linked_systems'])) : '<span class="text-muted">Not specified</span>' ?></p>
 				</div>
 			</div>
-			<?php if (!empty($a['cloud_additional_info'])): ?>
-			<div class="mt-3">
-				<strong>Additional Information:</strong>
-				<div class="alert alert-info mt-2 mb-0"><?= nl2br(htmlspecialchars($a['cloud_additional_info'])) ?></div>
-			</div>
-			<?php endif; ?>
+		<?php if (!empty($a['cloud_additional_info'])): ?>
+		<div class="mt-3">
+			<strong>Additional Information:</strong>
+			<div class="alert alert-info mt-2 mb-0"><?= nl2br(htmlspecialchars($a['cloud_additional_info'])) ?></div>
 		</div>
+		<?php endif; ?>
 	</div>
+</div>
 
-	<!-- 10. Observations & Recommendations -->
+<!-- 10. Website & Online Presence -->
+<div class="card border-0 shadow-sm mb-4">
+	<div class="card-header bg-white py-3">
+		<h5 class="card-title mb-0"><i class="bi bi-globe me-2 text-primary"></i>Website & Online Presence</h5>
+	</div>
+	<div class="card-body">
+		<div class="row">
+			<div class="col-md-6 mb-3">
+				<strong>Has Website:</strong>
+				<p class="mb-0">
+					<?php 
+					$hasWeb = $a['web_has_website'] ?? '';
+					if ($hasWeb === 'Yes') {
+						echo '<span class="badge bg-success">Yes</span>';
+					} elseif ($hasWeb === 'No') {
+						echo '<span class="badge bg-secondary">No</span>';
+					} else {
+						echo '<span class="text-muted">Not specified</span>';
+					}
+					?>
+				</p>
+			</div>
+			<div class="col-md-6 mb-3">
+				<strong>Website URL:</strong>
+				<p class="mb-0">
+					<?php if (!empty($a['web_url'])): ?>
+						<a href="<?= htmlspecialchars($a['web_url']) ?>" target="_blank" class="text-decoration-none">
+							<?= htmlspecialchars($a['web_url']) ?> <i class="bi bi-box-arrow-up-right small"></i>
+						</a>
+					<?php else: ?>
+						<span class="text-muted">Not specified</span>
+					<?php endif; ?>
+				</p>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6 mb-3">
+				<strong>Hosting Location:</strong>
+				<p class="mb-0">
+					<?php 
+					$hosting = $a['web_hosting_location'] ?? '';
+					if ($hosting === 'Locally Hosted') {
+						echo '<span class="badge bg-info">Locally Hosted</span>';
+					} elseif ($hosting === 'Cloud Hosted') {
+						echo '<span class="badge bg-primary">Cloud Hosted</span>';
+					} else {
+						echo '<span class="text-muted">Not specified</span>';
+					}
+					?>
+				</p>
+			</div>
+			<div class="col-md-6 mb-3">
+				<strong>Hosting Provider:</strong>
+				<p class="mb-0"><?= !empty($a['web_hosting_provider']) ? htmlspecialchars($a['web_hosting_provider']) : '<span class="text-muted">Not specified</span>' ?></p>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6 mb-3">
+				<strong>Managed By:</strong>
+				<p class="mb-0">
+					<?php 
+					$managed = $a['web_managed_by'] ?? '';
+					if ($managed === 'In-House') {
+						echo '<span class="badge bg-success">In-House</span>';
+					} elseif ($managed === 'External Company') {
+						echo '<span class="badge bg-warning">External Company</span>';
+					} elseif ($managed === 'Both') {
+						echo '<span class="badge bg-info">Both (Shared)</span>';
+					} else {
+						echo '<span class="text-muted">Not specified</span>';
+					}
+					?>
+				</p>
+			</div>
+			<div class="col-md-6 mb-3">
+				<strong>Management Company:</strong>
+				<p class="mb-0"><?= !empty($a['web_management_company']) ? htmlspecialchars($a['web_management_company']) : '<span class="text-muted">Not specified</span>' ?></p>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6 mb-3">
+				<strong>CMS / Platform:</strong>
+				<p class="mb-0"><?= !empty($a['web_cms']) ? htmlspecialchars($a['web_cms']) : '<span class="text-muted">Not specified</span>' ?></p>
+			</div>
+			<div class="col-md-6 mb-3">
+				<strong>SSL Certificate:</strong>
+				<p class="mb-0">
+					<?php 
+					$ssl = $a['web_ssl_certificate'] ?? '';
+					if ($ssl === 'Valid') {
+						echo '<span class="badge bg-success">Valid</span>';
+					} elseif ($ssl === 'Expired') {
+						echo '<span class="badge bg-danger">Expired</span>';
+					} elseif ($ssl === 'None') {
+						echo '<span class="badge bg-warning">None</span>';
+					} else {
+						echo '<span class="text-muted">Not specified</span>';
+					}
+					?>
+				</p>
+			</div>
+		</div>
+		<?php if (!empty($a['web_notes'])): ?>
+		<div class="mt-3">
+			<strong>Website Notes:</strong>
+			<p class="mb-0 mt-2"><?= nl2br(htmlspecialchars($a['web_notes'])) ?></p>
+		</div>
+		<?php endif; ?>
+		<?php if (!empty($a['web_additional_info'])): ?>
+		<div class="mt-3">
+			<strong>Additional Information:</strong>
+			<div class="alert alert-info mt-2 mb-0"><?= nl2br(htmlspecialchars($a['web_additional_info'])) ?></div>
+		</div>
+		<?php endif; ?>
+	</div>
+</div>
+
+<!-- 11. Observations & Recommendations -->
 	<div class="card border-0 shadow-sm mb-4">
 		<div class="card-header bg-white py-3">
 			<h5 class="card-title mb-0"><i class="bi bi-lightbulb me-2 text-primary"></i>Observations & Recommendations</h5>

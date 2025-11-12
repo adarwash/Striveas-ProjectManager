@@ -226,19 +226,25 @@ $title = 'Network Infrastructure Discovery Form';
 				</div>
 				<div class="card-body">
 					<div class="table-responsive mb-3">
-						<table class="table table-bordered align-middle" id="workstationsTable">
-							<thead>
-								<tr>
-									<th style="min-width:160px;">User / Location</th>
-									<th>Existing PC</th>
-									<th>Replacement Model</th>
-									<th>Software Dependencies</th>
-									<th>Notes</th>
-									<th style="width:60px;"></th>
-								</tr>
-							</thead>
-							<tbody></tbody>
-					</table>
+					<table class="table table-bordered align-middle" id="workstationsTable" style="font-size: 0.9rem;">
+						<thead>
+							<tr>
+								<th style="min-width:140px;">Machine Name</th>
+								<th style="min-width:120px;">Manufacturer</th>
+								<th style="min-width:120px;">Model Number</th>
+								<th style="min-width:100px;">CPU</th>
+								<th style="min-width:80px;">RAM</th>
+								<th style="min-width:100px;">Graphics Card</th>
+								<th style="min-width:120px;">Location</th>
+								<th style="min-width:120px;">Current OS</th>
+								<th style="min-width:110px;">Needs Replacing?</th>
+								<th style="min-width:110px;">OS Status</th>
+								<th style="min-width:150px;">Notes</th>
+								<th style="width:50px;"></th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+				</table>
 				</div>
 				<button type="button" class="btn btn-sm btn-outline-primary" id="addWorkstation">Add row</button>
 				<div class="mt-3">
@@ -425,7 +431,100 @@ $title = 'Network Infrastructure Discovery Form';
 
 		<div class="card mb-4">
 			<div class="card-header">
-				<h5 class="mb-0">10. Observations & Recommendations</h5>
+				<h5 class="mb-0">10. Website & Online Presence</h5>
+			</div>
+			<div class="card-body">
+				<div class="row">
+					<div class="col-md-6 mb-3">
+						<label class="form-label">Does the client have a website?</label>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="web_has_website" id="web_has_website_yes" value="Yes">
+							<label class="form-check-label" for="web_has_website_yes">Yes</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="web_has_website" id="web_has_website_no" value="No">
+							<label class="form-check-label" for="web_has_website_no">No</label>
+						</div>
+					</div>
+					<div class="col-md-6 mb-3">
+						<label for="web_url" class="form-label">Website URL</label>
+						<input type="text" class="form-control" id="web_url" name="web_url" placeholder="https://example.com">
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-6 mb-3">
+						<label class="form-label">Hosting Location</label>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="web_hosting_location" id="web_hosting_local" value="Locally Hosted">
+							<label class="form-check-label" for="web_hosting_local">Locally Hosted (On-Premise)</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="web_hosting_location" id="web_hosting_cloud" value="Cloud Hosted">
+							<label class="form-check-label" for="web_hosting_cloud">Cloud Hosted</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="web_hosting_location" id="web_hosting_unknown" value="Unknown">
+							<label class="form-check-label" for="web_hosting_unknown">Unknown</label>
+						</div>
+					</div>
+					<div class="col-md-6 mb-3">
+						<label for="web_hosting_provider" class="form-label">Hosting Provider</label>
+						<input type="text" class="form-control" id="web_hosting_provider" name="web_hosting_provider" placeholder="e.g., AWS, Azure, GoDaddy, Self-hosted">
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-6 mb-3">
+						<label class="form-label">Website Managed By</label>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="web_managed_by" id="web_managed_inhouse" value="In-House">
+							<label class="form-check-label" for="web_managed_inhouse">In-House</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="web_managed_by" id="web_managed_external" value="External Company">
+							<label class="form-check-label" for="web_managed_external">External Company</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="web_managed_by" id="web_managed_both" value="Both">
+							<label class="form-check-label" for="web_managed_both">Both (Shared)</label>
+						</div>
+					</div>
+					<div class="col-md-6 mb-3">
+						<label for="web_management_company" class="form-label">Management Company Name</label>
+						<input type="text" class="form-control" id="web_management_company" name="web_management_company" placeholder="External company name (if applicable)">
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-6 mb-3">
+						<label for="web_cms" class="form-label">CMS / Platform</label>
+						<input type="text" class="form-control" id="web_cms" name="web_cms" placeholder="e.g., WordPress, Drupal, Custom, Wix">
+					</div>
+					<div class="col-md-6 mb-3">
+						<label for="web_ssl_certificate" class="form-label">SSL Certificate Status</label>
+						<select class="form-select" id="web_ssl_certificate" name="web_ssl_certificate">
+							<option value="">-</option>
+							<option value="Valid">Valid</option>
+							<option value="Expired">Expired</option>
+							<option value="None">None</option>
+							<option value="Unknown">Unknown</option>
+						</select>
+					</div>
+				</div>
+				<div class="mb-3">
+					<label for="web_notes" class="form-label">Additional Website Notes</label>
+					<textarea class="form-control" id="web_notes" name="web_notes" rows="3" placeholder="Domain registrar, renewal dates, access credentials location, etc."></textarea>
+				</div>
+				<div class="mb-3">
+					<button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAdditionalInfo('web')">
+						<i class="bi bi-plus-circle"></i> Additional Information
+					</button>
+					<textarea class="form-control mt-2 additional-info-field" id="web_additional_info" name="web_additional_info" rows="4" placeholder="Additional website/online presence details..." style="display:none;"></textarea>
+				</div>
+			</div>
+		</div>
+
+		<div class="card mb-4">
+			<div class="card-header">
+				<h5 class="mb-0">11. Observations & Recommendations</h5>
 				</div>
 				<div class="card-body">
 					<div class="mb-3">
@@ -487,11 +586,31 @@ document.addEventListener('DOMContentLoaded', function() {
 		const idx = tbody.children.length;
 		const tr = document.createElement('tr');
 		tr.innerHTML = `
-			<td><input type="text" class="form-control" name="endpoints_workstations[${idx}][user_location]" value="${values.user_location || ''}"></td>
-			<td><input type="text" class="form-control" name="endpoints_workstations[${idx}][existing_pc]" value="${values.existing_pc || ''}"></td>
-			<td><input type="text" class="form-control" name="endpoints_workstations[${idx}][replacement_model]" value="${values.replacement_model || ''}"></td>
-			<td><input type="text" class="form-control" name="endpoints_workstations[${idx}][software_deps]" value="${values.software_deps || ''}"></td>
-			<td><input type="text" class="form-control" name="endpoints_workstations[${idx}][notes]" value="${values.notes || ''}"></td>
+			<td><input type="text" class="form-control form-control-sm" name="endpoints_workstations[${idx}][machine_name]" value="${values.machine_name || ''}" placeholder="e.g., WS001"></td>
+			<td><input type="text" class="form-control form-control-sm" name="endpoints_workstations[${idx}][manufacturer]" value="${values.manufacturer || ''}" placeholder="e.g., Dell, HP"></td>
+			<td><input type="text" class="form-control form-control-sm" name="endpoints_workstations[${idx}][model_number]" value="${values.model_number || ''}" placeholder="e.g., OptiPlex 7090"></td>
+			<td><input type="text" class="form-control form-control-sm" name="endpoints_workstations[${idx}][cpu]" value="${values.cpu || ''}" placeholder="e.g., i5-11500"></td>
+			<td><input type="text" class="form-control form-control-sm" name="endpoints_workstations[${idx}][ram]" value="${values.ram || ''}" placeholder="e.g., 16GB"></td>
+			<td><input type="text" class="form-control form-control-sm" name="endpoints_workstations[${idx}][graphics_card]" value="${values.graphics_card || ''}" placeholder="e.g., Intel UHD"></td>
+			<td><input type="text" class="form-control form-control-sm" name="endpoints_workstations[${idx}][location]" value="${values.location || ''}" placeholder="e.g., Office 201"></td>
+			<td><input type="text" class="form-control form-control-sm" name="endpoints_workstations[${idx}][current_os]" value="${values.current_os || ''}" placeholder="e.g., Windows 11"></td>
+			<td>
+				<select class="form-select form-select-sm" name="endpoints_workstations[${idx}][needs_replacing]">
+					<option value="">-</option>
+					<option value="Yes" ${values.needs_replacing === 'Yes' ? 'selected' : ''}>Yes</option>
+					<option value="No" ${values.needs_replacing === 'No' ? 'selected' : ''}>No</option>
+					<option value="Soon" ${values.needs_replacing === 'Soon' ? 'selected' : ''}>Soon</option>
+				</select>
+			</td>
+			<td>
+				<select class="form-select form-select-sm" name="endpoints_workstations[${idx}][os_status]">
+					<option value="">-</option>
+					<option value="Current" ${values.os_status === 'Current' ? 'selected' : ''}>Current</option>
+					<option value="Needs Upgrade" ${values.os_status === 'Needs Upgrade' ? 'selected' : ''}>Needs Upgrade</option>
+					<option value="End of Life" ${values.os_status === 'End of Life' ? 'selected' : ''}>End of Life</option>
+				</select>
+			</td>
+			<td><input type="text" class="form-control form-control-sm" name="endpoints_workstations[${idx}][notes]" value="${values.notes || ''}" placeholder="Additional notes"></td>
 			<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-row">&times;</button></td>
 		`;
 		tbody.appendChild(tr);

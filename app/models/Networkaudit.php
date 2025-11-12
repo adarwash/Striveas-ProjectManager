@@ -69,15 +69,27 @@ class Networkaudit {
 					[sec_remote_access_tools] NVARCHAR(255) NULL,
 					[sec_additional_info] NVARCHAR(MAX) NULL,
 
-					-- Cloud Services & Integrations
-					[cloud_tenant_name] NVARCHAR(255) NULL,
-					[cloud_platforms] NVARCHAR(255) NULL, -- comma separated values
-					[cloud_file_sharing_tools] NVARCHAR(255) NULL,
-					[cloud_linked_systems] NVARCHAR(MAX) NULL,
-					[cloud_additional_info] NVARCHAR(MAX) NULL,
+				-- Cloud Services & Integrations
+				[cloud_tenant_name] NVARCHAR(255) NULL,
+				[cloud_platforms] NVARCHAR(255) NULL, -- comma separated values
+				[cloud_file_sharing_tools] NVARCHAR(255) NULL,
+				[cloud_linked_systems] NVARCHAR(MAX) NULL,
+				[cloud_additional_info] NVARCHAR(MAX) NULL,
 
-					-- Observations & Recommendations
-					[observations] NVARCHAR(MAX) NULL,
+				-- Website & Online Presence
+				[web_has_website] NVARCHAR(10) NULL,
+				[web_url] NVARCHAR(500) NULL,
+				[web_hosting_location] NVARCHAR(50) NULL,
+				[web_hosting_provider] NVARCHAR(255) NULL,
+				[web_managed_by] NVARCHAR(50) NULL,
+				[web_management_company] NVARCHAR(255) NULL,
+				[web_cms] NVARCHAR(100) NULL,
+				[web_ssl_certificate] NVARCHAR(50) NULL,
+				[web_notes] NVARCHAR(MAX) NULL,
+				[web_additional_info] NVARCHAR(MAX) NULL,
+
+				-- Observations & Recommendations
+				[observations] NVARCHAR(MAX) NULL,
 
 					[created_by] INT NOT NULL,
 					[created_at] DATETIME NOT NULL DEFAULT GETDATE(),
@@ -116,6 +128,47 @@ class Networkaudit {
 			IF COL_LENGTH('dbo.NetworkAudits', 'cloud_additional_info') IS NULL
 			BEGIN
 				ALTER TABLE [dbo].[NetworkAudits] ADD [cloud_additional_info] NVARCHAR(MAX) NULL;
+			END;
+			-- Add website columns if they don't exist
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_has_website') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_has_website] NVARCHAR(10) NULL;
+			END;
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_url') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_url] NVARCHAR(500) NULL;
+			END;
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_hosting_location') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_hosting_location] NVARCHAR(50) NULL;
+			END;
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_hosting_provider') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_hosting_provider] NVARCHAR(255) NULL;
+			END;
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_managed_by') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_managed_by] NVARCHAR(50) NULL;
+			END;
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_management_company') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_management_company] NVARCHAR(255) NULL;
+			END;
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_cms') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_cms] NVARCHAR(100) NULL;
+			END;
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_ssl_certificate') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_ssl_certificate] NVARCHAR(50) NULL;
+			END;
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_notes') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_notes] NVARCHAR(MAX) NULL;
+			END;
+			IF COL_LENGTH('dbo.NetworkAudits', 'web_additional_info') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[NetworkAudits] ADD [web_additional_info] NVARCHAR(MAX) NULL;
 			END";
 			$this->db->query($sql);
 		} catch (Exception $e) {
@@ -135,9 +188,10 @@ class Networkaudit {
 				bkp_type, bkp_frequency, bkp_retention, bkp_test_restores, bkp_dr_docs, bkp_additional_info,
 				sec_firewall_rules, sec_antivirus, sec_mfa, sec_password_policy, sec_remote_access_tools, sec_additional_info,
 				cloud_tenant_name, cloud_platforms, cloud_file_sharing_tools, cloud_linked_systems, cloud_additional_info,
+				web_has_website, web_url, web_hosting_location, web_hosting_provider, web_managed_by, web_management_company, web_cms, web_ssl_certificate, web_notes, web_additional_info,
 				observations, created_by
 			) VALUES (
-				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 			)";
 
 			return $this->db->insert($sql, [
@@ -185,6 +239,16 @@ class Networkaudit {
 				$data['cloud_file_sharing_tools'] ?? null,
 				$data['cloud_linked_systems'] ?? null,
 				$data['cloud_additional_info'] ?? null,
+				$data['web_has_website'] ?? null,
+				$data['web_url'] ?? null,
+				$data['web_hosting_location'] ?? null,
+				$data['web_hosting_provider'] ?? null,
+				$data['web_managed_by'] ?? null,
+				$data['web_management_company'] ?? null,
+				$data['web_cms'] ?? null,
+				$data['web_ssl_certificate'] ?? null,
+				$data['web_notes'] ?? null,
+				$data['web_additional_info'] ?? null,
 				$data['observations'] ?? null,
 				(int)($data['created_by'] ?? 0)
 			]);
