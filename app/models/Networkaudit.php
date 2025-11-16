@@ -258,6 +258,87 @@ class Networkaudit {
 		}
 	}
 
+	public function update(int $id, array $data): bool {
+		try {
+			$sql = "UPDATE [NetworkAudits] SET
+				client_id = ?, site_location = ?, engineer_ids = ?, engineer_names = ?, audit_date = ?,
+				gen_reliability_issues = ?, gen_undocumented_systems = ?, gen_support_contracts = ?, gen_notes = ?, gen_additional_info = ?,
+				top_internet_provider = ?, top_connection_types = ?, top_router_firewall = ?, top_switches = ?, top_vlans = ?, top_wifi_setup = ?, top_additional_info = ?,
+				servers_physical = ?, servers_virtual = ?, servers_additional_info = ?,
+				endpoints_workstations = ?, endpoints_additional_info = ?,
+				soft_key_apps = ?, soft_licensing_type = ?, soft_antivirus_tools = ?, soft_update_mgmt = ?, soft_additional_info = ?,
+				bkp_type = ?, bkp_frequency = ?, bkp_retention = ?, bkp_test_restores = ?, bkp_dr_docs = ?, bkp_additional_info = ?,
+				sec_firewall_rules = ?, sec_antivirus = ?, sec_mfa = ?, sec_password_policy = ?, sec_remote_access_tools = ?, sec_additional_info = ?,
+				cloud_tenant_name = ?, cloud_platforms = ?, cloud_file_sharing_tools = ?, cloud_linked_systems = ?, cloud_additional_info = ?,
+				web_has_website = ?, web_url = ?, web_hosting_location = ?, web_hosting_provider = ?, web_managed_by = ?, web_management_company = ?, web_cms = ?, web_ssl_certificate = ?, web_notes = ?, web_additional_info = ?,
+				observations = ?, updated_at = GETDATE()
+			WHERE id = ?";
+
+			$this->db->update($sql, [
+				(int)$data['client_id'],
+				$data['site_location'] ?? null,
+				$data['engineer_ids_json'] ?? null,
+				$data['engineer_names'] ?? null,
+				$data['audit_date'] ?? date('Y-m-d'),
+				!empty($data['gen_reliability_issues']) ? 1 : 0,
+				!empty($data['gen_undocumented_systems']) ? 1 : 0,
+				!empty($data['gen_support_contracts']) ? 1 : 0,
+				$data['gen_notes'] ?? null,
+				$data['gen_additional_info'] ?? null,
+				$data['top_internet_provider'] ?? null,
+				$data['top_connection_types'] ?? null,
+				$data['top_router_firewall'] ?? null,
+				$data['top_switches'] ?? null,
+				$data['top_vlans'] ?? null,
+				$data['top_wifi_setup'] ?? null,
+				$data['top_additional_info'] ?? null,
+				$data['servers_physical_json'] ?? null,
+				$data['servers_virtual_json'] ?? null,
+				$data['servers_additional_info'] ?? null,
+				$data['endpoints_workstations_json'] ?? null,
+				$data['endpoints_additional_info'] ?? null,
+				$data['soft_key_apps'] ?? null,
+				$data['soft_licensing_type'] ?? null,
+				$data['soft_antivirus_tools'] ?? null,
+				$data['soft_update_mgmt'] ?? null,
+				$data['soft_additional_info'] ?? null,
+				$data['bkp_type'] ?? null,
+				$data['bkp_frequency'] ?? null,
+				$data['bkp_retention'] ?? null,
+				$data['bkp_test_restores'] ?? null,
+				$data['bkp_dr_docs'] ?? null,
+				$data['bkp_additional_info'] ?? null,
+				$data['sec_firewall_rules'] ?? null,
+				$data['sec_antivirus'] ?? null,
+				!empty($data['sec_mfa']) ? 1 : 0,
+				$data['sec_password_policy'] ?? null,
+				$data['sec_remote_access_tools'] ?? null,
+				$data['sec_additional_info'] ?? null,
+				$data['cloud_tenant_name'] ?? null,
+				$data['cloud_platforms'] ?? null,
+				$data['cloud_file_sharing_tools'] ?? null,
+				$data['cloud_linked_systems'] ?? null,
+				$data['cloud_additional_info'] ?? null,
+				$data['web_has_website'] ?? null,
+				$data['web_url'] ?? null,
+				$data['web_hosting_location'] ?? null,
+				$data['web_hosting_provider'] ?? null,
+				$data['web_managed_by'] ?? null,
+				$data['web_management_company'] ?? null,
+				$data['web_cms'] ?? null,
+				$data['web_ssl_certificate'] ?? null,
+				$data['web_notes'] ?? null,
+				$data['web_additional_info'] ?? null,
+				$data['observations'] ?? null,
+				$id
+			]);
+			return true;
+		} catch (Exception $e) {
+			error_log('NetworkAudits update error: ' . $e->getMessage());
+			return false;
+		}
+	}
+
 	public function getById(int $id): array|false {
 		try {
 			$rows = $this->db->select("SELECT * FROM [NetworkAudits] WHERE id = ?", [$id]);

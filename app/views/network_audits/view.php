@@ -21,14 +21,19 @@ $c = $client;
 					<?= htmlspecialchars($c['name']) ?> • <?= !empty($a['audit_date']) ? date('M j, Y', strtotime($a['audit_date'])) : 'Date Not Set' ?>
 				</p>
 			</div>
-			<div class="d-flex gap-2">
-				<a href="/clients/viewClient/<?= (int)$c['id'] ?>" class="btn btn-light">
-					<i class="bi bi-arrow-left"></i> Back to Client
-				</a>
-				<button onclick="window.print()" class="btn btn-outline-light">
-					<i class="bi bi-printer"></i> Print
-				</button>
-			</div>
+		<div class="d-flex gap-2">
+			<a href="/clients/viewClient/<?= (int)$c['id'] ?>" class="btn btn-light">
+				<i class="bi bi-arrow-left"></i> Back to Client
+			</a>
+			<?php if (hasPermission('clients.update')): ?>
+			<a href="/networkaudits/edit/<?= (int)$a['id'] ?>" class="btn btn-warning">
+				<i class="bi bi-pencil"></i> Edit
+			</a>
+			<?php endif; ?>
+			<button onclick="window.print()" class="btn btn-outline-light">
+				<i class="bi bi-printer"></i> Print
+			</button>
+		</div>
 		</div>
 	</div>
 

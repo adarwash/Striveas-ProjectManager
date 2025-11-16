@@ -1,23 +1,22 @@
 <?php
-$title = 'Network Infrastructure Discovery Form';
+$title = 'Edit Network Infrastructure Discovery Form';
 ?>
 
 <div class="page-header">
 	<div>
-		<h1 class="page-title">Network Infrastructure Discovery Form</h1>
+		<h1 class="page-title">Edit Network Infrastructure Discovery Form</h1>
 		<nav aria-label="breadcrumb">
 			<ol class="breadcrumb">
 				<li class="breadcrumb-item"><a href="<?= URLROOT ?>/clients">Clients</a></li>
-				<?php if (!empty($client_id)): ?>
-					<li class="breadcrumb-item"><a href="<?= URLROOT ?>/clients/viewClient/<?= (int)$client_id ?>">Client</a></li>
-				<?php endif; ?>
-				<li class="breadcrumb-item active" aria-current="page">New Audit</li>
+				<li class="breadcrumb-item"><a href="<?= URLROOT ?>/clients/viewClient/<?= (int)$audit['client_id'] ?>">Client</a></li>
+				<li class="breadcrumb-item"><a href="<?= URLROOT ?>/networkaudits/show/<?= (int)$audit['id'] ?>">Audit</a></li>
+				<li class="breadcrumb-item active" aria-current="page">Edit</li>
 			</ol>
 		</nav>
 	</div>
 </div>
 
-<form action="<?= URLROOT ?>/networkaudits/store" method="post">
+<form action="<?= URLROOT ?>/networkaudits/update/<?= (int)$audit['id'] ?>" method="post">
 	<div class="row">
 		<div class="col-lg-12 col-md-12">
 			<div class="card mb-4">
@@ -31,7 +30,7 @@ $title = 'Network Infrastructure Discovery Form';
 							<select class="form-select" id="client_id" name="client_id" required>
 								<option value="">Select client</option>
 								<?php foreach ($clients as $c): ?>
-									<option value="<?= (int)$c['id'] ?>" <?= (!empty($client_id) && (int)$client_id === (int)$c['id']) ? 'selected' : '' ?>>
+									<option value="<?= (int)$c['id'] ?>" <?= (!empty($audit['client_id']) && (int)$audit['client_id'] === (int)$c['id']) ? 'selected' : '' ?>>
 										<?= htmlspecialchars($c['name']) ?>
 									</option>
 								<?php endforeach; ?>
@@ -39,7 +38,7 @@ $title = 'Network Infrastructure Discovery Form';
 						</div>
 						<div class="col-md-6 mb-3">
 							<label for="site_location" class="form-label">Site location</label>
-							<input type="text" class="form-control" id="site_location" name="site_location" placeholder="e.g., London HQ">
+							<input type="text" class="form-control" id="site_location" name="site_location" placeholder="e.g., London HQ" value="<?= htmlspecialchars($audit['site_location'] ?? '') ?>">
 						</div>
 					</div>
 					<div class="row">
@@ -47,7 +46,7 @@ $title = 'Network Infrastructure Discovery Form';
 							<label for="engineer_ids" class="form-label">Engineer(s)</label>
 							<select class="form-select" id="engineer_ids" name="engineer_ids[]" multiple size="6">
 								<?php foreach ($users as $u): ?>
-									<option value="<?= (int)$u['id'] ?>">
+									<option value="<?= (int)$u['id'] ?>" <?= (!empty($audit['engineer_ids_array']) && in_array((int)$u['id'], $audit['engineer_ids_array'])) ? 'selected' : '' ?>>
 										<?= htmlspecialchars($u['full_name'] ?? $u['name'] ?? $u['username'] ?? 'User') ?>
 									</option>
 								<?php endforeach; ?>
@@ -56,7 +55,7 @@ $title = 'Network Infrastructure Discovery Form';
 						</div>
 						<div class="col-md-3 mb-3">
 							<label for="audit_date" class="form-label">Date</label>
-							<input type="date" class="form-control" id="audit_date" name="audit_date" value="<?= htmlspecialchars($audit_date ?? date('Y-m-d')) ?>">
+							<input type="date" class="form-control" id="audit_date" name="audit_date" value="<?= htmlspecialchars($audit['audit_date'] ?? date('Y-m-d')) ?>">
 						</div>
 					</div>
 				</div>
@@ -550,8 +549,8 @@ $title = 'Network Infrastructure Discovery Form';
 </form>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-	function addPhysicalRow(values = {}) {
+// Define table row functions globally so they can be used in multiple scripts
+function addPhysicalRow(values = {}) {
 		const tbody = document.querySelector('#physicalServersTable tbody');
 		const idx = tbody.children.length;
 		const tr = document.createElement('tr');
@@ -565,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		`;
 		tbody.appendChild(tr);
 	}
-	function addVirtualRow(values = {}) {
+function addVirtualRow(values = {}) {
 		const tbody = document.querySelector('#virtualServersTable tbody');
 		const idx = tbody.children.length;
 		const tr = document.createElement('tr');
@@ -581,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		`;
 		tbody.appendChild(tr);
 	}
-	function addWorkstationRow(values = {}) {
+function addWorkstationRow(values = {}) {
 		const tbody = document.querySelector('#workstationsTable tbody');
 		const idx = tbody.children.length;
 		const tr = document.createElement('tr');
@@ -616,6 +615,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		tbody.appendChild(tr);
 	}
 
+
+// Initialize tables and event listeners
+document.addEventListener('DOMContentLoaded', function() {
 	document.getElementById('addPhysicalServer').addEventListener('click', function() {
 		addPhysicalRow();
 	});
@@ -632,7 +634,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	});
 
-	// Start with one blank row in each table
+	// Start with one blank row in each table (will be replaced by prefill if editing)
 	addPhysicalRow();
 	addVirtualRow();
 	addWorkstationRow();
@@ -656,13 +658,140 @@ function toggleAdditionalInfo(section) {
 		button.querySelector('.bi').nextSibling.textContent = ' Additional Information';
 	}
 }
+</script>
 
+
+
+<script>
+// Prefill all form fields from audit data
+document.addEventListener('DOMContentLoaded', function() {
+	const audit = <?= json_encode($audit) ?>;
+	
+	// Prefill text inputs and textareas
+	const textFields = {
+		'gen_notes': audit.gen_notes,
+		'gen_additional_info': audit.gen_additional_info,
+		'top_internet_provider': audit.top_internet_provider,
+		'top_router_firewall': audit.top_router_firewall,
+		'top_switches': audit.top_switches,
+		'top_vlans': audit.top_vlans,
+		'top_wifi_setup': audit.top_wifi_setup,
+		'top_additional_info': audit.top_additional_info,
+		'servers_additional_info': audit.servers_additional_info,
+		'endpoints_additional_info': audit.endpoints_additional_info,
+		'soft_key_apps': audit.soft_key_apps,
+		'soft_licensing_type': audit.soft_licensing_type,
+		'soft_antivirus_tools': audit.soft_antivirus_tools,
+		'soft_update_mgmt': audit.soft_update_mgmt,
+		'soft_additional_info': audit.soft_additional_info,
+		'bkp_type': audit.bkp_type,
+		'bkp_frequency': audit.bkp_frequency,
+		'bkp_retention': audit.bkp_retention,
+		'bkp_test_restores': audit.bkp_test_restores,
+		'bkp_dr_docs': audit.bkp_dr_docs,
+		'bkp_additional_info': audit.bkp_additional_info,
+		'sec_firewall_rules': audit.sec_firewall_rules,
+		'sec_antivirus': audit.sec_antivirus,
+		'sec_password_policy': audit.sec_password_policy,
+		'sec_remote_access_tools': audit.sec_remote_access_tools,
+		'sec_additional_info': audit.sec_additional_info,
+		'cloud_tenant_name': audit.cloud_tenant_name,
+		'cloud_file_sharing_tools': audit.cloud_file_sharing_tools,
+		'cloud_linked_systems': audit.cloud_linked_systems,
+		'cloud_additional_info': audit.cloud_additional_info,
+		'web_url': audit.web_url,
+		'web_hosting_provider': audit.web_hosting_provider,
+		'web_management_company': audit.web_management_company,
+		'web_cms': audit.web_cms,
+		'web_ssl_certificate': audit.web_ssl_certificate,
+		'web_notes': audit.web_notes,
+		'web_additional_info': audit.web_additional_info,
+		'observations': audit.observations
+	};
+	
+	for (const [field, value] of Object.entries(textFields)) {
+		const el = document.getElementById(field);
+		if (el && value) {
+			el.value = value;
+			// Show additional info fields if they have content
+			if (field.includes('additional_info') && value) {
+				el.style.display = 'block';
+				const btn = el.previousElementSibling;
+				if (btn && btn.tagName === 'BUTTON') {
+					const icon = btn.querySelector('i');
+					if (icon) {
+						icon.classList.remove('bi-plus-circle');
+						icon.classList.add('bi-dash-circle');
+					}
+				}
+			}
+		}
+	}
+	
+	// Prefill checkboxes (ensure '0' string is not treated as true)
+	const toBool = (v) => v === 1 || v === '1' || v === true;
+	const relCb = document.getElementById('gen_reliability_issues');
+	if (relCb) relCb.checked = toBool(audit.gen_reliability_issues);
+	const undocCb = document.getElementById('gen_undocumented_systems');
+	if (undocCb) undocCb.checked = toBool(audit.gen_undocumented_systems);
+	const contractsCb = document.getElementById('gen_support_contracts');
+	if (contractsCb) contractsCb.checked = toBool(audit.gen_support_contracts);
+	const mfaCb = document.getElementById('sec_mfa');
+	if (mfaCb) mfaCb.checked = toBool(audit.sec_mfa);
+	
+	// Prefill radio buttons
+	if (audit.web_has_website) {
+		const radio = document.querySelector(`input[name="web_has_website"][value="${audit.web_has_website}"]`);
+		if (radio) radio.checked = true;
+	}
+	if (audit.web_hosting_location) {
+		const radio = document.querySelector(`input[name="web_hosting_location"][value="${audit.web_hosting_location}"]`);
+		if (radio) radio.checked = true;
+	}
+	if (audit.web_managed_by) {
+		const radio = document.querySelector(`input[name="web_managed_by"][value="${audit.web_managed_by}"]`);
+		if (radio) radio.checked = true;
+	}
+	
+	// Prefill connection types checkboxes
+	if (audit.top_connection_types_array) {
+		audit.top_connection_types_array.forEach(type => {
+			const cb = document.querySelector(`input[name="top_connection_types[]"][value="${type}"]`);
+			if (cb) cb.checked = true;
+		});
+	}
+	
+	// Prefill cloud platforms checkboxes
+	if (audit.cloud_platforms_array) {
+		audit.cloud_platforms_array.forEach(plat => {
+			const cb = document.querySelector(`input[name="cloud_platforms[]"][value="${plat}"]`);
+			if (cb) cb.checked = true;
+		});
+	}
+	
+	// Prefill dynamic tables
+	if (audit.servers_physical_decoded && audit.servers_physical_decoded.length > 0) {
+		// Clear default row
+		document.querySelector('#physicalServersTable tbody').innerHTML = '';
+		audit.servers_physical_decoded.forEach(row => addPhysicalRow(row));
+	}
+	if (audit.servers_virtual_decoded && audit.servers_virtual_decoded.length > 0) {
+		document.querySelector('#virtualServersTable tbody').innerHTML = '';
+		audit.servers_virtual_decoded.forEach(row => addVirtualRow(row));
+	}
+	if (audit.endpoints_workstations_decoded && audit.endpoints_workstations_decoded.length > 0) {
+		document.querySelector('#workstationsTable tbody').innerHTML = '';
+		audit.endpoints_workstations_decoded.forEach(row => addWorkstationRow(row));
+	}
+});
+</script>
+
+<script>
 // Autocomplete for workstation fields based on previously entered values
 function setupWorkstationAutocomplete() {
 	const table = document.getElementById('workstationsTable');
 	if (!table) return;
 	
-	// Helper to get unique values from all rows for a specific field
 	function getUniqueValues(fieldName) {
 		const values = new Set();
 		const inputs = table.querySelectorAll(`input[name^="endpoints_workstations"][name$="[${fieldName}]"]`);
@@ -674,19 +803,6 @@ function setupWorkstationAutocomplete() {
 		return Array.from(values);
 	}
 	
-	// Helper to get unique select values
-	function getUniqueSelectValues(fieldName) {
-		const values = new Set();
-		const selects = table.querySelectorAll(`select[name^="endpoints_workstations"][name$="[${fieldName}]"]`);
-		selects.forEach(select => {
-			if (select.value && select.value !== '') {
-				values.add(select.value);
-			}
-		});
-		return Array.from(values);
-	}
-	
-	// Setup autocomplete on input field
 	function setupAutocomplete(input, fieldName) {
 		let datalistId = 'datalist_' + fieldName;
 		let datalist = document.getElementById(datalistId);
@@ -699,7 +815,6 @@ function setupWorkstationAutocomplete() {
 		
 		input.setAttribute('list', datalistId);
 		
-		// Update datalist on focus
 		input.addEventListener('focus', function() {
 			const values = getUniqueValues(fieldName);
 			datalist.innerHTML = '';
@@ -711,12 +826,10 @@ function setupWorkstationAutocomplete() {
 		});
 	}
 	
-	// Listen for new rows being added
 	const observer = new MutationObserver(function(mutations) {
 		mutations.forEach(function(mutation) {
 			mutation.addedNodes.forEach(function(node) {
 				if (node.nodeType === 1 && node.tagName === 'TR') {
-					// Setup autocomplete for text fields
 					const autocompleteFields = ['manufacturer', 'model_number', 'cpu', 'ram', 'graphics_card', 'current_os'];
 					autocompleteFields.forEach(field => {
 						const input = node.querySelector(`input[name$="[${field}]"]`);
@@ -731,7 +844,6 @@ function setupWorkstationAutocomplete() {
 	
 	observer.observe(table.querySelector('tbody'), { childList: true });
 	
-	// Also setup for existing rows
 	const autocompleteFields = ['manufacturer', 'model_number', 'cpu', 'ram', 'graphics_card', 'current_os'];
 	autocompleteFields.forEach(field => {
 		const inputs = table.querySelectorAll(`input[name$="[${field}]"]`);
@@ -739,10 +851,5 @@ function setupWorkstationAutocomplete() {
 	});
 }
 
-// Initialize autocomplete after DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-	setTimeout(setupWorkstationAutocomplete, 500); // Delay to ensure table is populated
-});
+setTimeout(setupWorkstationAutocomplete, 600);
 </script>
-
-
