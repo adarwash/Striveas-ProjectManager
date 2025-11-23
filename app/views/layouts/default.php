@@ -826,11 +826,11 @@
                 $notifItems = [];
                 if (function_exists('isLoggedIn') && isLoggedIn()) {
                     try {
-                        if (!class_exists('ClientCallback')) {
-                            require_once APPROOT . '/app/models/ClientCallback.php';
+                        if (!class_exists('Reminder')) {
+                            require_once APPROOT . '/app/models/Reminder.php';
                         }
-                        $cbModel = new ClientCallback();
-                        $notifItems = $cbModel->getUpcomingByUser((int)($_SESSION['user_id'] ?? 0), 5);
+                        $remModel = new Reminder();
+                        $notifItems = $remModel->getUpcomingByUser((int)($_SESSION['user_id'] ?? 0), 5);
                         if (!is_array($notifItems)) { $notifItems = []; }
                         $notifCount = count($notifItems);
                     } catch (Exception $e) {
@@ -859,27 +859,64 @@
                             </div>
                             <?php if (!empty($notifItems)): ?>
                                 <?php
-                                // Attempt to load client names
+                                // Attempt to load client names and project titles
                                 $clientNameCache = [];
+                                $projectTitleCache = [];
                                 if (!class_exists('Client')) {
                                     require_once APPROOT . '/app/models/Client.php';
                                 }
                                 $clientModelTmp = new Client();
+                                if (!class_exists('Project')) {
+                                    require_once APPROOT . '/app/models/Project.php';
+                                }
+                                $projectModelTmp = new Project();
+                                if (!class_exists('Task')) {
+                                    require_once APPROOT . '/app/models/Task.php';
+                                }
+                                $taskModelTmp = new Task();
                                 ?>
                                 <?php foreach ($notifItems as $ni): ?>
                                     <?php
-                                    $clientId = (int)($ni['client_id'] ?? 0);
-                                    $clientName = 'Client #' . $clientId;
-                                    if ($clientId) {
+                                    $type = strtolower($ni['entity_type'] ?? '');
+                                    $clientId = $type === 'client' ? (int)($ni['entity_id'] ?? 0) : 0;
+                                    $projectId = $type === 'project' ? (int)($ni['entity_id'] ?? 0) : 0;
+                                    $taskId = $type === 'task' ? (int)($ni['entity_id'] ?? 0) : 0;
+                                    $entityLabel = '';
+                                    $openHref = '';
+                                    
+                                    if ($type === 'client' && $clientId) {
+                                        $entityLabel = 'Client #' . $clientId;
                                         if (!isset($clientNameCache[$clientId])) {
                                             try {
                                                 $c = $clientModelTmp->getClientById($clientId);
-                                                $clientNameCache[$clientId] = $c ? ($c['name'] ?? $clientName) : $clientName;
+                                                $clientNameCache[$clientId] = $c ? ($c['name'] ?? $entityLabel) : $entityLabel;
                                             } catch (Exception $e) {
-                                                $clientNameCache[$clientId] = $clientName;
+                                                $clientNameCache[$clientId] = $entityLabel;
                                             }
                                         }
-                                        $clientName = $clientNameCache[$clientId];
+                                        $entityLabel = $clientNameCache[$clientId];
+                                        $openHref = '/clients/viewClient/' . (int)$clientId;
+                                    } elseif ($type === 'project' && $projectId) {
+                                        $entityLabel = 'Project #' . $projectId;
+                                        if (!isset($projectTitleCache[$projectId])) {
+                                            try {
+                                                $p = $projectModelTmp->getProjectById($projectId);
+                                                $projectTitleCache[$projectId] = $p ? ($p->title ?? $entityLabel) : $entityLabel;
+                                            } catch (Exception $e) {
+                                                $projectTitleCache[$projectId] = $entityLabel;
+                                            }
+                                        }
+                                        $entityLabel = $projectTitleCache[$projectId];
+                                        $openHref = '/projects/viewProject/' . (int)$projectId;
+                                    } elseif ($type === 'task' && $taskId) {
+                                        $entityLabel = 'Task #' . $taskId;
+                                        try {
+                                            $t = $taskModelTmp->getTaskById($taskId);
+                                            if ($t && !empty($t->title)) {
+                                                $entityLabel = $t->title;
+                                            }
+                                        } catch (Exception $e) { /* ignore */ }
+                                        $openHref = '/tasks/show/' . (int)$taskId;
                                     }
                                     $remindAt = !empty($ni['remind_at']) ? date('M j, Y g:i A', strtotime($ni['remind_at'])) : '';
                                     $title = htmlspecialchars($ni['title'] ?? 'Callback');
@@ -892,19 +929,22 @@
                                             <div class="flex-grow-1">
                                                 <div class="notification-title text-truncate" title="<?= $title ?>"><?= $title ?></div>
                                                 <div class="notification-meta">
-                                                    <i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($clientName) ?>
+                                                    <i class="bi <?= $type === 'project' ? 'bi-kanban' : ($type === 'task' ? 'bi-list-task' : 'bi-person-badge') ?> me-1"></i><?= htmlspecialchars($entityLabel) ?>
                                                     <?php if ($remindAt): ?> • <i class="bi bi-clock ms-1 me-1"></i><?= $remindAt ?><?php endif; ?>
                                                 </div>
                                             </div>
                                             <div class="ms-2 d-flex align-items-center">
-                                                <a class="btn btn-sm btn-outline-success" href="/clients/completeCallback/<?= (int)$ni['id'] ?>" title="Mark Completed">
+                                                <a class="btn btn-sm btn-outline-success" href="<?=
+                                                    $type === 'project' ? '/projects/completeCallback/' . (int)$ni['id'] :
+                                                    ($type === 'task' ? '/tasks/completeCallback/' . (int)$ni['id'] :
+                                                    '/clients/completeCallback/' . (int)$ni['id']) ?>" title="Mark Completed">
                                                     <i class="bi bi-check2-circle"></i>
                                                 </a>
                                             </div>
                                         </div>
                                         <div class="mt-2 d-flex gap-2">
-                                            <?php if (!empty($clientId)): ?>
-                                            <a class="btn btn-sm btn-outline-primary" href="/clients/viewClient/<?= (int)$clientId ?>">Open Client</a>
+                                            <?php if (!empty($openHref)): ?>
+                                            <a class="btn btn-sm btn-outline-primary" href="<?= htmlspecialchars($openHref) ?>"><?= $type === 'project' ? 'Open Project' : ($type === 'task' ? 'Open Task' : 'Open Client') ?></a>
                                             <?php endif; ?>
                                             <?php if (!empty($ni['notes'])): ?>
                                             <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#cb-notes-<?= (int)$ni['id'] ?>" aria-expanded="false" aria-controls="cb-notes-<?= (int)$ni['id'] ?>">
@@ -922,7 +962,7 @@
                             <?php else: ?>
                                 <div class="p-3 text-center text-muted">
                                     <i class="bi bi-bell-slash" style="font-size:1.25rem;"></i>
-                                    <div class="small mt-1">No upcoming callbacks</div>
+                                    <div class="small mt-1">No upcoming follow-ups</div>
                                 </div>
                             <?php endif; ?>
                         </div>

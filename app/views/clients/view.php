@@ -11,11 +11,34 @@
         
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h1 class="h3 mb-1 text-dark"><?= htmlspecialchars($client['name']) ?></h1>
+				<h1 class="h3 mb-1 text-dark">
+					<?= htmlspecialchars($client['name']) ?>
+					<?php
+					$hasMeetingToday = false;
+					if (!empty($meetings)) {
+						$todayStart = strtotime(date('Y-m-d 00:00:00'));
+						$todayEnd = strtotime(date('Y-m-d 23:59:59'));
+						foreach ($meetings as $m) {
+							$mt = isset($m['meeting_at']) ? strtotime($m['meeting_at']) : null;
+							if ($mt && $mt >= $todayStart && $mt <= $todayEnd) { $hasMeetingToday = true; break; }
+						}
+					}
+					?>
+					<?php if ($hasMeetingToday): ?>
+						<span class="badge bg-warning text-dark ms-2">
+							<i class="bi bi-calendar-event me-1"></i>Meeting Today
+						</span>
+					<?php endif; ?>
+				</h1>
                 <p class="text-muted mb-0">Client details and site assignments</p>
             </div>
             <div class="d-flex gap-2">
                 <?php if (hasPermission('clients.update')): ?>
+                <form action="/clients/addQuickCallback/<?= (int)$client['id'] ?>" method="post">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-bell-fill"></i> Quick Follow-up
+                    </button>
+                </form>
                 <a href="/networkaudits/create?client_id=<?= (int)$client['id'] ?>" class="btn btn-primary">
                     <i class="bi bi-diagram-3"></i> New Discovery Form
                 </a>
@@ -194,6 +217,264 @@
                 </div>
             </div>
             
+            <!-- Client Notes -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-journal-text text-primary me-2"></i>
+                            Notes
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <a href="/notes?type=client&reference_id=<?= (int)$client['id'] ?>" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-collection"></i> View All Notes
+                            </a>
+                            <a href="/notes/add?type=client&reference_id=<?= (int)$client['id'] ?>" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-plus-lg"></i> Add Note
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($client_notes)): ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Created By</th>
+                                    <th>Created</th>
+                                    <th>Updated</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($client_notes as $n): ?>
+                                <tr>
+                                    <td>
+                                        <a href="/notes/show/<?= (int)$n['id'] ?>" class="fw-semibold text-decoration-none">
+                                            <?= htmlspecialchars($n['title']) ?>
+                                        </a>
+                                        <?php if (!empty($n['content'])): ?>
+                                        <div class="small text-muted text-truncate" style="max-width: 520px;">
+                                            <?= htmlspecialchars(mb_strimwidth($n['content'], 0, 120, '…')) ?>
+                                        </div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($n['created_by_name'] ?? '—') ?></td>
+                                    <td><?= !empty($n['created_at']) ? date('M j, Y H:i', strtotime($n['created_at'])) : '—' ?></td>
+                                    <td><?= !empty($n['updated_at']) ? date('M j, Y H:i', strtotime($n['updated_at'])) : '—' ?></td>
+                                    <td class="text-end">
+                                        <a href="/notes/show/<?= (int)$n['id'] ?>" class="btn btn-sm btn-outline-primary" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <?php if (!empty($n['created_by']) && isset($_SESSION['user_id']) && (int)$n['created_by'] === (int)$_SESSION['user_id']): ?>
+                                        <a href="/notes/edit/<?= (int)$n['id'] ?>" class="btn btn-sm btn-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php else: ?>
+                    <div class="text-center py-4">
+                        <i class="bi bi-journal-text text-muted" style="font-size: 2rem;"></i>
+                        <h6 class="text-muted mt-2">No Notes</h6>
+                        <p class="text-muted mb-3">Create client-specific notes to keep context and history together.</p>
+                        <a href="/notes/add?type=client&reference_id=<?= (int)$client['id'] ?>" class="btn btn-primary">
+                            <i class="bi bi-plus-lg"></i> Add Note
+                        </a>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Meetings -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-people text-primary me-2"></i>
+                            Meetings
+                        </h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php
+                    $nowTs = time();
+                    $todayStart = strtotime(date('Y-m-d 00:00:00'));
+                    $todayEnd = strtotime(date('Y-m-d 23:59:59'));
+                    $past = [];
+                    $today = [];
+                    $upcoming = [];
+                    foreach (($meetings ?? []) as $m) {
+                        $mt = isset($m['meeting_at']) ? strtotime($m['meeting_at']) : null;
+                        if (!$mt) { continue; }
+                        if ($mt < $todayStart) {
+                            $past[] = $m;
+                        } elseif ($mt >= $todayStart && $mt <= $todayEnd) {
+                            $today[] = $m;
+                        } else {
+                            $upcoming[] = $m;
+                        }
+                    }
+                    $fmt = function($m) {
+                        $when = !empty($m['meeting_at']) ? date('M j, Y g:i A', strtotime($m['meeting_at'])) : '—';
+                        $site = !empty($m['site_name']) ? $m['site_name'] . (!empty($m['site_location']) ? ' - ' . $m['site_location'] : '') : '—';
+                        $parts = [];
+                        if (!empty($m['person_going'])) { $parts[] = 'Going: ' . $m['person_going']; }
+                        if (!empty($m['person_visiting'])) { $parts[] = 'Visiting: ' . $m['person_visiting']; }
+                        if (!empty($m['additional_going'])) { $parts[] = 'Also going: ' . $m['additional_going']; }
+                        if (!empty($m['additional_meeting'])) { $parts[] = 'Also meeting: ' . $m['additional_meeting']; }
+                        $who = !empty($parts) ? implode(' • ', $parts) : '—';
+                        return [$when, $site, $who];
+                    };
+                    ?>
+                    <div class="row">
+                        <div class="col-12 col-xl-6 mb-4">
+                            <h6 class="text-muted mb-2"><i class="bi bi-clock-history me-1"></i>Past</h6>
+                            <?php if (!empty($past)): ?>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>When</th>
+                                            <th>Title</th>
+                                            <th>People</th>
+                                            <th>Site</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($past as $m): [$when,$site,$who] = $fmt($m); ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($when) ?></td>
+                                            <td><?= htmlspecialchars($m['title'] ?? '') ?></td>
+                                            <td><?= htmlspecialchars($who) ?></td>
+                                            <td><?= htmlspecialchars($site) ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <?php else: ?>
+                            <div class="text-muted small">No past meetings.</div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-12 col-xl-6 mb-4">
+                            <h6 class="text-muted mb-2"><i class="bi bi-calendar-check me-1"></i>Today</h6>
+                            <?php if (!empty($today)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($today as $m): [$when,$site,$who] = $fmt($m); ?>
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <div class="fw-semibold"><?= htmlspecialchars($m['title'] ?? '') ?></div>
+                                            <div class="small text-muted"><?= htmlspecialchars($when) ?> • <?= htmlspecialchars($site) ?></div>
+                                        </div>
+                                        <div class="small"><?= htmlspecialchars($who) ?></div>
+                                    </div>
+                                </li>
+                                <?php endforeach; ?>
+                            </ul>
+                            <?php else: ?>
+                            <div class="text-muted small">No meetings today.</div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-12">
+                            <h6 class="text-muted mb-2"><i class="bi bi-calendar-event me-1"></i>Upcoming</h6>
+                            <?php if (!empty($upcoming)): ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>When</th>
+                                            <th>Title</th>
+                                            <th>People</th>
+                                            <th>Site</th>
+                                            <th>Info</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($upcoming as $m): [$when,$site,$who] = $fmt($m); ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($when) ?></td>
+                                            <td><?= htmlspecialchars($m['title'] ?? '') ?></td>
+                                            <td><?= htmlspecialchars($who) ?></td>
+                                            <td><?= htmlspecialchars($site) ?></td>
+                                            <td class="text-truncate" style="max-width:300px;">
+                                                <?= htmlspecialchars(mb_strimwidth($m['info'] ?? '', 0, 140, '…')) ?>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <?php else: ?>
+                            <div class="text-muted small">No upcoming meetings scheduled.</div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
+                    <?php if (hasPermission('clients.update')): ?>
+                    <hr class="my-4">
+                    <h6 class="mb-3">Create Meeting</h6>
+                    <form action="/clients/addMeeting/<?= (int)$client['id'] ?>" method="post">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Title</label>
+                                <input type="text" name="title" class="form-control" placeholder="e.g., Quarterly Review" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Person Going</label>
+                                <input type="text" name="person_going" class="form-control" placeholder="Internal attendee">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Person Visiting</label>
+                                <input type="text" name="person_visiting" class="form-control" placeholder="Client attendee">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Site</label>
+                                <select name="site_id" class="form-select">
+                                    <option value="">—</option>
+									<?php $siteOptions = !empty($sites) ? $sites : ($all_sites ?? []); ?>
+									<?php foreach ($siteOptions as $s): ?>
+                                        <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars($s['name']) ?><?= !empty($s['location']) ? ' - ' . htmlspecialchars($s['location']) : '' ?></option>
+                                    <?php endforeach; ?>
+									<?php if (empty($siteOptions)): ?>
+										<option value="" disabled>No sites available</option>
+									<?php endif; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">When</label>
+                                <input type="datetime-local" name="meeting_at" class="form-control" required>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Info</label>
+                                <textarea name="info" class="form-control" rows="2" placeholder="Agenda, notes, or details"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Additional People Going</label>
+                                <textarea name="additional_going" class="form-control" rows="2" placeholder="Comma-separated names of internal attendees"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Additional People Meeting</label>
+                                <textarea name="additional_meeting" class="form-control" rows="2" placeholder="Comma-separated names of client attendees"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-lg me-1"></i>Create Meeting
+                            </button>
+                        </div>
+                    </form>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <!-- Assigned Sites -->
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3">
@@ -597,18 +878,18 @@
                 </div>
             </div>
 
-            <!-- Callbacks / Reminders -->
+            <!-- Follow-ups / Reminders -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3">
                     <h6 class="card-title mb-0">
                         <i class="bi bi-bell text-primary me-2"></i>
-                        Callbacks & Reminders
+                        Follow-ups & Reminders
                     </h6>
                 </div>
                 <div class="card-body">
                     <?php if (hasPermission('clients.update')): ?>
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="mb-0 text-muted">Add Callback</h6>
+                        <h6 class="mb-0 text-muted">Add Follow-up</h6>
                         <a href="/clients/callbacksHistory/<?= (int)$client['id'] ?>" class="small text-decoration-none">
                             <i class="bi bi-clock-history me-1"></i>View History
                         </a>
@@ -634,7 +915,7 @@
                         </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-plus-lg me-1"></i>Add Callback
+                                <i class="bi bi-plus-lg me-1"></i>Add Follow-up
                             </button>
                         </div>
                     </form>
@@ -675,7 +956,7 @@
                         <?php endforeach; ?>
                     </ul>
                     <?php else: ?>
-                    <div class="text-center py-2 text-muted small">No upcoming callbacks.</div>
+                    <div class="text-center py-2 text-muted small">No upcoming follow-ups.</div>
                     <?php endif; ?>
                 </div>
             </div>

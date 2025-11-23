@@ -4,6 +4,24 @@ require_once __DIR__ . '/../../core/PermissionHelper.php';
 
 // Get accessible menu items based on user permissions
 $menuItems = PermissionHelper::getAccessibleMenuItems();
+
+// Compute today's meetings count for Clients badge
+$todayMeetingCount = 0;
+try {
+    $clientMeetingPath = __DIR__ . '/../../models/ClientMeeting.php';
+    if (file_exists($clientMeetingPath)) {
+        require_once $clientMeetingPath;
+        if (class_exists('ClientMeeting')) {
+            $cmModel = new ClientMeeting();
+            if (method_exists($cmModel, 'countToday')) {
+                $todayMeetingCount = (int)$cmModel->countToday();
+            }
+        }
+    }
+} catch (Exception $e) {
+    error_log('Sidebar meeting count error: ' . $e->getMessage());
+    $todayMeetingCount = 0;
+}
 ?>
 
 <!-- Sidebar structure based on modern dashboard design -->
@@ -25,6 +43,9 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
                 <a href="<?= $item['url'] ?>" class="nav-link <?= ($_SERVER['REQUEST_URI'] === $item['url'] || $_SERVER['REQUEST_URI'] === $item['url'] . '/' || strpos($_SERVER['REQUEST_URI'], $item['url'] . '/') === 0) ? 'active' : '' ?>">
                     <i class="<?= $item['icon'] ?>"></i>
                     <span><?= $item['title'] ?></span>
+                    <?php if ($item['url'] === '/clients' && $todayMeetingCount > 0): ?>
+                        <span class="badge bg-warning text-dark menu-badge"><?= $todayMeetingCount ?></span>
+                    <?php endif; ?>
                 </a>
             </li>
             <?php endforeach; ?>
@@ -316,6 +337,12 @@ $menuItems = PermissionHelper::getAccessibleMenuItems();
     gap: 0.75rem !important;
     margin: 0.25rem 0.75rem !important;
     font-size: 0.95rem !important;
+}
+
+/* Badge alignment for menu items */
+.sidebar .nav-link .menu-badge {
+    margin-left: auto !important;
+    font-size: 0.75rem !important;
 }
 
 /* Hover style */

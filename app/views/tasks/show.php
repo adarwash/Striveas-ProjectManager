@@ -23,6 +23,11 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
             <a href="/tasks/manageAssignments/<?= $task->id ?>" class="btn btn-light">
                 <i class="bi bi-people"></i> Manage Assignments
             </a>
+            <form action="/tasks/addQuickCallback/<?= (int)$task->id ?>" method="post">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-bell-fill"></i> Quick Follow-up
+                </button>
+            </form>
             <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
                 <i class="bi bi-trash"></i> Delete
             </button>
@@ -363,6 +368,82 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
                         <i class="bi bi-kanban"></i> View Project
                     </a>
                 </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <!-- Follow-ups / Reminders -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="bi bi-bell text-primary me-2"></i>Follow-ups & Reminders</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0 text-muted">Add Follow-up</h6>
+                    <a href="/tasks/callbacksHistory/<?= (int)$task->id ?>" class="small text-decoration-none">
+                        <i class="bi bi-clock-history me-1"></i>View History
+                    </a>
+                </div>
+                <form action="/tasks/addCallback/<?= (int)$task->id ?>" method="post" class="mb-3">
+                    <div class="mb-2">
+                        <label class="form-label">Title</label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g., Check progress with assignee" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Remind At</label>
+                        <input type="datetime-local" name="remind_at" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Add context or next steps"></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" value="1" id="notify_all_task" name="notify_all">
+                        <label class="form-check-label" for="notify_all_task">
+                            Show in notifications for all users
+                        </label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-lg me-1"></i>Add Follow-up
+                        </button>
+                    </div>
+                </form>
+
+                <h6 class="text-muted mb-2">Upcoming</h6>
+                <?php
+                $pending = array_values(array_filter(($callbacks ?? []), function($c) { return ($c['status'] ?? '') === 'Pending'; }));
+                usort($pending, function($a, $b) {
+                    return strtotime($a['remind_at']) <=> strtotime($b['remind_at']);
+                });
+                ?>
+                <?php if (!empty($pending)): ?>
+                <ul class="list-group list-group-flush">
+                    <?php foreach ($pending as $cb): ?>
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div class="me-2">
+                            <div class="fw-semibold text-truncate" style="max-width:220px;">
+                                <?= htmlspecialchars($cb['title']) ?>
+                            </div>
+                            <div class="small text-muted">
+                                <?= date('M j, Y g:i A', strtotime($cb['remind_at'])) ?>
+                            </div>
+                            <?php if (!empty($cb['notes'])): ?>
+                            <div class="small text-muted text-truncate" style="max-width:260px;">
+                                <?= htmlspecialchars($cb['notes']) ?>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <div>
+                            <a href="/tasks/completeCallback/<?= (int)$cb['id'] ?>" class="btn btn-sm btn-outline-success" title="Mark Completed">
+                                <i class="bi bi-check2-circle"></i>
+                            </a>
+                        </div>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php else: ?>
+                <div class="text-center py-2 text-muted small">No upcoming follow-ups.</div>
                 <?php endif; ?>
             </div>
         </div>

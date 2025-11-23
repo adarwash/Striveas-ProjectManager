@@ -9,7 +9,14 @@
             <h1 class="page-title">
                 <i class="fas fa-sticky-note me-3"></i><?= $data['title'] ?>
             </h1>
-            <p class="mb-0">Your collection of thoughts, ideas, and important information</p>
+            <p class="mb-0">
+                <?php if (!empty($filter_type) && !empty($filter_reference_id)): ?>
+                    Viewing <?= htmlspecialchars($filter_type) ?>-linked notes
+                    <a href="/notes" class="ms-2 small text-decoration-none">Clear filter</a>
+                <?php else: ?>
+                    Your collection of thoughts, ideas, and important information
+                <?php endif; ?>
+            </p>
         </div>
         <div>
             <a href="/notes/add" class="btn btn-primary">
@@ -117,6 +124,7 @@ flash('note_error');
                                 <option value="all">All Types</option>
                                 <option value="project">Project Notes</option>
                                 <option value="task">Task Notes</option>
+                                <option value="client">Client Notes</option>
                                 <option value="personal">Personal Notes</option>
                             </select>
                         </div>
@@ -610,6 +618,11 @@ flash('note_error');
 
 .note-type-personal {
     background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+}
+
+/* Client-linked notes */
+.note-type-client {
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
 }
 
 .note-menu-btn {

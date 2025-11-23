@@ -11,7 +11,7 @@
 		</nav>
 		<div class="d-flex justify-content-between align-items-center">
 			<div>
-				<h1 class="h3 mb-1 text-dark">Callbacks History</h1>
+				<h1 class="h3 mb-1 text-dark">Follow-ups History</h1>
 				<p class="text-muted mb-0">Completed and missed reminders for this client</p>
 			</div>
 			<div class="d-flex gap-2">
@@ -30,7 +30,7 @@
 			<div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
 				<h5 class="card-title mb-0">
 					<i class="bi bi-bell text-primary me-2"></i>
-					Callbacks
+					Follow-ups
 				</h5>
 				<ul class="nav nav-pills">
 					<li class="nav-item">
@@ -119,10 +119,17 @@
 								<?php endif; ?>
 							</td>
 							<td class="text-end">
-								<?php if ($status !== 'Completed' && hasPermission('clients.update')): ?>
+								<?php if (hasPermission('clients.update')): ?>
+								<?php if ($status !== 'Completed'): ?>
 								<a href="/clients/completeCallback/<?= (int)$cb['id'] ?>" class="btn btn-sm btn-outline-success" title="Mark Completed">
 									<i class="bi bi-check2-circle"></i>
 								</a>
+								<?php endif; ?>
+								<form action="/clients/deleteCallback/<?= (int)$cb['id'] ?>" method="post" class="d-inline" onsubmit="return confirm('Delete this follow-up?');">
+									<button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+										<i class="bi bi-trash"></i>
+									</button>
+								</form>
 								<?php endif; ?>
 							</td>
 						</tr>

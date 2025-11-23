@@ -30,6 +30,24 @@ class Admin extends Controller {
     }
     
     /**
+     * Login Audit - view recent user logins
+     */
+    public function logins() {
+        // Permissions already enforced in __construct
+        $auditModel = $this->model('LoginAudit');
+        
+        // Optional filters
+        $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 200;
+        $entries = $auditModel->getRecent($limit);
+        
+        $this->view('admin/login_audit', [
+            'title' => 'Login Audit',
+            'entries' => $entries,
+            'limit' => $limit
+        ]);
+    }
+    
+    /**
      * User Management
      */
     public function users() {

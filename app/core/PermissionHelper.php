@@ -335,6 +335,12 @@ class PermissionHelper {
                 'permission' => 'admin.access'
             ],
             [
+                'title' => 'Login Audit',
+                'url' => '/admin/logins',
+                'icon' => 'bi bi-fingerprint',
+                'permission' => 'admin.access'
+            ],
+            [
                 'title' => 'Users',
                 'url' => '/admin/users',
                 'icon' => 'bi bi-people',

@@ -4,6 +4,7 @@ class Notes extends Controller {
     private $noteModel;
     private $projectModel;
     private $taskModel;
+    private $clientModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -14,6 +15,7 @@ class Notes extends Controller {
         $this->noteModel = $this->model('Note');
         $this->projectModel = $this->model('Project');
         $this->taskModel = $this->model('Task');
+        $this->clientModel = $this->model('Client');
         
         // Create Notes table if it doesn't exist
         $this->noteModel->createNotesTable();
@@ -24,11 +26,26 @@ class Notes extends Controller {
      */
     public function index() {
         $userId = $_SESSION['user_id'];
-        $notes = $this->noteModel->getNotesByUser($userId);
+        
+        // Optional filter: type + reference_id (e.g., client)
+        $type = isset($_GET['type']) ? strtolower(trim($_GET['type'])) : '';
+        $referenceId = isset($_GET['reference_id']) ? (int)$_GET['reference_id'] : 0;
+        
+        if (in_array($type, ['project', 'task', 'client']) && $referenceId > 0) {
+            // Fetch notes for this reference visible to the user
+            $notes = $this->noteModel->getNotesByReferenceForUser($type, $referenceId, $userId);
+            $title = ucfirst($type) . ' Notes';
+        } else {
+            // Default: all notes visible to user
+            $notes = $this->noteModel->getNotesByUser($userId);
+            $title = 'My Notes';
+        }
         
         $data = [
-            'title' => 'My Notes',
-            'notes' => $notes
+            'title' => $title,
+            'notes' => $notes,
+            'filter_type' => $type,
+            'filter_reference_id' => $referenceId
         ];
         
         $this->view('notes/index', $data);
@@ -141,7 +158,7 @@ class Notes extends Controller {
             }
             
             // Validate type
-            if (!in_array($data['type'], ['project', 'task', 'personal'])) {
+            if (!in_array($data['type'], ['project', 'task', 'client', 'personal'])) {
                 $data['type_err'] = 'Invalid note type';
             }
             
@@ -155,6 +172,11 @@ class Notes extends Controller {
                 $task = $this->taskModel->getTaskById($data['reference_id']);
                 if (!$task) {
                     $data['reference_id_err'] = 'Task not found';
+                }
+            } elseif ($data['type'] === 'client') {
+                $client = $this->clientModel->getClientById($data['reference_id']);
+                if (!$client) {
+                    $data['reference_id_err'] = 'Client not found';
                 }
             } else {
                 // For personal notes, no reference needed
@@ -182,11 +204,22 @@ class Notes extends Controller {
             $userId = $_SESSION['user_id'];
             $projects = $this->projectModel->getProjectsByUser($userId);
             $tasks = $this->taskModel->getTasksByUser($userId);
+            $clients = $this->clientModel->getAllClients();
+            
+            // Prefill from query params
+            $preType = isset($_GET['type']) ? strtolower(trim($_GET['type'])) : '';
+            if (!in_array($preType, ['project', 'task', 'client', 'personal'])) {
+                $preType = '';
+            }
+            $preRefId = isset($_GET['reference_id']) ? (int)$_GET['reference_id'] : (isset($_GET['client_id']) ? (int)$_GET['client_id'] : null);
             
             $data = [
                 'title' => 'Add Note',
                 'projects' => $projects,
-                'tasks' => $tasks
+                'tasks' => $tasks,
+                'clients' => $clients,
+                'type' => $preType,
+                'reference_id' => $preRefId
             ];
             
             $this->view('notes/add', $data);
@@ -251,7 +284,7 @@ class Notes extends Controller {
             }
             
             // Validate type
-            if (!in_array($data['type'], ['project', 'task', 'personal'])) {
+            if (!in_array($data['type'], ['project', 'task', 'client', 'personal'])) {
                 $errors['type'] = 'Invalid note type';
                 error_log('AJAX Note Add - Invalid type: ' . $data['type']);
             }
@@ -277,6 +310,17 @@ class Notes extends Controller {
                     if (!$task) {
                         $errors['reference_id'] = 'Task not found';
                         error_log('AJAX Note Add - Invalid task ID: ' . $data['reference_id']);
+                    }
+                }
+            } elseif ($data['type'] === 'client') {
+                if (empty($data['reference_id'])) {
+                    $errors['reference_id'] = 'Client ID is required';
+                    error_log('AJAX Note Add - Missing client ID');
+                } else {
+                    $client = $this->clientModel->getClientById($data['reference_id']);
+                    if (!$client) {
+                        $errors['reference_id'] = 'Client not found';
+                        error_log('AJAX Note Add - Invalid client ID: ' . $data['reference_id']);
                     }
                 }
             }
@@ -519,7 +563,7 @@ class Notes extends Controller {
      * Get notes for a specific project or task (AJAX endpoint)
      */
     public function get($type, $id) {
-        if (!in_array($type, ['project', 'task'])) {
+        if (!in_array($type, ['project', 'task', 'client'])) {
             echo json_encode(['error' => 'Invalid type']);
             return;
         }

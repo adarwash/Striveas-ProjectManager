@@ -1,6 +1,7 @@
 <?php
 
 class Clients extends Controller {
+    private $reminderModel;
     private $clientModel;
     private $siteModel;
     private $contractModel;
@@ -8,6 +9,7 @@ class Clients extends Controller {
     private $settingModel;
 	private $callbackModel;
 	private $auditModel;
+	private $clientMeetingModel;
     
     /**
      * Initialize controller and load models
@@ -23,9 +25,11 @@ class Clients extends Controller {
         $this->siteModel = $this->model('Site');
         $this->contractModel = $this->model('ClientContract');
         $this->projectModel = $this->model('Project');
-        $this->settingModel = $this->model('Setting');
+		$this->settingModel = $this->model('Setting');
 		$this->callbackModel = $this->model('ClientCallback');
+		$this->reminderModel = $this->model('Reminder');
 		$this->auditModel = $this->model('Networkaudit');
+		$this->clientMeetingModel = $this->model('ClientMeeting');
         
         // Set the page for sidebar highlighting
         $_SESSION['page'] = 'clients';
@@ -94,10 +98,10 @@ class Clients extends Controller {
             $projects = $this->projectModel->getProjectsByClient($id);
         } catch (Exception $e) { $projects = []; }
 
-		// Get callbacks/reminders
+		// Get follow-ups/reminders (from universal Reminders)
 		$callbacks = [];
 		try {
-			$callbacks = $this->callbackModel->getByClientId((int)$id);
+			$callbacks = $this->reminderModel->getByEntity('client', (int)$id);
 		} catch (Exception $e) {
 			$callbacks = [];
 		}
@@ -139,6 +143,15 @@ class Clients extends Controller {
             $domains = [];
         }
 
+        // Client notes (top 10 recent)
+        $clientNotes = [];
+        try {
+            $noteModel = $this->model('Note');
+            $clientNotes = $noteModel->getRecentByReference('client', (int)$id, 10);
+        } catch (Exception $e) {
+            $clientNotes = [];
+        }
+
         // Get contracts
         try {
             $contracts = $this->contractModel->getContractsByClient($id);
@@ -150,17 +163,75 @@ class Clients extends Controller {
             'title' => $client['name'],
             'client' => $client,
             'sites' => $sitesWithServices,
+            'all_sites' => $this->siteModel->getAllSites(),
             'domains' => $domains,
             'recent_visits' => $recentVisits,
             'contracts' => $contracts,
 			'projects' => $projects,
 			'callbacks' => $callbacks,
 			'audits' => $audits,
+            'client_notes' => $clientNotes,
+			'meetings' => $this->clientMeetingModel->listByClient((int)$id),
             'currency' => $this->settingModel->getCurrency()
         ];
         
         $this->view('clients/view', $data);
     }
+
+	/**
+	 * Add a meeting for a client
+	 */
+	public function addMeeting($clientId) {
+		if (!hasPermission('clients.update')) {
+			flash('client_error', 'You do not have permission to create meetings.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+			redirect('clients/viewClient/' . (int)$clientId);
+		}
+		$title = trim((string)($_POST['title'] ?? ''));
+		$personGoing = trim((string)($_POST['person_going'] ?? ''));
+		$personVisiting = trim((string)($_POST['person_visiting'] ?? ''));
+		$additionalGoing = trim((string)($_POST['additional_going'] ?? ''));
+		$additionalMeeting = trim((string)($_POST['additional_meeting'] ?? ''));
+		$siteId = (string)($_POST['site_id'] ?? '');
+		$meetingAt = trim((string)($_POST['meeting_at'] ?? ''));
+		$info = trim((string)($_POST['info'] ?? ''));
+		
+		if ($title === '' || $meetingAt === '') {
+			flash('client_error', 'Please provide a title and date/time for the meeting.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+		// Normalize datetime-local input to SQL format
+		$meetingTs = strtotime($meetingAt);
+		if ($meetingTs === false) {
+			flash('client_error', 'Invalid meeting date/time.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+		$meetingAtSql = date('Y-m-d H:i:s', $meetingTs);
+		$payload = [
+			'client_id' => (int)$clientId,
+			'site_id' => $siteId,
+			'title' => $title,
+			'person_going' => $personGoing,
+			'person_visiting' => $personVisiting,
+			'additional_going' => $additionalGoing,
+			'additional_meeting' => $additionalMeeting,
+			'info' => $info,
+			'meeting_at' => $meetingAtSql,
+			'created_by' => (int)($_SESSION['user_id'] ?? 0)
+		];
+		$ok = $this->clientMeetingModel->add($payload);
+		if ($ok) {
+			flash('client_success', 'Meeting created.');
+		} else {
+			flash('client_error', 'Failed to create meeting.', 'alert-danger');
+		}
+		redirect('clients/viewClient/' . (int)$clientId);
+	}
 
     /**
      * Upload client contract
@@ -716,8 +787,9 @@ class Clients extends Controller {
 		}
 		$remindAt = date('Y-m-d H:i:s', $remindTs);
 
-		$insertId = $this->callbackModel->add([
-			'client_id' => (int)$clientId,
+		$insertId = $this->reminderModel->add([
+			'entity_type' => 'client',
+			'entity_id' => (int)$clientId,
 			'title' => $title,
 			'notes' => $notes,
 			'remind_at' => $remindAt,
@@ -731,7 +803,7 @@ class Clients extends Controller {
 			return;
 		}
 
-		// Queue reminder email to creator
+        // Queue reminder email to creator
 		try {
 			$userModel = $this->model('User');
 			$user = $userModel->getUserById((int)($_SESSION['user_id'] ?? 0));
@@ -742,10 +814,10 @@ class Clients extends Controller {
 				require_once APPROOT . '/app/services/EmailService.php';
 				$emailService = new EmailService();
 
-				$subject = '[Reminder] Client callback: ' . ($client['name'] ?? 'Client') . ' - ' . $title;
+                $subject = '[Reminder] Client follow-up: ' . ($client['name'] ?? 'Client') . ' - ' . $title;
 				$link = URLROOT . '/clients/viewClient/' . (int)$clientId;
 				$html = "
-				<h2>Client Callback Reminder</h2>
+                <h2>Follow-up Reminder</h2>
 				<p><strong>Client:</strong> " . htmlspecialchars($client['name'] ?? 'Client') . "</p>
 				<p><strong>When:</strong> " . date('M j, Y g:i A', $remindTs) . "</p>
 				<p><strong>Title:</strong> " . htmlspecialchars($title) . "</p>
@@ -760,7 +832,7 @@ class Clients extends Controller {
 				];
 				$queueId = $emailService->queueEmail($emailData, 3, new DateTime($remindAt));
 				if ($queueId) {
-					$this->callbackModel->setReminderQueueId((int)$insertId, (int)$queueId);
+					$this->reminderModel->setReminderQueueId((int)$insertId, (int)$queueId);
 				}
 			}
 		} catch (Exception $e) {
@@ -788,15 +860,15 @@ class Clients extends Controller {
 			redirect('clients');
 			return;
 		}
-		$cb = $this->callbackModel->getById((int)$callbackId);
+		$cb = $this->reminderModel->getById((int)$callbackId);
 		if (!$cb) {
 			flash('client_error', 'Callback not found', 'alert-danger');
 			redirect('clients');
 			return;
 		}
-		$this->callbackModel->markCompleted((int)$callbackId);
+		$this->reminderModel->markCompleted((int)$callbackId);
 		flash('client_success', 'Callback marked as completed.');
-		$redirectClient = (int)($cb['client_id'] ?? 0);
+		$redirectClient = (int)($cb['entity_id'] ?? 0);
 		redirect('clients/viewClient/' . $redirectClient);
 	}
 
@@ -827,10 +899,10 @@ class Clients extends Controller {
 			return;
 		}
 
-		// Fetch callbacks
+		// Fetch follow-ups
 		$all = [];
 		try {
-			$all = $this->callbackModel->getByClientId((int)$clientId);
+			$all = $this->reminderModel->getByEntity('client', (int)$clientId);
 		} catch (Exception $e) {
 			$all = [];
 		}
@@ -892,6 +964,117 @@ class Clients extends Controller {
 		];
 
 		$this->view('clients/callbacks_history', $data);
+	}
+
+	/**
+	 * Quick follow-up (client): creates a follow-up for the current user +24h
+	 */
+	public function addQuickCallback($clientId = null) {
+		if (!isLoggedIn()) {
+			redirect('users/login');
+			return;
+		}
+		if (!hasPermission('clients.update')) {
+			flash('client_error', 'You do not have permission to add follow-ups', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$clientId) {
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		$title = 'Follow-up';
+		$notes = '';
+		$remindTs = time() + 24 * 3600; // +24 hours
+		$remindAt = date('Y-m-d H:i:s', $remindTs);
+
+		$insertId = $this->reminderModel->add([
+			'entity_type' => 'client',
+			'entity_id' => (int)$clientId,
+			'title' => $title,
+			'notes' => $notes,
+			'remind_at' => $remindAt,
+			'created_by' => (int)($_SESSION['user_id'] ?? 0),
+			'notify_all' => 0,
+		]);
+
+		if (!$insertId) {
+			flash('client_error', 'Failed to create follow-up.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		// Queue reminder email to creator
+		try {
+			$userModel = $this->model('User');
+			$user = $userModel->getUserById((int)($_SESSION['user_id'] ?? 0));
+			$client = $this->clientModel->getClientById((int)$clientId);
+			$toEmail = $user && !empty($user['email']) ? $user['email'] : null;
+
+			if ($toEmail) {
+				require_once APPROOT . '/app/services/EmailService.php';
+				$emailService = new EmailService();
+
+				$subject = '[Reminder] Client follow-up: ' . ($client['name'] ?? 'Client') . ' - ' . $title;
+				$link = URLROOT . '/clients/viewClient/' . (int)$clientId;
+				$html = "
+				<h2>Follow-up Reminder</h2>
+				<p><strong>Client:</strong> " . htmlspecialchars($client['name'] ?? 'Client') . "</p>
+				<p><strong>When:</strong> " . date('M j, Y g:i A', $remindTs) . "</p>
+				<p><strong>Title:</strong> " . htmlspecialchars($title) . "</p>
+				<p><a href=\"" . $link . "\">Open client</a></p>
+				";
+				$emailData = [
+					'to' => $toEmail,
+					'subject' => $subject,
+					'html_body' => $html,
+					'body' => strip_tags($html),
+				];
+				$queueId = $emailService->queueEmail($emailData, 3, new DateTime($remindAt));
+				if ($queueId) {
+					$this->reminderModel->setReminderQueueId((int)$insertId, (int)$queueId);
+				}
+			}
+		} catch (Exception $e) {
+			error_log('Queue client quick follow-up email failed: ' . $e->getMessage());
+		}
+
+		flash('client_success', 'Quick follow-up created for ' . date('M j, Y g:i A', $remindTs) . '.');
+		redirect('clients/viewClient/' . (int)$clientId);
+	}
+
+	/**
+	 * Delete a client follow-up (admin/authorized users)
+	 */
+	public function deleteCallback($callbackId = null) {
+		if (!isLoggedIn()) {
+			redirect('users/login');
+			return;
+		}
+		if (!hasPermission('clients.update')) {
+			flash('client_error', 'You do not have permission to delete follow-ups', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$callbackId) {
+			redirect('clients');
+			return;
+		}
+		$cb = $this->reminderModel->getById((int)$callbackId);
+		if (!$cb || (($cb['entity_type'] ?? '') !== 'client')) {
+			flash('client_error', 'Follow-up not found', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		$clientId = (int)($cb['entity_id'] ?? 0);
+		$ok = $this->reminderModel->delete((int)$callbackId);
+		if ($ok) {
+			flash('client_success', 'Follow-up deleted.');
+		} else {
+			flash('client_error', 'Failed to delete follow-up.', 'alert-danger');
+		}
+		redirect('clients/callbacksHistory/' . $clientId);
 	}
 }
 ?> 

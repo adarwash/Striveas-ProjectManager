@@ -2,12 +2,14 @@
 
 class Auth extends Controller {
     private $userModel;
+	private $loginAuditModel;
     
     /**
      * Constructor - initializes any needed models
      */
     public function __construct() {
         $this->userModel = $this->model('User');
+		$this->loginAuditModel = $this->model('LoginAudit');
     }
     
     /**
@@ -59,6 +61,19 @@ class Auth extends Controller {
             $user = $this->userModel->authenticate($username, $password);
             
             if ($user) {
+				// Record successful login
+				$ip = $_SERVER['REMOTE_ADDR'] ?? null;
+				$agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+				$this->loginAuditModel->add([
+					'user_id' => (int)$user['id'],
+					'username' => $username,
+					'ip_address' => $ip,
+					'user_agent' => $agent,
+					'success' => 1
+				]);
+				// Update user's last_login timestamp
+				$this->userModel->updateLastLogin((int)$user['id']);
+				
                 // Start a session if not already started
                 if (session_status() === PHP_SESSION_NONE) {
                     session_start();
@@ -87,6 +102,17 @@ class Auth extends Controller {
                 header('Location: /dashboard');
                 exit;
             } else {
+				// Record failed login attempt
+				$ip = $_SERVER['REMOTE_ADDR'] ?? null;
+				$agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+				$this->loginAuditModel->add([
+					'user_id' => null,
+					'username' => $username,
+					'ip_address' => $ip,
+					'user_agent' => $agent,
+					'success' => 0
+				]);
+				
                 // Authentication failed, redirect back to login with error
                 $error = urlencode('Invalid username or password');
                 header('Location: /auth/index/' . $error);

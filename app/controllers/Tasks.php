@@ -5,6 +5,7 @@ class Tasks extends Controller {
     private $userModel;
     private $noteModel;
     private $clientModel;
+    private $reminderModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -23,6 +24,7 @@ class Tasks extends Controller {
         $this->userModel = $this->model('User');
         $this->noteModel = $this->model('Note');
         $this->clientModel = $this->model('Client');
+        $this->reminderModel = $this->model('Reminder');
         
         // Create task_users table if it doesn't exist
         $this->taskModel->createTaskUsersTable();
@@ -233,6 +235,12 @@ class Tasks extends Controller {
         // Users for subtask assignment dropdown
         $users = $this->userModel->getAllUsers();
         
+        // Load reminders/follow-ups for this task
+        $callbacks = [];
+        try {
+            $callbacks = $this->reminderModel->getByEntity('task', (int)$id);
+        } catch (Exception $e) { $callbacks = []; }
+
         $data = [
             'task' => $task,
             'project' => $project,
@@ -241,10 +249,348 @@ class Tasks extends Controller {
             'reference_id' => $id,
             'assigned_users' => $assignedUsers,
             'subtasks' => $subtasks,
-            'users' => $users
+            'users' => $users,
+            'callbacks' => $callbacks
         ];
         
         $this->view('tasks/show', $data);
+    }
+
+    /**
+     * Add a task follow-up/reminder
+     */
+    public function addCallback($taskId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (function_exists('hasPermission') && !hasPermission('tasks.update')) {
+            flash('task_error', 'You do not have permission to add follow-ups', 'alert-danger');
+            redirect('tasks/show/' . (int)$taskId);
+            return;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$taskId) {
+            redirect('tasks/show/' . (int)$taskId);
+            return;
+        }
+
+        $title = trim($_POST['title'] ?? '');
+        $notes = trim($_POST['notes'] ?? '');
+        $remindAtRaw = trim($_POST['remind_at'] ?? '');
+
+        if ($title === '' || $remindAtRaw === '') {
+            flash('task_error', 'Title and reminder date/time are required.', 'alert-danger');
+            redirect('tasks/show/' . (int)$taskId);
+            return;
+        }
+
+        $remindTs = strtotime($remindAtRaw);
+        if ($remindTs === false) {
+            flash('task_error', 'Invalid reminder date/time.', 'alert-danger');
+            redirect('tasks/show/' . (int)$taskId);
+            return;
+        }
+        $remindAt = date('Y-m-d H:i:s', $remindTs);
+
+        // Determine recipient (assigned user)
+        $recipientUserId = null;
+        try {
+            $task = $this->taskModel->getTaskById((int)$taskId);
+            if ($task && !empty($task->assigned_to)) {
+                $recipientUserId = (int)$task->assigned_to;
+            } else {
+                $assignees = $this->taskModel->getTaskUsers((int)$taskId);
+                if (!empty($assignees)) {
+                    $recipientUserId = (int)($assignees[0]->user_id ?? null);
+                }
+            }
+        } catch (Exception $e) { /* ignore */ }
+
+        $insertId = $this->reminderModel->add([
+            'entity_type' => 'task',
+            'entity_id' => (int)$taskId,
+            'title' => $title,
+            'notes' => $notes,
+            'remind_at' => $remindAt,
+            'created_by' => (int)($_SESSION['user_id'] ?? 0),
+            'recipient_user_id' => $recipientUserId,
+            'notify_all' => !empty($_POST['notify_all']) ? 1 : 0,
+        ]);
+
+        if (!$insertId) {
+            flash('task_error', 'Failed to create follow-up.', 'alert-danger');
+            redirect('tasks/show/' . (int)$taskId);
+            return;
+        }
+
+        // Queue reminder email to the recipient if available
+        try {
+            require_once APPROOT . '/app/services/EmailService.php';
+            $emailService = new EmailService();
+
+            $toEmail = null;
+            if ($recipientUserId) {
+                $user = $this->userModel->getUserById($recipientUserId);
+                $toEmail = $user && !empty($user['email']) ? $user['email'] : null;
+            }
+
+            if ($toEmail) {
+                $task = $this->taskModel->getTaskById((int)$taskId);
+                $subject = '[Reminder] Task follow-up: ' . (($task && !empty($task->title)) ? $task->title : ('Task #' . (int)$taskId)) . ' - ' . $title;
+                $link = URLROOT . '/tasks/show/' . (int)$taskId;
+                $html = "
+                <h2>Follow-up Reminder</h2>
+                <p><strong>Task:</strong> " . htmlspecialchars(($task && !empty($task->title)) ? $task->title : ('Task #' . (int)$taskId)) . "</p>
+                <p><strong>When:</strong> " . date('M j, Y g:i A', $remindTs) . "</p>
+                <p><strong>Title:</strong> " . htmlspecialchars($title) . "</p>
+                " . (!empty($notes) ? "<p><strong>Notes:</strong><br>" . nl2br(htmlspecialchars($notes)) . "</p>" : "") . "
+                <p><a href=\"" . $link . "\">Open task</a></p>
+                ";
+                $emailData = [
+                    'to' => $toEmail,
+                    'subject' => $subject,
+                    'html_body' => $html,
+                    'body' => strip_tags($html),
+                ];
+                $queueId = $emailService->queueEmail($emailData, 3, new DateTime($remindAt));
+                if ($queueId) {
+                    $this->reminderModel->setReminderQueueId((int)$insertId, (int)$queueId);
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Queue task follow-up reminder email failed: ' . $e->getMessage());
+        }
+
+        flash('task_success', 'Follow-up created. Reminder scheduled for ' . date('M j, Y g:i A', $remindTs) . '.');
+        redirect('tasks/show/' . (int)$taskId);
+    }
+
+    /**
+     * Mark a task follow-up as completed
+     */
+    public function completeCallback($callbackId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (function_exists('hasPermission') && !hasPermission('tasks.update')) {
+            flash('task_error', 'You do not have permission to update follow-ups', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
+        if (!$callbackId) {
+            redirect('tasks');
+            return;
+        }
+        $cb = $this->reminderModel->getById((int)$callbackId);
+        if (!$cb) {
+            flash('task_error', 'Follow-up not found', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
+        $this->reminderModel->markCompleted((int)$callbackId);
+        flash('task_success', 'Follow-up marked as completed.');
+        $redirectTask = (int)($cb['entity_id'] ?? 0);
+        redirect('tasks/show/' . $redirectTask);
+    }
+
+    /**
+     * View follow-ups history for a task
+     */
+    public function callbacksHistory($taskId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (!$taskId) {
+            redirect('tasks');
+            return;
+        }
+
+        $task = $this->taskModel->getTaskById((int)$taskId);
+        if (!$task) {
+            flash('task_error', 'Task not found', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
+
+        $all = [];
+        try {
+            $all = $this->reminderModel->getByEntity('task', (int)$taskId);
+        } catch (Exception $e) {
+            $all = [];
+        }
+
+        $now = time();
+        $completed = [];
+        $missed = [];
+        $pending = [];
+        foreach ($all as $cb) {
+            $status = $cb['status'] ?? 'Pending';
+            $rt = isset($cb['remind_at']) ? strtotime($cb['remind_at']) : null;
+            if ($status === 'Completed') {
+                $completed[] = $cb;
+            } elseif ($status === 'Pending' && $rt !== false && $rt !== null && $rt < $now) {
+                $missed[] = $cb;
+            } else {
+                $pending[] = $cb;
+            }
+        }
+
+        $filter = strtolower(trim($_GET['status'] ?? 'history'));
+        switch ($filter) {
+            case 'completed': $list = $completed; break;
+            case 'missed': $list = $missed; break;
+            case 'pending': $list = $pending; break;
+            case 'all': $list = $all; break;
+            case 'history':
+            default: $list = array_merge($completed, $missed); break;
+        }
+
+        usort($list, function($a, $b) {
+            return strtotime($b['remind_at'] ?? '') <=> strtotime($a['remind_at'] ?? '');
+        });
+
+        $this->view('tasks/callbacks_history', [
+            'title' => 'Follow-ups History - ' . ($task->title ?? ('Task #' . (int)$taskId)),
+            'task' => $task,
+            'callbacks' => $list,
+            'counts' => [
+                'all' => count($all),
+                'completed' => count($completed),
+                'missed' => count($missed),
+                'pending' => count($pending)
+            ],
+            'active_filter' => $filter
+        ]);
+    }
+
+    /**
+     * Quick follow-up (task): creates a follow-up for the task assignee +24h
+     */
+    public function addQuickCallback($taskId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (function_exists('hasPermission') && !hasPermission('tasks.update')) {
+            flash('task_error', 'You do not have permission to add follow-ups', 'alert-danger');
+            redirect('tasks/show/' . (int)$taskId);
+            return;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$taskId) {
+            redirect('tasks/show/' . (int)$taskId);
+            return;
+        }
+
+        $title = 'Follow-up';
+        $notes = '';
+        $remindTs = time() + 24 * 3600; // +24 hours
+        $remindAt = date('Y-m-d H:i:s', $remindTs);
+
+        // Determine recipient (assigned user)
+        $recipientUserId = null;
+        try {
+            $task = $this->taskModel->getTaskById((int)$taskId);
+            if ($task && !empty($task->assigned_to)) {
+                $recipientUserId = (int)$task->assigned_to;
+            } else {
+                $assignees = $this->taskModel->getTaskUsers((int)$taskId);
+                if (!empty($assignees)) {
+                    $recipientUserId = (int)($assignees[0]->user_id ?? null);
+                }
+            }
+        } catch (Exception $e) { /* ignore */ }
+
+        $insertId = $this->reminderModel->add([
+            'entity_type' => 'task',
+            'entity_id' => (int)$taskId,
+            'title' => $title,
+            'notes' => $notes,
+            'remind_at' => $remindAt,
+            'created_by' => (int)($_SESSION['user_id'] ?? 0),
+            'recipient_user_id' => $recipientUserId,
+            'notify_all' => 0,
+        ]);
+
+        if (!$insertId) {
+            flash('task_error', 'Failed to create follow-up.', 'alert-danger');
+            redirect('tasks/show/' . (int)$taskId);
+            return;
+        }
+
+        // Queue reminder email to the recipient if available
+        try {
+            require_once APPROOT . '/app/services/EmailService.php';
+            $emailService = new EmailService();
+
+            $toEmail = null;
+            if ($recipientUserId) {
+                $user = $this->userModel->getUserById($recipientUserId);
+                $toEmail = $user && !empty($user['email']) ? $user['email'] : null;
+            }
+
+            if ($toEmail) {
+                $task = $this->taskModel->getTaskById((int)$taskId);
+                $subject = '[Reminder] Task follow-up: ' . (($task && !empty($task->title)) ? $task->title : ('Task #' . (int)$taskId)) . ' - ' . $title;
+                $link = URLROOT . '/tasks/show/' . (int)$taskId;
+                $html = "
+                <h2>Follow-up Reminder</h2>
+                <p><strong>Task:</strong> " . htmlspecialchars(($task && !empty($task->title)) ? $task->title : ('Task #' . (int)$taskId)) . "</p>
+                <p><strong>When:</strong> " . date('M j, Y g:i A', $remindTs) . "</p>
+                <p><strong>Title:</strong> " . htmlspecialchars($title) . "</p>
+                <p><a href=\"" . $link . "\">Open task</a></p>
+                ";
+                $emailData = [
+                    'to' => $toEmail,
+                    'subject' => $subject,
+                    'html_body' => $html,
+                    'body' => strip_tags($html),
+                ];
+                $queueId = $emailService->queueEmail($emailData, 3, new DateTime($remindAt));
+                if ($queueId) {
+                    $this->reminderModel->setReminderQueueId((int)$insertId, (int)$queueId);
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Queue task quick follow-up email failed: ' . $e->getMessage());
+        }
+
+        flash('task_success', 'Quick follow-up created for ' . date('M j, Y g:i A', $remindTs) . '.');
+        redirect('tasks/show/' . (int)$taskId);
+    }
+
+    /**
+     * Delete a task follow-up (admin/authorized users)
+     */
+    public function deleteCallback($callbackId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (function_exists('hasPermission') && !hasPermission('tasks.update')) {
+            flash('task_error', 'You do not have permission to delete follow-ups', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$callbackId) {
+            redirect('tasks');
+            return;
+        }
+        $cb = $this->reminderModel->getById((int)$callbackId);
+        if (!$cb || (strtolower($cb['entity_type'] ?? '') !== 'task')) {
+            flash('task_error', 'Follow-up not found', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
+        $taskId = (int)($cb['entity_id'] ?? 0);
+        $ok = $this->reminderModel->delete((int)$callbackId);
+        if ($ok) {
+            flash('task_success', 'Follow-up deleted.');
+        } else {
+            flash('task_error', 'Failed to delete follow-up.', 'alert-danger');
+        }
+        redirect('tasks/callbacksHistory/' . $taskId);
     }
     
     /**

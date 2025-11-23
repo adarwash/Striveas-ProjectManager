@@ -31,6 +31,19 @@
                             </div>
                         </div>
                         
+						<div class="col-md-6 col-lg-4 mb-4">
+							<div class="card border-0 shadow-sm h-100">
+								<div class="card-body text-center">
+									<i class="bi bi-shield-lock text-dark" style="font-size: 2rem;"></i>
+									<h5 class="card-title mt-3">Login Audit</h5>
+									<p class="card-text text-muted">View authentication history with timestamps, IP addresses, and status.</p>
+									<a href="<?= URLROOT ?>/admin/logins" class="btn btn-dark">
+										<i class="bi bi-clock-history me-2"></i>View Logins
+									</a>
+								</div>
+							</div>
+						</div>
+						
                         <div class="col-md-6 col-lg-4 mb-4">
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">

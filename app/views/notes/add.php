@@ -59,6 +59,7 @@
                                     <option value="">Select type...</option>
                                     <option value="project" <?= (isset($type) && $type === 'project') ? 'selected' : '' ?>>Project</option>
                                     <option value="task" <?= (isset($type) && $type === 'task') ? 'selected' : '' ?>>Task</option>
+                                    <option value="client" <?= (isset($type) && $type === 'client') ? 'selected' : '' ?>>Client</option>
                                     <option value="personal" <?= (isset($type) && $type === 'personal') ? 'selected' : '' ?>>Personal</option>
                                 </select>
                                 <?php if (isset($type_err) && !empty($type_err)): ?>
@@ -105,6 +106,7 @@
 // Store projects and tasks data
 const projects = <?= json_encode($projects ?? []) ?>;
 const tasks = <?= json_encode($tasks ?? []) ?>;
+const clients = <?= json_encode($clients ?? []) ?>;
 
 function updateReferenceOptions() {
     const typeSelect = document.getElementById('type');
@@ -163,6 +165,17 @@ function updateReferenceOptions() {
                     const option = document.createElement('option');
                     option.value = task.id;
                     option.textContent = task.title;
+                    referenceSelect.appendChild(option);
+                });
+            }
+        } else if (selectedType === 'client') {
+            if (clients.length === 0) {
+                emptyMessage.classList.remove('d-none');
+            } else {
+                clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.id;
+                    option.textContent = client.name;
                     referenceSelect.appendChild(option);
                 });
             }

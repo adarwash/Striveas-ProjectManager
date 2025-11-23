@@ -11,6 +11,8 @@ class Projects extends Controller {
     private $siteModel;
     private $settingModel;
     private $clientModel;
+    private $callbackModel;
+    private $reminderModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -35,6 +37,8 @@ class Projects extends Controller {
         $this->siteModel = $this->model('Site');
         $this->settingModel = $this->model('Setting');
         $this->clientModel = $this->model('Client');
+        $this->callbackModel = $this->model('ProjectCallback');
+        $this->reminderModel = $this->model('Reminder');
         
         // Create project_users table if it doesn't exist
         $this->projectModel->createProjectUsersTable();
@@ -50,6 +54,30 @@ class Projects extends Controller {
     public function index() {
         // Get all projects
         $projects = $this->projectModel->getAllProjects(); // Get real projects from database
+        
+        // Compute missed follow-ups per project
+        try {
+            $nowTs = time();
+            foreach ($projects as &$p) {
+                $missedCount = 0;
+                try {
+                    $reminders = $this->reminderModel->getByEntity('project', (int)$p->id);
+                    if (is_array($reminders)) {
+                        foreach ($reminders as $cb) {
+                            $status = $cb['status'] ?? 'Pending';
+                            $rt = isset($cb['remind_at']) ? strtotime($cb['remind_at']) : null;
+                            if ($status === 'Pending' && $rt !== false && $rt !== null && $rt < $nowTs) {
+                                $missedCount++;
+                            }
+                        }
+                    }
+                } catch (Exception $e) { $missedCount = 0; }
+                $p->missed_callbacks_count = $missedCount;
+            }
+            unset($p);
+        } catch (Exception $e) {
+            // ignore on failure
+        }
         
         // Get currency settings
         $currency = $this->settingModel->getCurrency();
@@ -318,6 +346,26 @@ class Projects extends Controller {
             }
         }
         
+        // Get project follow-ups/reminders from universal Reminders
+        $callbacks = [];
+        try {
+            $callbacks = $this->reminderModel->getByEntity('project', (int)$id);
+        } catch (Exception $e) {
+            $callbacks = [];
+        }
+        // Compute missed follow-ups
+        $missedCount = 0;
+        if (!empty($callbacks)) {
+            $nowTs = time();
+            foreach ($callbacks as $cb) {
+                $status = $cb['status'] ?? 'Pending';
+                $rt = isset($cb['remind_at']) ? strtotime($cb['remind_at']) : null;
+                if ($status === 'Pending' && $rt !== false && $rt !== null && $rt < $nowTs) {
+                    $missedCount++;
+                }
+            }
+        }
+        
         $this->view('projects/view', [
             'title' => $project->title,
             'project' => $project,
@@ -329,8 +377,308 @@ class Projects extends Controller {
             'documents' => $documents,
             'linked_sites' => $linkedSites,
             'currency' => $currency,
-            'client' => $client
+            'client' => $client,
+            'callbacks' => $callbacks,
+            'missed_callbacks_count' => $missedCount
         ]);
+    }
+    
+    /**
+     * Add a project callback/reminder
+     */
+    public function addCallback($projectId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (!hasPermission('projects.update')) {
+            flash('project_error', 'You do not have permission to add project callbacks', 'alert-danger');
+            redirect('projects/viewProject/' . (int)$projectId);
+            return;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$projectId) {
+            redirect('projects/viewProject/' . (int)$projectId);
+            return;
+        }
+
+        $title = trim($_POST['title'] ?? '');
+        $notes = trim($_POST['notes'] ?? '');
+        $remindAtRaw = trim($_POST['remind_at'] ?? '');
+
+        if ($title === '' || $remindAtRaw === '') {
+            flash('project_error', 'Title and reminder date/time are required.', 'alert-danger');
+            redirect('projects/viewProject/' . (int)$projectId);
+            return;
+        }
+
+        // Parse datetime-local input
+        $remindTs = strtotime($remindAtRaw);
+        if ($remindTs === false) {
+            flash('project_error', 'Invalid reminder date/time.', 'alert-danger');
+            redirect('projects/viewProject/' . (int)$projectId);
+            return;
+        }
+        $remindAt = date('Y-m-d H:i:s', $remindTs);
+
+        $insertId = $this->reminderModel->add([
+            'entity_type' => 'project',
+            'entity_id' => (int)$projectId,
+            'title' => $title,
+            'notes' => $notes,
+            'remind_at' => $remindAt,
+            'created_by' => (int)($_SESSION['user_id'] ?? 0),
+            'notify_all' => !empty($_POST['notify_all']) ? 1 : 0,
+        ]);
+
+        if (!$insertId) {
+            flash('project_error', 'Failed to create callback.', 'alert-danger');
+            redirect('projects/viewProject/' . (int)$projectId);
+            return;
+        }
+
+        // Queue reminder email to creator
+        try {
+            $user = $this->userModel->getUserById((int)($_SESSION['user_id'] ?? 0));
+            $project = $this->projectModel->getProjectById((int)$projectId);
+            $toEmail = $user && !empty($user->email) ? $user->email : null;
+
+            if ($toEmail) {
+                require_once APPROOT . '/app/services/EmailService.php';
+                $emailService = new EmailService();
+
+                $subject = '[Reminder] Project follow-up: ' . ($project->title ?? 'Project') . ' - ' . $title;
+                $link = URLROOT . '/projects/viewProject/' . (int)$projectId;
+                $html = "
+                <h2>Follow-up Reminder</h2>
+                <p><strong>Project:</strong> " . htmlspecialchars($project->title ?? 'Project') . "</p>
+                <p><strong>When:</strong> " . date('M j, Y g:i A', $remindTs) . "</p>
+                <p><strong>Title:</strong> " . htmlspecialchars($title) . "</p>
+                " . (!empty($notes) ? "<p><strong>Notes:</strong><br>" . nl2br(htmlspecialchars($notes)) . "</p>" : "") . "
+                <p><a href=\"" . $link . "\">Open project</a></p>
+                ";
+                $emailData = [
+                    'to' => $toEmail,
+                    'subject' => $subject,
+                    'html_body' => $html,
+                    'body' => strip_tags($html),
+                ];
+                $queueId = $emailService->queueEmail($emailData, 3, new DateTime($remindAt));
+                if ($queueId) {
+                    $this->reminderModel->setReminderQueueId((int)$insertId, (int)$queueId);
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Queue project callback reminder email failed: ' . $e->getMessage());
+        }
+
+        flash('project_message', 'Callback created. Reminder scheduled for ' . date('M j, Y g:i A', $remindTs) . '.');
+        redirect('projects/viewProject/' . (int)$projectId);
+    }
+
+    /**
+     * Mark a project callback as completed
+     */
+    public function completeCallback($callbackId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (!hasPermission('projects.update')) {
+            flash('project_error', 'You do not have permission to update callbacks', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        if (!$callbackId) {
+            redirect('projects');
+            return;
+        }
+        $cb = $this->reminderModel->getById((int)$callbackId);
+        if (!$cb) {
+            flash('project_error', 'Callback not found', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        $this->reminderModel->markCompleted((int)$callbackId);
+        flash('project_message', 'Callback marked as completed.');
+        $redirectProject = (int)($cb['entity_id'] ?? 0);
+        redirect('projects/viewProject/' . $redirectProject);
+    }
+
+    /**
+     * View callbacks history for a project (completed and missed)
+     */
+    public function callbacksHistory($projectId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (!hasPermission('projects.read')) {
+            flash('project_error', 'You do not have permission to view callbacks', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        if (!$projectId) {
+            redirect('projects');
+            return;
+        }
+
+        $project = $this->projectModel->getProjectById((int)$projectId);
+        if (!$project) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+
+        // Fetch follow-ups
+        $all = [];
+        try {
+            $all = $this->reminderModel->getByEntity('project', (int)$projectId);
+        } catch (Exception $e) {
+            $all = [];
+        }
+
+        // Categorize
+        $now = time();
+        $completed = array_values(array_filter($all, function($c) { return ($c['status'] ?? '') === 'Completed'; }));
+        $pending = array_values(array_filter($all, function($c) { return ($c['status'] ?? '') === 'Pending'; }));
+        $missed = array_values(array_filter($pending, function($c) use ($now) { return strtotime($c['remind_at'] ?? '') < $now; }));
+        $history = array_merge($completed, $missed);
+
+        // Filter selection
+        $status = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'history';
+        $active = $all;
+        switch ($status) {
+            case 'completed': $active = $completed; break;
+            case 'missed': $active = $missed; break;
+            case 'pending': $active = $pending; break;
+            case 'history': $active = $history; break;
+            case 'all': default: $active = $all; break;
+        }
+
+        // Counts
+        $counts = [
+            'completed' => count($completed),
+            'missed' => count($missed),
+            'pending' => count($pending),
+            'all' => count($all)
+        ];
+
+        $this->view('projects/callbacks_history', [
+            'title' => 'Callbacks History - ' . ($project->title ?? 'Project'),
+            'project' => $project,
+            'callbacks' => $active,
+            'counts' => $counts,
+            'active_filter' => $status
+        ]);
+    }
+    
+    /**
+     * Quick follow-up (project): creates a follow-up for the current user +24h
+     */
+    public function addQuickCallback($projectId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (!hasPermission('projects.update')) {
+            flash('project_error', 'You do not have permission to add follow-ups', 'alert-danger');
+            redirect('projects/viewProject/' . (int)$projectId);
+            return;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$projectId) {
+            redirect('projects/viewProject/' . (int)$projectId);
+            return;
+        }
+
+        $title = 'Follow-up';
+        $notes = '';
+        $remindTs = time() + 24 * 3600; // +24 hours
+        $remindAt = date('Y-m-d H:i:s', $remindTs);
+
+        $insertId = $this->reminderModel->add([
+            'entity_type' => 'project',
+            'entity_id' => (int)$projectId,
+            'title' => $title,
+            'notes' => $notes,
+            'remind_at' => $remindAt,
+            'created_by' => (int)($_SESSION['user_id'] ?? 0),
+            'notify_all' => 0,
+        ]);
+
+        if (!$insertId) {
+            flash('project_error', 'Failed to create follow-up.', 'alert-danger');
+            redirect('projects/viewProject/' . (int)$projectId);
+            return;
+        }
+
+        // Queue reminder email to creator
+        try {
+            require_once APPROOT . '/app/services/EmailService.php';
+            $emailService = new EmailService();
+            $user = $this->userModel->getUserById((int)($_SESSION['user_id'] ?? 0));
+            $toEmail = $user && !empty($user->email) ? $user->email : null;
+
+            if ($toEmail) {
+                $project = $this->projectModel->getProjectById((int)$projectId);
+                $subject = '[Reminder] Project follow-up: ' . (($project && !empty($project->title)) ? $project->title : ('Project #' . (int)$projectId)) . ' - ' . $title;
+                $link = URLROOT . '/projects/viewProject/' . (int)$projectId;
+                $html = "
+                <h2>Follow-up Reminder</h2>
+                <p><strong>Project:</strong> " . htmlspecialchars(($project && !empty($project->title)) ? $project->title : ('Project #' . (int)$projectId)) . "</p>
+                <p><strong>When:</strong> " . date('M j, Y g:i A', $remindTs) . "</p>
+                <p><strong>Title:</strong> " . htmlspecialchars($title) . "</p>
+                <p><a href=\"" . $link . "\">Open project</a></p>
+                ";
+                $emailData = [
+                    'to' => $toEmail,
+                    'subject' => $subject,
+                    'html_body' => $html,
+                    'body' => strip_tags($html),
+                ];
+                $queueId = $emailService->queueEmail($emailData, 3, new DateTime($remindAt));
+                if ($queueId) {
+                    $this->reminderModel->setReminderQueueId((int)$insertId, (int)$queueId);
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Queue project quick follow-up email failed: ' . $e->getMessage());
+        }
+
+        flash('project_message', 'Quick follow-up created for ' . date('M j, Y g:i A', $remindTs) . '.');
+        redirect('projects/viewProject/' . (int)$projectId);
+    }
+
+    /**
+     * Delete a project follow-up (admin/authorized users)
+     */
+    public function deleteCallback($callbackId = null) {
+        if (!isset($_SESSION['is_logged_in']) || !$_SESSION['is_logged_in']) {
+            redirect('users/login');
+            return;
+        }
+        if (!hasPermission('projects.update')) {
+            flash('project_error', 'You do not have permission to delete follow-ups', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$callbackId) {
+            redirect('projects');
+            return;
+        }
+        $cb = $this->reminderModel->getById((int)$callbackId);
+        if (!$cb || (strtolower($cb['entity_type'] ?? '') !== 'project')) {
+            flash('project_error', 'Follow-up not found', 'alert-danger');
+            redirect('projects');
+            return;
+        }
+        $projectId = (int)($cb['entity_id'] ?? 0);
+        $ok = $this->reminderModel->delete((int)$callbackId);
+        if ($ok) {
+            flash('project_message', 'Follow-up deleted.');
+        } else {
+            flash('project_error', 'Failed to delete follow-up.', 'alert-danger');
+        }
+        redirect('projects/callbacksHistory/' . $projectId);
     }
     
     // Show form to edit project

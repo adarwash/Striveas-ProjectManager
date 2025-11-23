@@ -625,6 +625,27 @@ class User {
             return [];
         }
     }
+	
+	/**
+	 * Update last_login timestamp for a user (ensures column exists)
+	 */
+	public function updateLastLogin(int $userId): bool {
+		try {
+			// Ensure last_login column exists (SQL Server)
+			$this->db->query("
+				IF COL_LENGTH('dbo.Users','last_login') IS NULL
+				BEGIN
+					ALTER TABLE [dbo].[Users] ADD [last_login] DATETIME NULL;
+				END
+			");
+			// Update last_login to current time
+			$this->db->update("UPDATE [dbo].[Users] SET last_login = GETDATE() WHERE id = ?", [$userId]);
+			return true;
+		} catch (Exception $e) {
+			error_log('UpdateLastLogin Error: ' . $e->getMessage());
+			return false;
+		}
+	}
 
     // Update user role (supports both old role field and new role_id)
     public function updateUserRole($userId, $role) {

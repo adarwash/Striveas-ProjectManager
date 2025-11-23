@@ -24,7 +24,7 @@ class Note {
             }
             
             // Validate reference_id based on type
-            if (in_array($data['type'], ['project', 'task']) && empty($data['reference_id'])) {
+            if (in_array($data['type'], ['project', 'task', 'client']) && empty($data['reference_id'])) {
                 error_log("Note::create - Error: reference_id is required for type: " . $data['type']);
                 return false;
             }
@@ -219,6 +219,44 @@ class Note {
             return [];
         }
     }
+
+    /**
+     * Get notes by type/reference that the given user can see (owner or shared)
+     */
+    public function getNotesByReferenceForUser(string $type, int $referenceId, int $userId): array {
+        try {
+            $query = "SELECT DISTINCT n.*, u.username as created_by_name
+                     FROM Notes n
+                     LEFT JOIN Users u ON n.created_by = u.id
+                     LEFT JOIN note_shares ns ON ns.note_id = n.id AND ns.shared_with_user_id = ?
+                     WHERE n.type = ? AND n.reference_id = ?
+                       AND (n.created_by = ? OR ns.shared_with_user_id = ?)
+                     ORDER BY n.created_at DESC";
+            $params = [$userId, $type, $referenceId, $userId, $userId];
+            return $this->db->select($query, $params) ?: [];
+        } catch (Exception $e) {
+            error_log('Get Notes By Reference For User Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get recent notes by type/reference (no permission filter)
+     */
+    public function getRecentByReference(string $type, int $referenceId, int $limit = 10): array {
+        try {
+            $top = $limit > 0 ? "TOP {$limit} " : '';
+            $query = "SELECT {$top} n.*, u.username as created_by_name
+                     FROM Notes n
+                     LEFT JOIN Users u ON n.created_by = u.id
+                     WHERE n.type = ? AND n.reference_id = ?
+                     ORDER BY n.created_at DESC";
+            return $this->db->select($query, [$type, $referenceId]) ?: [];
+        } catch (Exception $e) {
+            error_log('Get Recent Notes By Reference Error: ' . $e->getMessage());
+            return [];
+        }
+    }
     
     /**
      * Get all notes for a user
@@ -232,6 +270,7 @@ class Note {
                      CASE 
                          WHEN n.type = 'project' THEN p.title 
                          WHEN n.type = 'task' THEN t.title 
+                         WHEN n.type = 'client' THEN c.name
                      END as reference_title,
                      CASE
                          WHEN n.created_by = ? THEN 'owner'
@@ -244,6 +283,7 @@ class Note {
                      LEFT JOIN Users u ON n.created_by = u.id
                      LEFT JOIN Projects p ON n.type = 'project' AND n.reference_id = p.id
                      LEFT JOIN Tasks t ON n.type = 'task' AND n.reference_id = t.id
+                     LEFT JOIN Clients c ON n.type = 'client' AND n.reference_id = c.id
                      LEFT JOIN note_shares ns ON n.id = ns.note_id AND ns.shared_with_user_id = ?
                      LEFT JOIN Users su ON ns.shared_by_user_id = su.id
                      WHERE n.created_by = ? OR ns.shared_with_user_id = ?

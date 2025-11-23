@@ -228,6 +228,12 @@
                                                 <i class="<?= $config['icon'] ?> me-1"></i>
                                                 <?= htmlspecialchars($project->status) ?>
                                             </span>
+                                            <?php if (!empty($project->missed_callbacks_count) && (int)$project->missed_callbacks_count > 0): ?>
+                                            <span class="badge bg-warning text-dark ms-2">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                Missed <?= (int)$project->missed_callbacks_count ?>
+                                            </span>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="project-actions">
                                             <div class="dropdown">
@@ -402,6 +408,12 @@
                                                         <i class="<?= $config['icon'] ?> me-1"></i>
                                                         <?= htmlspecialchars($project->status) ?>
                                                     </span>
+                                                    <?php if (!empty($project->missed_callbacks_count) && (int)$project->missed_callbacks_count > 0): ?>
+                                                    <span class="badge bg-warning text-dark ms-2">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                                        Missed <?= (int)$project->missed_callbacks_count ?>
+                                                    </span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <?php 
