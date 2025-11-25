@@ -80,6 +80,7 @@
                                             <thead>
                                                 <tr>
                                                     <th>Select</th>
+                                                    <th>Primary</th>
                                                     <th>Name</th>
                                                     <th>Email</th>
                                                     <th>Project Role</th>
@@ -92,6 +93,12 @@
                                                             <div class="form-check">
                                                                 <input class="form-check-input" type="checkbox" name="user_ids[]" value="<?= $user->user_id ?>" id="user-<?= $user->user_id ?>" 
                                                                     <?= in_array($user->user_id, $assigned_user_ids) ? 'checked' : '' ?>>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="primary_user_id" value="<?= $user->user_id ?>" id="primary-<?= $user->user_id ?>"
+                                                                    <?= ((int)$task->assigned_to === (int)$user->user_id) ? 'checked' : '' ?>>
                                                             </div>
                                                         </td>
                                                         <td><?= $user->name ?></td>

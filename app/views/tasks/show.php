@@ -134,12 +134,16 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
                             <?php foreach ($assigned_users as $user) : ?>
                                 <div class="col-md-6 mb-2">
                                     <div class="d-flex align-items-center">
-                                        <div class="user-avatar me-2 bg-<?= strtolower(substr($user->name, 0, 1)) ?>">
-                                            <?= strtoupper(substr($user->name, 0, 1)) ?>
+										<?php 
+											$dispName = $user->name ?? ($user->username ?? 'User');
+											$initial = strtoupper(substr((string)$dispName, 0, 1));
+										?>
+										<div class="user-avatar me-2 bg-<?= strtolower($initial) ?>">
+											<?= $initial ?>
                                         </div>
                                         <div>
-                                            <div class="fs-6"><?= htmlspecialchars($user->name) ?></div>
-                                            <small class="text-muted"><?= htmlspecialchars($user->email) ?></small>
+											<div class="fs-6"><?= htmlspecialchars($dispName) ?></div>
+											<small class="text-muted"><?= htmlspecialchars($user->email ?? ($user->username ?? '')) ?></small>
                                         </div>
                                     </div>
                                 </div>
@@ -185,13 +189,14 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
                 <?php if (!empty($subtasks)): ?>
                 <div class="table-responsive">
                     <table class="table align-middle">
-                        <thead class="table-light">
+                            <thead class="table-light">
                             <tr>
                                 <th>Title</th>
                                 <th>Status</th>
                                 <th>Assignee</th>
                                 <th>Priority</th>
                                 <th>Due</th>
+                                <th>Progress</th>
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
@@ -216,11 +221,23 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
                                     <a href="/tasks/show/<?= (int)$st->id ?>" class="text-decoration-none fw-semibold">
                                         <?= htmlspecialchars($st->title ?? '') ?>
                                     </a>
+                                    <?php if (!empty($st->references_text)): ?>
+                                    <div class="small text-muted mt-1">
+                                        Ref: <?= htmlspecialchars($st->references_text) ?>
+                                    </div>
+                                    <?php endif; ?>
                                 </td>
                                 <td><span class="badge <?= $stStatusClass ?>"><?= htmlspecialchars($st->status ?? 'Pending') ?></span></td>
                                 <td><?= htmlspecialchars($st->assigned_to_name ?? '—') ?></td>
                                 <td><span class="badge <?= $stPriorityClass ?>"><?= htmlspecialchars($st->priority ?? 'Medium') ?></span></td>
                                 <td><?= !empty($st->due_date) ? date('M j, Y', strtotime($st->due_date)) : '—' ?></td>
+                                <td style="min-width:160px;">
+                                    <form action="/tasks/updateProgress/<?= (int)$st->id ?>" method="post" class="d-flex align-items-center gap-2">
+                                        <input type="range" name="progress_percent" min="0" max="100" value="<?= (int)($st->progress_percent ?? 0) ?>" class="form-range" style="width:100px;">
+                                        <span class="small text-muted"><?= (int)($st->progress_percent ?? 0) ?>%</span>
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
+                                    </form>
+                                </td>
                                 <td class="text-end">
                                     <?php if (($st->status ?? '') !== 'Completed'): ?>
                                     <form action="/tasks/updateStatus/<?= (int)$st->id ?>" method="post" class="d-inline">
@@ -274,6 +291,20 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
                             <textarea name="description" class="form-control" rows="2" placeholder="Optional details"></textarea>
                         </div>
                     </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-12">
+                        <input type="text" name="references_text" class="form-control" placeholder="References (links, ticket numbers, etc.)">
+                    </div>
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-12">
+                        <label class="form-label mb-1">Progress</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="range" name="progress_percent" min="0" max="100" value="0" class="form-range" style="width:200px;">
+                            <span class="text-muted small" id="newSubtaskProgressValue">0%</span>
+                        </div>
+                    </div>
+                </div>
                     <div class="mt-2 d-flex justify-content-end">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-plus-lg"></i> Add Subtask
@@ -482,6 +513,18 @@ $title = htmlspecialchars($task->title) . ' - HiveITPortal';
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var newSubtaskSlider = document.querySelector('form[action^="/tasks/addSubtask"] input[name="progress_percent"]');
+    var newSubtaskValue = document.getElementById('newSubtaskProgressValue');
+    if (newSubtaskSlider && newSubtaskValue) {
+        newSubtaskSlider.addEventListener('input', function() {
+            newSubtaskValue.textContent = this.value + '%';
+        });
+    }
+});
+</script>
 
 <!-- Delete Task Modal -->
 <div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-labelledby="deleteTaskModalLabel" aria-hidden="true">

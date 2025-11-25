@@ -299,6 +299,23 @@ class Projects extends Controller {
         
         // Get all tasks for this project
         $tasks = $this->taskModel->getTasksByProject($id);
+        $taskLookup = [];
+        foreach ($tasks as $t) {
+            $taskLookup[$t->id] = $t;
+        }
+        $parentTasks = [];
+        $subTasksByParent = [];
+        foreach ($tasks as $task) {
+            $parentId = isset($task->parent_task_id) ? (int)$task->parent_task_id : 0;
+            if ($parentId > 0 && isset($taskLookup[$parentId])) {
+                if (!isset($subTasksByParent[$parentId])) {
+                    $subTasksByParent[$parentId] = [];
+                }
+                $subTasksByParent[$parentId][] = $task;
+            } else {
+                $parentTasks[] = $task;
+            }
+        }
         
         // Get all notes for this project
         $notes = $this->noteModel->getNotesByReference('project', $id);
@@ -370,6 +387,8 @@ class Projects extends Controller {
             'title' => $project->title,
             'project' => $project,
             'tasks' => $tasks,
+            'parentTasks' => $parentTasks,
+            'subTasksByParent' => $subTasksByParent,
             'notes' => $notes,
             'task_activities' => $taskActivities,
             'assigned_users' => $assignedUsers,

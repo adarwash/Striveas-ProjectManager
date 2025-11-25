@@ -272,6 +272,64 @@
     border: none;
 }
 
+.parent-task-row {
+    background-color: #fff;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.parent-task-row .task-title {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.subtask-container-row td {
+    background: #f8fafc;
+    padding: 0;
+    border-top: 1px solid #e2e8f0;
+}
+
+.subtask-table {
+    width: 100%;
+    margin: 0;
+}
+
+.subtask-table td {
+    padding: 0.65rem 1.5rem;
+    font-size: 0.9rem;
+}
+
+.subtask-indicator {
+    width: 14px;
+    height: 2px;
+    background: #3b82f6;
+    display: inline-block;
+    margin-right: 0.5rem;
+    border-radius: 2px;
+}
+
+.toggle-subtasks-btn {
+    border: none;
+    background: transparent;
+    color: #3b82f6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.toggle-subtasks-btn:hover {
+    background: rgba(59,130,246,0.1);
+}
+
+.subtasks-collapsed {
+    display: none;
+}
+
 /* Dropdown Improvements */
 .dropdown-menu {
     border-radius: 8px;
@@ -960,7 +1018,11 @@
                         </a>
                     </div>
                     <div class="card-body p-0">
-                        <?php if (empty($tasks)): ?>
+                        <?php
+                        $parentTasksForView = $parentTasks ?? $tasks ?? [];
+                        $subTasksMap = $subTasksByParent ?? [];
+                        ?>
+                        <?php if (empty($parentTasksForView)): ?>
                             <div class="p-4 text-center">
                                 <p class="text-muted mb-0">No tasks yet. Add a task to get started.</p>
                             </div>
@@ -978,10 +1040,17 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($tasks as $task): ?>
-                                            <tr>
+                                        <?php foreach ($parentTasksForView as $task): ?>
+                                            <tr class="parent-task-row">
                                                 <td>
                                                     <div class="task-title">
+                                                        <?php if (!empty($subTasksMap[$task->id])): ?>
+                                                        <button type="button" class="toggle-subtasks-btn" data-parent-id="<?= $task->id ?>" aria-expanded="false" aria-label="Toggle Subtasks">
+                                                            <i class="bi bi-caret-right-fill"></i>
+                                                        </button>
+                                                        <?php else: ?>
+                                                        <i class="bi bi-diagram-3 text-primary"></i>
+                                                        <?php endif; ?>
                                                         <a href="<?= URLROOT ?>/tasks/show/<?= $task->id ?>" class="text-decoration-none">
                                                             <?= htmlspecialchars($task->title) ?>
                                                         </a>
@@ -1017,6 +1086,57 @@
                                                     </div>
                                                 </td>
                                             </tr>
+                                            <?php if (!empty($subTasksMap[$task->id])): ?>
+                                            <tr class="subtask-container-row subtasks-collapsed" data-subtasks-for="<?= $task->id ?>">
+                                                <td colspan="6">
+                                                    <table class="table subtask-table mb-0">
+                                                        <tbody>
+                                                        <?php foreach ($subTasksMap[$task->id] as $subtask): ?>
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="d-flex align-items-center">
+                                                                        <span class="subtask-indicator"></span>
+                                                                        <a href="<?= URLROOT ?>/tasks/show/<?= $subtask->id ?>" class="text-decoration-none">
+                                                                            <?= htmlspecialchars($subtask->title) ?>
+                                                                        </a>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <?php
+                                                                    $subStatusClass = 'bg-secondary';
+                                                                    if ($subtask->status === 'Pending') $subStatusClass = 'bg-secondary';
+                                                                    if ($subtask->status === 'In Progress') $subStatusClass = 'bg-primary';
+                                                                    if ($subtask->status === 'Completed') $subStatusClass = 'bg-success';
+                                                                    if ($subtask->status === 'Testing') $subStatusClass = 'bg-info';
+                                                                    if ($subtask->status === 'Blocked') $subStatusClass = 'bg-danger';
+                                                                    ?>
+                                                                    <span class="badge <?= $subStatusClass ?>"><?= $subtask->status ?></span>
+                                                                </td>
+                                                                <td>
+                                                                    <?php
+                                                                    $subPriorityClass = 'bg-secondary';
+                                                                    if ($subtask->priority === 'Low') $subPriorityClass = 'bg-success';
+                                                                    if ($subtask->priority === 'Medium') $subPriorityClass = 'bg-info';
+                                                                    if ($subtask->priority === 'High') $subPriorityClass = 'bg-warning';
+                                                                    if ($subtask->priority === 'Critical') $subPriorityClass = 'bg-danger';
+                                                                    ?>
+                                                                    <span class="badge <?= $subPriorityClass ?>"><?= $subtask->priority ?></span>
+                                                                </td>
+                                                                <td><?= htmlspecialchars($subtask->assigned_to_name ?? 'Unassigned') ?></td>
+                                                                <td><?= !empty($subtask->due_date) ? date('M j, Y', strtotime($subtask->due_date)) : '—' ?></td>
+                                                                <td>
+                                                                    <div class="btn-group">
+                                                                        <a href="<?= URLROOT ?>/tasks/show/<?= $subtask->id ?>" class="btn btn-outline-primary btn-sm">View</a>
+                                                                        <a href="<?= URLROOT ?>/tasks/edit/<?= $subtask->id ?>" class="btn btn-outline-secondary btn-sm">Edit</a>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <?php endif; ?>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
@@ -1115,6 +1235,25 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Task hierarchy toggles
+    document.querySelectorAll('.toggle-subtasks-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var parentId = this.getAttribute('data-parent-id');
+            var subtasksRow = document.querySelector('tr[data-subtasks-for="' + parentId + '"]');
+            if (!subtasksRow) return;
+            var expanded = this.getAttribute('aria-expanded') === 'true';
+            if (expanded) {
+                subtasksRow.classList.add('subtasks-collapsed');
+                this.setAttribute('aria-expanded', 'false');
+                this.innerHTML = '<i class="bi bi-caret-right-fill"></i>';
+            } else {
+                subtasksRow.classList.remove('subtasks-collapsed');
+                this.setAttribute('aria-expanded', 'true');
+                this.innerHTML = '<i class="bi bi-caret-down-fill"></i>';
+            }
+        });
+    });
+
     // Initialize Gantt Chart
     gantt.config.date_format = "%Y-%m-%d";
     gantt.init("gantt_here");

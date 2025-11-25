@@ -8,6 +8,38 @@ class Task {
     }
     
     /**
+     * Ensure references_text column exists
+     */
+    private function ensureReferencesColumn() {
+        $sql = "
+        IF COL_LENGTH('dbo.tasks', 'references_text') IS NULL
+        BEGIN
+            ALTER TABLE [dbo].[tasks] ADD [references_text] NVARCHAR(1024) NULL;
+        END";
+        try {
+            $this->db->query($sql);
+        } catch (Exception $e) {
+            error_log('ensureReferencesColumn error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Ensure progress column exists
+     */
+    private function ensureProgressColumn() {
+        $sql = "
+        IF COL_LENGTH('dbo.tasks', 'progress_percent') IS NULL
+        BEGIN
+            ALTER TABLE [dbo].[tasks] ADD [progress_percent] INT NOT NULL CONSTRAINT DF_tasks_progress DEFAULT 0;
+        END";
+        try {
+            $this->db->query($sql);
+        } catch (Exception $e) {
+            error_log('ensureProgressColumn error: ' . $e->getMessage());
+        }
+    }
+		
+    /**
      * Ensure parent_task_id column exists for subtasks
      */
     private function ensureParentTaskColumn() {
@@ -129,8 +161,10 @@ class Task {
     // Create new task
     public function create($data) {
         $this->ensureParentTaskColumn();
-        $query = "INSERT INTO tasks (project_id, title, description, status, priority, due_date, assigned_to, created_by, created_at, parent_task_id) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?)";
+        $this->ensureReferencesColumn();
+        $this->ensureProgressColumn();
+        $query = "INSERT INTO tasks (project_id, title, description, status, priority, due_date, assigned_to, created_by, created_at, parent_task_id, references_text, progress_percent) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?)";
         
         return $this->db->insert($query, [
             $data['project_id'],
@@ -141,7 +175,9 @@ class Task {
             $data['due_date'],
             $data['assigned_to'],
             $data['created_by'],
-            $data['parent_task_id'] ?? null
+            $data['parent_task_id'] ?? null,
+            $data['references_text'] ?? null,
+            isset($data['progress_percent']) ? (int)$data['progress_percent'] : 0
         ]);
     }
 
@@ -217,8 +253,10 @@ class Task {
     // Update task
     public function update($data) {
         $this->ensureParentTaskColumn();
+        $this->ensureReferencesColumn();
+        $this->ensureProgressColumn();
         $query = "UPDATE tasks 
-                 SET project_id = ?, title = ?, description = ?, status = ?, priority = ?, due_date = ?, assigned_to = ?, parent_task_id = ?, updated_at = GETDATE()
+                 SET project_id = ?, title = ?, description = ?, status = ?, priority = ?, due_date = ?, assigned_to = ?, parent_task_id = ?, references_text = ?, progress_percent = ?, updated_at = GETDATE()
                  WHERE id = ?";
         
         return $this->db->update($query, [
@@ -229,7 +267,9 @@ class Task {
             $data['priority'],
             $data['due_date'],
             $data['assigned_to'],
-            $data['parent_task_id'] ?? null,
+				$data['parent_task_id'] ?? null,
+            $data['references_text'] ?? null,
+            isset($data['progress_percent']) ? (int)$data['progress_percent'] : 0,
             $data['id']
         ]);
     }
@@ -246,7 +286,22 @@ class Task {
         
         return $this->db->update($query, [$status, $id]);
     }
+		
+		/**
+		 * Update the primary assignee (tasks.assigned_to)
+		 */
+		public function updateAssignedTo($taskId, $userIdOrNull) {
+			$query = "UPDATE tasks SET assigned_to = ?, updated_at = GETDATE() WHERE id = ?";
+			return $this->db->update($query, [$userIdOrNull, $taskId]);
+		}
     
+	public function updateProgress($taskId, $progress) {
+		$this->ensureProgressColumn();
+		$progress = max(0, min(100, (int)$progress));
+		$query = "UPDATE tasks SET progress_percent = ?, updated_at = GETDATE() WHERE id = ?";
+		return $this->db->update($query, [$progress, $taskId]);
+	}
+	
     // Delete task
     public function delete($id) {
         $query = "DELETE FROM tasks WHERE id = ?";
@@ -417,7 +472,10 @@ class Task {
      * @return array Array of assigned users
      */
     public function getTaskUsers($taskId) {
-        $sql = "SELECT u.id as user_id, u.name, u.email, u.username 
+		$sql = "SELECT u.id as user_id, 
+		                COALESCE(u.full_name, u.username) AS name, 
+		                COALESCE(u.email, u.username) AS email, 
+		                u.username 
                 FROM users u
                 JOIN task_users tu ON u.id = tu.user_id
                 WHERE tu.task_id = ?";
@@ -448,6 +506,7 @@ class Task {
      * @return bool True if assigned, false otherwise
      */
     public function assignUserToTask($taskId, $userId) {
+		$this->createTaskUsersTable();
         // First check if the user is already assigned
         if ($this->isUserAssignedToTask($taskId, $userId)) {
             return true; // Already assigned
@@ -473,6 +532,7 @@ class Task {
      * @return bool True if removed, false otherwise
      */
     public function removeUserFromTask($taskId, $userId) {
+		$this->createTaskUsersTable();
         $sql = "DELETE FROM task_users WHERE task_id = ? AND user_id = ?";
         
         try {

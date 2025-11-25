@@ -68,6 +68,9 @@
                         <a href="#authentication" class="list-group-item list-group-item-action" data-bs-toggle="list">
                             <i class="bi bi-shield-lock me-2"></i> Authentication
                         </a>
+                        <a href="#backup" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                            <i class="bi bi-database-down me-2"></i> Backup
+                        </a>
                     </div>
                 </div>
             </div>
@@ -705,6 +708,47 @@
                                             <li>Create a client secret and copy the values above</li>
                                             <li>Grant admin consent for the permissions</li>
                                         </ol>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Backup Tab -->
+                <div class="tab-pane fade" id="backup">
+                    <div class="row">
+                        <div class="col-lg-10 mx-auto">
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-white py-3">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-database-down text-primary me-2"></i>Database Backup
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-light border">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        Set the directory on the SQL Server where .bak files can be written. Then generate and download a full backup.
+                                        <div class="small text-muted mt-2">
+                                            Requires SQL permissions for BACKUP and Ad Hoc Distributed Queries for streaming the file.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="mssql_backup_path" class="form-label fw-medium">Backup directory on SQL Server</label>
+                                        <input type="text" class="form-control" id="mssql_backup_path" name="mssql_backup_path" 
+                                               placeholder="/var/opt/mssql/backups or C:\MSSQL\\Backup"
+                                               value="<?= htmlspecialchars($data['systemSettings']['mssql_backup_path'] ?? '/var/opt/mssql/backups') ?>">
+                                        <div class="form-text">
+                                            Ensure the SQL Server service account has write access to this directory.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-end">
+                                        <button type="submit" class="btn btn-primary"
+                                                formaction="<?= URLROOT ?>/admin/backupDatabase" formmethod="post">
+                                            <i class="bi bi-download me-2"></i>Create & Download Backup (.bak)
+                                        </button>
                                     </div>
                                 </div>
                             </div>

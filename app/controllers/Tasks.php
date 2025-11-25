@@ -128,6 +128,7 @@ class Tasks extends Controller {
                 'priority' => trim($_POST['priority']),
                 'due_date' => !empty($_POST['due_date']) ? trim($_POST['due_date']) : null,
                 'assigned_to' => !empty($_POST['assigned_to']) ? trim($_POST['assigned_to']) : null,
+				'references_text' => isset($_POST['references_text']) ? trim($_POST['references_text']) : null,
                 'site_ids' => isset($_POST['site_ids']) ? (array)$_POST['site_ids'] : [],
                 'project_id_err' => '',
                 'title_err' => '',
@@ -614,6 +615,9 @@ class Tasks extends Controller {
         $priority = !empty($_POST['priority']) ? trim($_POST['priority']) : 'Medium';
         $status = !empty($_POST['status']) ? trim($_POST['status']) : 'Pending';
         $description = trim($_POST['description'] ?? '');
+		$referencesText = trim($_POST['references_text'] ?? '');
+		$progressPercent = isset($_POST['progress_percent']) ? (int)$_POST['progress_percent'] : 0;
+		$progressPercent = max(0, min(100, $progressPercent));
         
         if ($title === '') {
             flash('task_error', 'Subtask title is required', 'alert-danger');
@@ -630,7 +634,9 @@ class Tasks extends Controller {
             'due_date' => $dueDate,
             'assigned_to' => $assignedTo,
             'created_by' => $_SESSION['user_id'],
-            'parent_task_id' => (int)$parentId
+			'parent_task_id' => (int)$parentId,
+			'references_text' => $referencesText !== '' ? $referencesText : null,
+			'progress_percent' => $progressPercent
         ];
         
         $subtaskId = $this->taskModel->create($data);
@@ -836,20 +842,18 @@ class Tasks extends Controller {
             redirect('tasks');
         }
         
-        // Sanitize POST data
-        $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
-        
-        // Get the selected user IDs
-        $userIds = isset($_POST['user_ids']) ? $_POST['user_ids'] : [];
+		// Get the selected user IDs (preserve array, then normalize to ints)
+		$userIdsRaw = isset($_POST['user_ids']) ? (array)$_POST['user_ids'] : [];
+		$userIds = array_values(array_filter(array_map('intval', $userIdsRaw), function($v){ return $v > 0; }));
         
         // Start transaction
         $success = true;
         
         // First, remove all existing assignments
         $currentlyAssigned = $this->taskModel->getTaskUsers($id);
-        $currentlyAssignedIds = array_map(function($user) {
-            return $user->user_id;
-        }, $currentlyAssigned);
+		$currentlyAssignedIds = array_map(function($user) {
+		 return (int)$user->user_id;
+		}, $currentlyAssigned);
         
         // Find users to remove (those who were assigned but not in the new selection)
         $usersToRemove = array_diff($currentlyAssignedIds, $userIds);
@@ -861,6 +865,16 @@ class Tasks extends Controller {
         foreach ($userIds as $userId) {
             $success = $success && $this->taskModel->assignUserToTask($id, $userId);
         }
+		
+		// Update primary assignee only if explicitly provided
+		$primary = isset($_POST['primary_user_id']) ? (int)$_POST['primary_user_id'] : 0;
+		if ($primary > 0) {
+			// Ensure the chosen primary is included in assignments
+			if (!in_array($primary, $userIds, true)) {
+				$success = $success && $this->taskModel->assignUserToTask($id, $primary);
+			}
+			$this->taskModel->updateAssignedTo((int)$id, $primary);
+		}
         
         if ($success) {
             flash('task_message', 'Task assignments updated successfully');
@@ -941,6 +955,31 @@ class Tasks extends Controller {
         
         redirect('tasks/show/' . $id);
     }
+	
+	/**
+	 * Update task/subtask progress (0-100)
+	 */
+	public function updateProgress($id) {
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+			redirect('tasks/show/' . (int)$id);
+			return;
+		}
+		$task = $this->taskModel->getTaskById($id);
+		if (!$task) {
+			flash('task_error', 'Task not found', 'alert-danger');
+			redirect('tasks');
+			return;
+		}
+		$progress = isset($_POST['progress_percent']) ? (int)$_POST['progress_percent'] : 0;
+		$progress = max(0, min(100, $progress));
+		if ($this->taskModel->updateProgress((int)$id, $progress)) {
+			flash('task_message', 'Progress updated to ' . $progress . '%');
+		} else {
+			flash('task_error', 'Failed to update progress', 'alert-danger');
+		}
+		$redirectId = $task->parent_task_id ?? $task->id;
+		redirect('tasks/show/' . (int)$redirectId);
+	}
     
     /**
      * Mark a task as complete (convenience method)

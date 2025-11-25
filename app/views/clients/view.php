@@ -682,6 +682,165 @@
                 </div>
             </div>
 
+            <!-- Document Library -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-folder2-open text-primary me-2"></i>
+                            Documents
+                        </h5>
+                        <?php if (hasPermission('clients.update')): ?>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadClientDocModal">
+                            <i class="bi bi-upload"></i> Upload Document
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($documents)): ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Type</th>
+                                    <th>Size</th>
+                                    <th>Tags</th>
+                                    <th>Uploaded By</th>
+                                    <th>Date</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($documents as $document): ?>
+                                <?php 
+                                    $fileExt = strtolower(pathinfo($document['file_name'], PATHINFO_EXTENSION));
+                                    $iconClass = 'bi-file-earmark';
+                                    switch ($fileExt) {
+                                        case 'pdf': $iconClass = 'bi-file-earmark-pdf'; break;
+                                        case 'doc': case 'docx': $iconClass = 'bi-file-earmark-word'; break;
+                                        case 'xls': case 'xlsx': $iconClass = 'bi-file-earmark-excel'; break;
+                                        case 'jpg': case 'jpeg': case 'png': $iconClass = 'bi-file-earmark-image'; break;
+                                        case 'txt': $iconClass = 'bi-file-earmark-text'; break;
+                                    }
+                                    $tags = array_filter(array_map('trim', explode(',', (string)($document['tags'] ?? ''))));
+                                ?>
+                                <tr>
+                                    <td>
+                                        <i class="bi <?= $iconClass ?> me-1"></i>
+                                        <?= htmlspecialchars($document['file_name']) ?>
+                                    </td>
+                                    <td><?= strtoupper($fileExt) ?></td>
+                                    <td><?= $document['formatted_size'] ?></td>
+                                    <td>
+                                        <?php if (!empty($tags)): ?>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <?php foreach ($tags as $t): ?>
+                                                    <span class="badge bg-light text-dark border"><?= htmlspecialchars($t) ?></span>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="text-muted">—</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($document['uploaded_by_name'] ?? '—') ?></td>
+                                    <td><?= !empty($document['uploaded_at']) ? date('Y-m-d H:i', strtotime($document['uploaded_at'])) : '—' ?></td>
+                                    <td class="text-end">
+										<?php if (hasPermission('clients.update')): ?>
+										<button class="btn btn-sm btn-outline-secondary" 
+												data-bs-toggle="modal" 
+												data-bs-target="#renameClientDocModal"
+												data-doc-id="<?= (int)$document['id'] ?>"
+												data-doc-name="<?= htmlspecialchars($document['file_name']) ?>">
+											<i class="bi bi-pencil"></i>
+										</button>
+										<?php endif; ?>
+                                        <a href="/clients/downloadDocument/<?= (int)$document['id'] ?>" class="btn btn-sm btn-outline-primary" title="Download">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        <?php if (hasPermission('clients.update')): ?>
+                                        <a href="/clients/deleteDocument/<?= (int)$document['id'] ?>" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Delete this document?');">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php else: ?>
+                    <div class="text-center py-4">
+                        <i class="bi bi-folder2-open text-muted" style="font-size: 2rem;"></i>
+                        <h6 class="text-muted mt-2">No Documents</h6>
+                        <p class="text-muted mb-0">Upload client documents and tag them for quick retrieval.</p>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+			<!-- Rename Document Modal -->
+			<div class="modal fade" id="renameClientDocModal" tabindex="-1" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title">Rename Document</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<form id="renameClientDocForm" action="#" method="post">
+							<div class="modal-body">
+								<div class="mb-3">
+									<label class="form-label">New Name</label>
+									<input type="text" class="form-control" id="renameDocNameInput" name="file_name" required>
+									<div class="form-text">Changing the name does not change the underlying file.</div>
+								</div>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+								<button type="submit" class="btn btn-primary">
+									<i class="bi bi-check2-circle me-1"></i>Save
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+            <!-- Upload Document Modal -->
+            <div class="modal fade" id="uploadClientDocModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Upload Document</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form action="/clients/uploadDocument/<?= (int)$client['id'] ?>" method="post" enctype="multipart/form-data">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">File</label>
+                                    <input type="file" class="form-control" name="document" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt" required>
+                                    <div class="form-text">Max 10MB. Allowed: PDF, DOC(X), XLS(X), JPG/PNG, TXT</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tags</label>
+                                    <input type="text" class="form-control" name="tags" placeholder="e.g., contract, legal">
+                                    <div class="form-text">Comma-separated. Example: proposal, signed</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Description (optional)</label>
+                                    <textarea class="form-control" name="description" rows="2" placeholder="Short description"></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Upload</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <!-- Network Infrastructure Discovery Forms -->
             <div class="card border-0 shadow-sm mt-4">
                 <div class="card-header bg-white py-3">
@@ -1123,5 +1282,25 @@
         if (!sel || !sel.value) return;
         window.location.href = '/sitevisits/create/' + sel.value;
     }
+
+	// Hook up Rename Document modal
+	var renameModal = document.getElementById('renameClientDocModal');
+	if (renameModal) {
+		renameModal.addEventListener('show.bs.modal', function (event) {
+			var button = event.relatedTarget;
+			if (!button) return;
+			var docId = button.getAttribute('data-doc-id');
+			var docName = button.getAttribute('data-doc-name');
+			var form = document.getElementById('renameClientDocForm');
+			var input = document.getElementById('renameDocNameInput');
+			if (form && docId) {
+				form.action = '/clients/renameDocument/' + docId;
+			}
+			if (input) {
+				input.value = docName || '';
+				setTimeout(function(){ input.focus(); input.select(); }, 150);
+			}
+		});
+	}
 })();
 </script> 

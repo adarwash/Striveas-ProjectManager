@@ -10,6 +10,7 @@ class Clients extends Controller {
 	private $callbackModel;
 	private $auditModel;
 	private $clientMeetingModel;
+	private $clientDocumentModel;
     
     /**
      * Initialize controller and load models
@@ -30,6 +31,7 @@ class Clients extends Controller {
 		$this->reminderModel = $this->model('Reminder');
 		$this->auditModel = $this->model('Networkaudit');
 		$this->clientMeetingModel = $this->model('ClientMeeting');
+		$this->clientDocumentModel = $this->model('ClientDocument');
         
         // Set the page for sidebar highlighting
         $_SESSION['page'] = 'clients';
@@ -132,6 +134,19 @@ class Clients extends Controller {
             $recentVisits = [];
         }
 
+		// Client documents
+		$documents = [];
+		try {
+			$documents = $this->clientDocumentModel->listByClient((int)$id);
+			if (!empty($documents)) {
+				foreach ($documents as &$doc) {
+					$doc['formatted_size'] = $this->formatFileSize((int)($doc['file_size'] ?? 0));
+				}
+			}
+		} catch (Exception $e) {
+			$documents = [];
+		}
+
         // Get client domains
         try {
             if (!class_exists('ClientDomain')) {
@@ -172,7 +187,8 @@ class Clients extends Controller {
 			'audits' => $audits,
             'client_notes' => $clientNotes,
 			'meetings' => $this->clientMeetingModel->listByClient((int)$id),
-            'currency' => $this->settingModel->getCurrency()
+            'currency' => $this->settingModel->getCurrency(),
+			'documents' => $documents
         ];
         
         $this->view('clients/view', $data);
@@ -231,6 +247,234 @@ class Clients extends Controller {
 			flash('client_error', 'Failed to create meeting.', 'alert-danger');
 		}
 		redirect('clients/viewClient/' . (int)$clientId);
+	}
+
+	/**
+	 * Upload a general client document (with tags)
+	 */
+	public function uploadDocument($clientId = null) {
+		if (!$clientId) {
+			redirect('clients');
+			return;
+		}
+		if (!hasPermission('clients.update')) {
+			flash('client_error', 'You do not have permission to upload documents', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+			redirect('clients/viewClient/' . (int)$clientId);
+		}
+
+		if (!isset($_FILES['document']) || $_FILES['document']['error'] !== UPLOAD_ERR_OK) {
+			flash('client_error', 'Error uploading file. Please try again.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		$file = $_FILES['document'];
+
+		// Validate size (10MB)
+		if ((int)$file['size'] > 10 * 1024 * 1024) {
+			flash('client_error', 'File size exceeds 10MB limit.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		// Validate type
+		$allowed = ['pdf','doc','docx','xls','xlsx','jpg','jpeg','png','txt'];
+		$ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+		if (!in_array($ext, $allowed, true)) {
+			flash('client_error', 'Invalid file type. Allowed: ' . implode(', ', $allowed), 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		// Resolve document root and upload dir
+		$docRoot = (isset($_SERVER['DOCUMENT_ROOT']) && $_SERVER['DOCUMENT_ROOT'])
+			? rtrim($_SERVER['DOCUMENT_ROOT'], '/')
+			: (APPROOT . '/public');
+		$uploadDir = $docRoot . '/uploads/clients/' . (int)$clientId . '/documents/';
+		if (!file_exists($uploadDir)) {
+			if (!@mkdir($uploadDir, 0775, true)) {
+				flash('client_error', 'Server cannot create upload directory.', 'alert-danger');
+				redirect('clients/viewClient/' . (int)$clientId);
+				return;
+			}
+		}
+		if (!is_writable($uploadDir)) {
+			flash('client_error', 'Upload directory is not writable. Please contact admin.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		// Safe file name
+		$safeBase = preg_replace('/[^A-Za-z0-9_\.-]/', '_', $file['name']);
+		$newName = uniqid('doc_') . '_' . $safeBase;
+		$absPath = $uploadDir . $newName;
+
+		if (!move_uploaded_file($file['tmp_name'], $absPath)) {
+			flash('client_error', 'Error saving uploaded file.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$clientId);
+			return;
+		}
+
+		$publicPath = '/uploads/clients/' . (int)$clientId . '/documents/' . $newName;
+		$tags = trim((string)($_POST['tags'] ?? ''));
+		$description = trim((string)($_POST['description'] ?? ''));
+
+		$fileData = [
+			'file_name' => $file['name'],
+			'file_path' => $publicPath,
+			'file_type' => $file['type'] ?? null,
+			'file_size' => (int)$file['size'],
+			'uploaded_by' => (int)($_SESSION['user_id'] ?? 0)
+		];
+
+		$insertId = $this->clientDocumentModel->uploadDocument((int)$clientId, $fileData, $tags !== '' ? $tags : null, $description !== '' ? $description : null);
+		if ($insertId) {
+			flash('client_success', 'Document uploaded successfully.');
+		} else {
+			// rollback file if DB failed
+			if (file_exists($absPath)) {
+				@unlink($absPath);
+			}
+			flash('client_error', 'Error saving document metadata.', 'alert-danger');
+		}
+
+		redirect('clients/viewClient/' . (int)$clientId);
+	}
+
+	/**
+	 * Download a client document
+	 */
+	public function downloadDocument($documentId = null) {
+		if (!$documentId) {
+			redirect('clients');
+			return;
+		}
+		$document = $this->clientDocumentModel->getById((int)$documentId);
+		if (!$document) {
+			flash('client_error', 'Document not found.', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		$absPath = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/') . $document['file_path'];
+		if (!file_exists($absPath)) {
+			flash('client_error', 'File not found on server.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$document['client_id']);
+			return;
+		}
+
+		while (ob_get_level()) { ob_end_clean(); }
+
+		$mime = 'application/octet-stream';
+		if (!empty($document['file_type'])) {
+			$mime = $document['file_type'];
+		} else {
+			$ext = strtolower(pathinfo($document['file_name'], PATHINFO_EXTENSION));
+			$map = [
+				'pdf' => 'application/pdf',
+				'doc' => 'application/msword',
+				'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+				'xls' => 'application/vnd.ms-excel',
+				'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+				'jpg' => 'image/jpeg',
+				'jpeg' => 'image/jpeg',
+				'png' => 'image/png',
+				'txt' => 'text/plain'
+			];
+			if (isset($map[$ext])) { $mime = $map[$ext]; }
+		}
+
+		header('Content-Type: ' . $mime);
+		header('Content-Disposition: attachment; filename="' . $document['file_name'] . '"');
+		header('Content-Length: ' . filesize($absPath));
+		header('Cache-Control: no-cache, must-revalidate');
+		header('Pragma: no-cache');
+		header('Expires: 0');
+		readfile($absPath);
+		exit;
+	}
+
+	/**
+	 * Rename a client document (update display name only)
+	 */
+	public function renameDocument($documentId = null) {
+		if (!$documentId) {
+			redirect('clients');
+			return;
+		}
+		if (!hasPermission('clients.update')) {
+			flash('client_error', 'You do not have permission to rename documents', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		$document = $this->clientDocumentModel->getById((int)$documentId);
+		if (!$document) {
+			flash('client_error', 'Document not found.', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+			redirect('clients/viewClient/' . (int)$document['client_id']);
+		}
+		$newName = trim((string)($_POST['file_name'] ?? ''));
+		if ($newName === '') {
+			flash('client_error', 'Please provide a valid name.', 'alert-danger');
+			redirect('clients/viewClient/' . (int)$document['client_id']);
+			return;
+		}
+		// Sanitize unsafe characters in display name
+		$newName = preg_replace('/[\\r\\n\\t\\x00\\x0B]/', ' ', $newName);
+		if ($this->clientDocumentModel->rename((int)$documentId, $newName)) {
+			flash('client_success', 'Document name updated.');
+		} else {
+			flash('client_error', 'Failed to update document name.', 'alert-danger');
+		}
+		redirect('clients/viewClient/' . (int)$document['client_id']);
+	}
+
+	/**
+	 * Delete a client document
+	 */
+	public function deleteDocument($documentId = null) {
+		if (!$documentId) {
+			redirect('clients');
+			return;
+		}
+		if (!hasPermission('clients.update')) {
+			flash('client_error', 'You do not have permission to delete documents', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		$document = $this->clientDocumentModel->getById((int)$documentId);
+		if (!$document) {
+			flash('client_error', 'Document not found.', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+		$absPath = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/') . $document['file_path'];
+		if (file_exists($absPath)) {
+			@unlink($absPath);
+		}
+		if ($this->clientDocumentModel->delete((int)$documentId)) {
+			flash('client_success', 'Document deleted successfully.');
+		} else {
+			flash('client_error', 'Error deleting document.', 'alert-danger');
+		}
+		redirect('clients/viewClient/' . (int)$document['client_id']);
+	}
+
+	private function formatFileSize($bytes) {
+		if (!is_numeric($bytes) || $bytes < 0) {
+			return '0 B';
+		}
+		$units = ['B','KB','MB','GB','TB'];
+		$pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+		$pow = min($pow, count($units) - 1);
+		$bytes /= pow(1024, $pow);
+		return round($bytes, 2) . ' ' . $units[$pow];
 	}
 
     /**

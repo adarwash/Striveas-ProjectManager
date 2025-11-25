@@ -124,6 +124,7 @@ class PermissionHelper {
             // Administration
             'admin' => 'admin.access',
             'admin/users' => 'users.manage',
+            'admin/backupDatabase' => 'admin.system_settings',
             'admin/settings' => 'admin.system_settings',
             'permissions' => 'admin.permissions',
             

@@ -298,6 +298,86 @@ class Admin extends Controller {
     }
     
     /**
+     * Create and download a full MSSQL database backup (.bak)
+     * Requires: sysadmin rights to BACKUP database and (optionally) enable Ad Hoc Distributed Queries.
+     * The backup file is written on the SQL Server to a configured directory, then streamed via OPENROWSET.
+     */
+    public function backupDatabase() {
+        if (!hasPermission('admin.system_settings')) {
+            flash('settings_error', 'You do not have permission to perform database backups.');
+            redirect('admin/settings');
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('admin/settings');
+        }
+        
+        // Get DB config and settings
+        $dbName = DB1['dbname'] ?? null;
+        if (!$dbName) {
+            flash('settings_error', 'Database name not found in configuration.');
+            redirect('admin/settings');
+        }
+        
+        $settingModel = $this->model('Setting');
+        $backupDir = trim((string)$settingModel->get('mssql_backup_path', '/var/opt/mssql/backups'));
+        if ($backupDir === '') {
+            $backupDir = '/var/opt/mssql/backups';
+        }
+        
+        // Compose backup file path on SQL Server
+        $timestamp = date('Ymd_His');
+        $fileName = $dbName . '_' . $timestamp . '.bak';
+        // Normalize slashes for T-SQL literal
+        $sep = (strpos($backupDir, '\\') !== false) ? '\\' : '/';
+        $backupDir = rtrim($backupDir, "/\\");
+        $serverPath = $backupDir . $sep . $fileName;
+        $tsqlPathLiteral = str_replace("'", "''", $serverPath);
+        
+        $db = new EasySQL(DB1);
+        try {
+            // Try to enable Ad Hoc Distributed Queries (may fail depending on permissions; we ignore failures)
+            try {
+                $db->update("EXEC sp_configure 'show advanced options', 1; RECONFIGURE;");
+                $db->update("EXEC sp_configure 'Ad Hoc Distributed Queries', 1; RECONFIGURE;");
+            } catch (Exception $e) {
+                // ignore
+            }
+            
+            // Perform the backup
+            $backupSql = "BACKUP DATABASE [$dbName] TO DISK = N'{$tsqlPathLiteral}' WITH COPY_ONLY, INIT, COMPRESSION;";
+            $db->update($backupSql);
+            
+            // Stream the file via OPENROWSET SINGLE_BLOB
+            // Note: Requires Ad Hoc Distributed Queries enabled and SQL Server to access the file path
+            $selectSql = "SELECT BulkColumn AS BackupData FROM OPENROWSET(BULK N'{$tsqlPathLiteral}', SINGLE_BLOB) AS BackupFile;";
+            $rows = $db->select($selectSql);
+            if (empty($rows) || !isset($rows[0]['BackupData'])) {
+                throw new Exception('Backup file could not be read via OPENROWSET. Ensure Ad Hoc Distributed Queries is enabled and backup path is accessible to SQL Server.');
+            }
+            $blob = $rows[0]['BackupData'];
+            if (is_resource($blob)) {
+                $content = stream_get_contents($blob);
+            } else {
+                $content = $blob;
+            }
+            if ($content === false || $content === null) {
+                throw new Exception('Failed to read backup content.');
+            }
+            
+            // Send headers and output
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename="' . $fileName . '"');
+            header('Content-Length: ' . strlen($content));
+            echo $content;
+            exit;
+        } catch (Exception $e) {
+            error_log('backupDatabase error: ' . $e->getMessage());
+            flash('settings_error', 'Backup failed: ' . $e->getMessage());
+            redirect('admin/settings');
+        }
+    }
+    
+    /**
      * Test OAuth Configuration
      */
     public function testOAuth() {

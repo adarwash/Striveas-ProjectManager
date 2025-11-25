@@ -59,6 +59,12 @@ $title = 'Create Task - HiveITPortal';
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="description" rows="3"><?= $data['description'] ?? '' ?></textarea>
                     </div>
+					
+					<div class="mb-3">
+						<label for="references_text" class="form-label">References (optional)</label>
+						<textarea class="form-control" id="references_text" name="references_text" rows="2" placeholder="URLs, ticket numbers, document names, etc."><?= $data['references_text'] ?? '' ?></textarea>
+						<div class="form-text">Add any related links or identifiers. Comma or newline separated is fine.</div>
+					</div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
