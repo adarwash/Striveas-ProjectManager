@@ -8,18 +8,27 @@ class Task {
     }
     
     /**
-     * Ensure references_text column exists
+     * Ensure optional columns exist
      */
-    private function ensureReferencesColumn() {
-        $sql = "
-        IF COL_LENGTH('dbo.tasks', 'references_text') IS NULL
-        BEGIN
-            ALTER TABLE [dbo].[tasks] ADD [references_text] NVARCHAR(1024) NULL;
-        END";
-        try {
-            $this->db->query($sql);
-        } catch (Exception $e) {
-            error_log('ensureReferencesColumn error: ' . $e->getMessage());
+    private function ensureOptionalColumns() {
+        $columns = [
+            'references_text' => "NVARCHAR(1024) NULL",
+            'progress_percent' => "INT NOT NULL CONSTRAINT DF_tasks_progress DEFAULT 0",
+            'start_date' => "DATE NULL",
+            'tags' => "NVARCHAR(500) NULL",
+            'estimated_hours' => "DECIMAL(8,2) NULL"
+        ];
+        foreach ($columns as $column => $definition) {
+            $sql = "
+            IF COL_LENGTH('dbo.tasks', '{$column}') IS NULL
+            BEGIN
+                ALTER TABLE [dbo].[tasks] ADD [{$column}] {$definition};
+            END";
+            try {
+                $this->db->query($sql);
+            } catch (Exception $e) {
+                error_log("ensureColumn {$column} error: " . $e->getMessage());
+            }
         }
     }
     
@@ -161,10 +170,9 @@ class Task {
     // Create new task
     public function create($data) {
         $this->ensureParentTaskColumn();
-        $this->ensureReferencesColumn();
-        $this->ensureProgressColumn();
-        $query = "INSERT INTO tasks (project_id, title, description, status, priority, due_date, assigned_to, created_by, created_at, parent_task_id, references_text, progress_percent) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?)";
+        $this->ensureOptionalColumns();
+        $query = "INSERT INTO tasks (project_id, title, description, status, priority, start_date, due_date, assigned_to, created_by, created_at, parent_task_id, references_text, tags, estimated_hours, progress_percent) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?)";
         
         return $this->db->insert($query, [
             $data['project_id'],
@@ -172,11 +180,14 @@ class Task {
             $data['description'],
             $data['status'],
             $data['priority'],
+            $data['start_date'] ?? null,
             $data['due_date'],
             $data['assigned_to'],
             $data['created_by'],
             $data['parent_task_id'] ?? null,
             $data['references_text'] ?? null,
+            $data['tags'] ?? null,
+            isset($data['estimated_hours']) ? $data['estimated_hours'] : null,
             isset($data['progress_percent']) ? (int)$data['progress_percent'] : 0
         ]);
     }
@@ -253,10 +264,9 @@ class Task {
     // Update task
     public function update($data) {
         $this->ensureParentTaskColumn();
-        $this->ensureReferencesColumn();
-        $this->ensureProgressColumn();
+        $this->ensureOptionalColumns();
         $query = "UPDATE tasks 
-                 SET project_id = ?, title = ?, description = ?, status = ?, priority = ?, due_date = ?, assigned_to = ?, parent_task_id = ?, references_text = ?, progress_percent = ?, updated_at = GETDATE()
+                 SET project_id = ?, title = ?, description = ?, status = ?, priority = ?, start_date = ?, due_date = ?, assigned_to = ?, tags = ?, estimated_hours = ?, parent_task_id = ?, references_text = ?, progress_percent = ?, updated_at = GETDATE()
                  WHERE id = ?";
         
         return $this->db->update($query, [
@@ -265,9 +275,12 @@ class Task {
             $data['description'],
             $data['status'],
             $data['priority'],
+            $data['start_date'] ?? null,
             $data['due_date'],
             $data['assigned_to'],
-				$data['parent_task_id'] ?? null,
+            $data['tags'] ?? null,
+            isset($data['estimated_hours']) ? $data['estimated_hours'] : null,
+            $data['parent_task_id'] ?? null,
             $data['references_text'] ?? null,
             isset($data['progress_percent']) ? (int)$data['progress_percent'] : 0,
             $data['id']
@@ -296,7 +309,7 @@ class Task {
 		}
     
 	public function updateProgress($taskId, $progress) {
-		$this->ensureProgressColumn();
+        $this->ensureOptionalColumns();
 		$progress = max(0, min(100, (int)$progress));
 		$query = "UPDATE tasks SET progress_percent = ?, updated_at = GETDATE() WHERE id = ?";
 		return $this->db->update($query, [$progress, $taskId]);

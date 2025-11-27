@@ -284,28 +284,34 @@
     gap: 0.5rem;
 }
 
-.subtask-container-row td {
+.task-overdue a,
+.task-overdue span {
+    color: #dc2626 !important;
+}
+
+.task-overdue .badge {
+    background-color: #dc2626 !important;
+    color: #fff !important;
+}
+
+.subtask-row td {
     background: #f8fafc;
-    padding: 0;
     border-top: 1px solid #e2e8f0;
+    font-size: 0.92rem;
+    padding: 0.75rem 1.25rem;
 }
 
-.subtask-table {
-    width: 100%;
-    margin: 0;
-}
-
-.subtask-table td {
-    padding: 0.65rem 1.5rem;
-    font-size: 0.9rem;
+.subtask-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .subtask-indicator {
-    width: 14px;
+    width: 12px;
     height: 2px;
     background: #3b82f6;
     display: inline-block;
-    margin-right: 0.5rem;
     border-radius: 2px;
 }
 
@@ -1041,7 +1047,8 @@
                                     </thead>
                                     <tbody>
                                         <?php foreach ($parentTasksForView as $task): ?>
-                                            <tr class="parent-task-row">
+                                            <?php $isTaskOverdue = (!empty($task->due_date) && $task->status !== 'Completed' && strtotime($task->due_date) < time()); ?>
+                                            <tr class="parent-task-row <?= $isTaskOverdue ? 'task-overdue' : '' ?>">
                                                 <td>
                                                     <div class="task-title">
                                                         <?php if (!empty($subTasksMap[$task->id])): ?>
@@ -1078,7 +1085,16 @@
                                                     <span class="badge <?= $priorityClass ?>"><?= $task->priority ?></span>
                                                 </td>
                                                 <td><?= htmlspecialchars($task->assigned_to_name ?? 'Unassigned') ?></td>
-                                                <td><?= !empty($task->due_date) ? date('M j, Y', strtotime($task->due_date)) : '—' ?></td>
+                                                    <td>
+                                                        <?php if (!empty($task->due_date)): ?>
+                                                            <?= date('M j, Y', strtotime($task->due_date)) ?>
+                                                            <?php if ($isTaskOverdue): ?>
+                                                                <span class="badge bg-danger ms-2">Overdue</span>
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            —
+                                                        <?php endif; ?>
+                                                    </td>
                                                 <td>
                                                     <div class="btn-group">
                                                         <a href="<?= URLROOT ?>/tasks/show/<?= $task->id ?>" class="btn btn-outline-primary">View</a>
@@ -1087,55 +1103,57 @@
                                                 </td>
                                             </tr>
                                             <?php if (!empty($subTasksMap[$task->id])): ?>
-                                            <tr class="subtask-container-row subtasks-collapsed" data-subtasks-for="<?= $task->id ?>">
-                                                <td colspan="6">
-                                                    <table class="table subtask-table mb-0">
-                                                        <tbody>
-                                                        <?php foreach ($subTasksMap[$task->id] as $subtask): ?>
-                                                            <tr>
-                                                                <td>
-                                                                    <div class="d-flex align-items-center">
-                                                                        <span class="subtask-indicator"></span>
-                                                                        <a href="<?= URLROOT ?>/tasks/show/<?= $subtask->id ?>" class="text-decoration-none">
-                                                                            <?= htmlspecialchars($subtask->title) ?>
-                                                                        </a>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <?php
-                                                                    $subStatusClass = 'bg-secondary';
-                                                                    if ($subtask->status === 'Pending') $subStatusClass = 'bg-secondary';
-                                                                    if ($subtask->status === 'In Progress') $subStatusClass = 'bg-primary';
-                                                                    if ($subtask->status === 'Completed') $subStatusClass = 'bg-success';
-                                                                    if ($subtask->status === 'Testing') $subStatusClass = 'bg-info';
-                                                                    if ($subtask->status === 'Blocked') $subStatusClass = 'bg-danger';
-                                                                    ?>
-                                                                    <span class="badge <?= $subStatusClass ?>"><?= $subtask->status ?></span>
-                                                                </td>
-                                                                <td>
-                                                                    <?php
-                                                                    $subPriorityClass = 'bg-secondary';
-                                                                    if ($subtask->priority === 'Low') $subPriorityClass = 'bg-success';
-                                                                    if ($subtask->priority === 'Medium') $subPriorityClass = 'bg-info';
-                                                                    if ($subtask->priority === 'High') $subPriorityClass = 'bg-warning';
-                                                                    if ($subtask->priority === 'Critical') $subPriorityClass = 'bg-danger';
-                                                                    ?>
-                                                                    <span class="badge <?= $subPriorityClass ?>"><?= $subtask->priority ?></span>
-                                                                </td>
-                                                                <td><?= htmlspecialchars($subtask->assigned_to_name ?? 'Unassigned') ?></td>
-                                                                <td><?= !empty($subtask->due_date) ? date('M j, Y', strtotime($subtask->due_date)) : '—' ?></td>
-                                                                <td>
-                                                                    <div class="btn-group">
-                                                                        <a href="<?= URLROOT ?>/tasks/show/<?= $subtask->id ?>" class="btn btn-outline-primary btn-sm">View</a>
-                                                                        <a href="<?= URLROOT ?>/tasks/edit/<?= $subtask->id ?>" class="btn btn-outline-secondary btn-sm">Edit</a>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        <?php endforeach; ?>
-                                                        </tbody>
-                                                    </table>
-                                                </td>
-                                            </tr>
+                                                <?php foreach ($subTasksMap[$task->id] as $subtask): ?>
+                                                    <?php $isSubOverdue = (!empty($subtask->due_date) && $subtask->status !== 'Completed' && strtotime($subtask->due_date) < time()); ?>
+                                                    <tr class="subtask-row subtasks-collapsed <?= $isSubOverdue ? 'task-overdue' : '' ?>" data-parent-row="<?= $task->id ?>">
+                                                        <td>
+                                                            <div class="subtask-title">
+                                                                <span class="subtask-indicator"></span>
+                                                                <a href="<?= URLROOT ?>/tasks/show/<?= $subtask->id ?>" class="text-decoration-none">
+                                                                    <?= htmlspecialchars($subtask->title) ?>
+                                                                </a>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <?php
+                                                            $subStatusClass = 'bg-secondary';
+                                                            if ($subtask->status === 'Pending') $subStatusClass = 'bg-secondary';
+                                                            if ($subtask->status === 'In Progress') $subStatusClass = 'bg-primary';
+                                                            if ($subtask->status === 'Completed') $subStatusClass = 'bg-success';
+                                                            if ($subtask->status === 'Testing') $subStatusClass = 'bg-info';
+                                                            if ($subtask->status === 'Blocked') $subStatusClass = 'bg-danger';
+                                                            ?>
+                                                            <span class="badge <?= $subStatusClass ?>"><?= $subtask->status ?></span>
+                                                        </td>
+                                                        <td>
+                                                            <?php
+                                                            $subPriorityClass = 'bg-secondary';
+                                                            if ($subtask->priority === 'Low') $subPriorityClass = 'bg-success';
+                                                            if ($subtask->priority === 'Medium') $subPriorityClass = 'bg-info';
+                                                            if ($subtask->priority === 'High') $subPriorityClass = 'bg-warning';
+                                                            if ($subtask->priority === 'Critical') $subPriorityClass = 'bg-danger';
+                                                            ?>
+                                                            <span class="badge <?= $subPriorityClass ?>"><?= $subtask->priority ?></span>
+                                                        </td>
+                                                        <td><?= htmlspecialchars($subtask->assigned_to_name ?? 'Unassigned') ?></td>
+                                                        <td>
+                                                            <?php if (!empty($subtask->due_date)): ?>
+                                                                <?= date('M j, Y', strtotime($subtask->due_date)) ?>
+                                                                <?php if ($isSubOverdue): ?>
+                                                                    <span class="badge bg-danger ms-2">Overdue</span>
+                                                                <?php endif; ?>
+                                                            <?php else: ?>
+                                                                —
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <div class="btn-group">
+                                                                <a href="<?= URLROOT ?>/tasks/show/<?= $subtask->id ?>" class="btn btn-outline-primary btn-sm">View</a>
+                                                                <a href="<?= URLROOT ?>/tasks/edit/<?= $subtask->id ?>" class="btn btn-outline-secondary btn-sm">Edit</a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
                                             <?php endif; ?>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -1239,15 +1257,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.toggle-subtasks-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var parentId = this.getAttribute('data-parent-id');
-            var subtasksRow = document.querySelector('tr[data-subtasks-for="' + parentId + '"]');
-            if (!subtasksRow) return;
+            var subtaskRows = document.querySelectorAll('tr[data-parent-row="' + parentId + '"]');
+            if (!subtaskRows.length) return;
             var expanded = this.getAttribute('aria-expanded') === 'true';
             if (expanded) {
-                subtasksRow.classList.add('subtasks-collapsed');
+                subtaskRows.forEach(function(row) {
+                    row.classList.add('subtasks-collapsed');
+                });
                 this.setAttribute('aria-expanded', 'false');
                 this.innerHTML = '<i class="bi bi-caret-right-fill"></i>';
             } else {
-                subtasksRow.classList.remove('subtasks-collapsed');
+                subtaskRows.forEach(function(row) {
+                    row.classList.remove('subtasks-collapsed');
+                });
                 this.setAttribute('aria-expanded', 'true');
                 this.innerHTML = '<i class="bi bi-caret-down-fill"></i>';
             }

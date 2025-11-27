@@ -120,21 +120,24 @@ class Tasks extends Controller {
             $_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
             
             // Initialize data array
-            $data = [
-                'project_id' => trim($_POST['project_id']),
-                'title' => trim($_POST['title']),
-                'description' => trim($_POST['description']),
-                'status' => trim($_POST['status']),
-                'priority' => trim($_POST['priority']),
-                'due_date' => !empty($_POST['due_date']) ? trim($_POST['due_date']) : null,
-                'assigned_to' => !empty($_POST['assigned_to']) ? trim($_POST['assigned_to']) : null,
+			$data = [
+				'project_id' => trim($_POST['project_id']),
+				'title' => trim($_POST['title']),
+				'description' => trim($_POST['description']),
+				'status' => trim($_POST['status']),
+				'priority' => trim($_POST['priority']),
+				'start_date' => !empty($_POST['start_date']) ? trim($_POST['start_date']) : null,
+				'due_date' => !empty($_POST['due_date']) ? trim($_POST['due_date']) : null,
+				'assigned_to' => !empty($_POST['assigned_to']) ? trim($_POST['assigned_to']) : null,
+				'estimated_hours' => isset($_POST['estimated_hours']) && $_POST['estimated_hours'] !== '' ? (float)$_POST['estimated_hours'] : null,
+				'tags' => isset($_POST['tags']) ? trim($_POST['tags']) : null,
 				'references_text' => isset($_POST['references_text']) ? trim($_POST['references_text']) : null,
-                'site_ids' => isset($_POST['site_ids']) ? (array)$_POST['site_ids'] : [],
-                'project_id_err' => '',
-                'title_err' => '',
-                'status_err' => '',
-                'priority_err' => ''
-            ];
+				'site_ids' => isset($_POST['site_ids']) ? (array)$_POST['site_ids'] : [],
+				'project_id_err' => '',
+				'title_err' => '',
+				'status_err' => '',
+				'priority_err' => ''
+			];
             
             // Validate project_id
             if (empty($data['project_id'])) {
@@ -631,11 +634,14 @@ class Tasks extends Controller {
             'description' => $description,
             'status' => $status,
             'priority' => $priority,
+			'start_date' => $task->start_date ?? null,
             'due_date' => $dueDate,
             'assigned_to' => $assignedTo,
             'created_by' => $_SESSION['user_id'],
 			'parent_task_id' => (int)$parentId,
 			'references_text' => $referencesText !== '' ? $referencesText : null,
+			'tags' => null,
+			'estimated_hours' => null,
 			'progress_percent' => $progressPercent
         ];
         
@@ -676,84 +682,88 @@ class Tasks extends Controller {
     }
     
     // Process the edit form
-    public function update($id) {
-        // Process form data if POST request
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
-            
-            // Initialize data array
-            $data = [
-                'id' => $id,
-                'project_id' => trim($_POST['project_id']),
-                'title' => trim($_POST['title']),
-                'description' => trim($_POST['description']),
-                'status' => trim($_POST['status']),
-                'priority' => trim($_POST['priority']),
-                'due_date' => !empty($_POST['due_date']) ? trim($_POST['due_date']) : null,
-                'assigned_to' => !empty($_POST['assigned_to']) ? trim($_POST['assigned_to']) : null,
-                'project_id_err' => '',
-                'title_err' => '',
-                'status_err' => '',
-                'priority_err' => ''
-            ];
-            
-            // Validate project_id
-            if (empty($data['project_id'])) {
-                $data['project_id_err'] = 'Please select a project';
-            }
-            
-            // Validate title
-            if (empty($data['title'])) {
-                $data['title_err'] = 'Please enter task title';
-            }
-            
-            // Validate status
-            if (empty($data['status'])) {
-                $data['status_err'] = 'Please select a status';
-            }
-            
-            // Validate priority
-            if (empty($data['priority'])) {
-                $data['priority_err'] = 'Please select a priority';
-            }
-            
-            // Check if there are no errors
-            if (empty($data['project_id_err']) && empty($data['title_err']) && 
-                empty($data['status_err']) && empty($data['priority_err'])) {
-                
-                // Update task
-                // Placeholder: $this->taskModel->update($data);
-                
-                // Set flash message
-                // Placeholder: flash('task_message', 'Task updated successfully');
-                
-                // Redirect to the task details page
-                header('Location: /tasks/show/' . $id);
-                exit;
-            } else {
-                // Get all projects for dropdown
-                // Placeholder: $projects = $this->projectModel->getAllProjects();
-                $projects = [];
-                
-                // Get all users for assignments
-                // Placeholder: $users = $this->userModel->getAllUsers();
-                $users = [];
-                
-                // Load view with errors
-                $this->view('tasks/edit', [
-                    'title' => 'Edit Task',
-                    'task' => (object)$data,
-                    'projects' => $projects,
-                    'users' => $users
-                ]);
-            }
-        } else {
-            // If not POST request, redirect to edit form
-            header('Location: /tasks/edit/' . $id);
-            exit;
-        }
-    }
+	public function update($id) {
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+			header('Location: /tasks/edit/' . $id);
+			exit;
+		}
+
+		$existingTask = $this->taskModel->getTaskById($id);
+		if (!$existingTask) {
+			flash('task_error', 'Task not found', 'alert-danger');
+			redirect('tasks');
+			return;
+		}
+
+		$_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
+
+		$data = [
+			'id' => (int)$id,
+			'project_id' => trim($_POST['project_id']),
+			'title' => trim($_POST['title']),
+			'description' => trim($_POST['description']),
+			'status' => trim($_POST['status']),
+			'priority' => trim($_POST['priority']),
+			'start_date' => !empty($_POST['start_date']) ? trim($_POST['start_date']) : null,
+			'due_date' => !empty($_POST['due_date']) ? trim($_POST['due_date']) : null,
+			'assigned_to' => !empty($_POST['assigned_to']) ? trim($_POST['assigned_to']) : null,
+			'estimated_hours' => isset($_POST['estimated_hours']) && $_POST['estimated_hours'] !== '' ? (float)$_POST['estimated_hours'] : null,
+			'tags' => isset($_POST['tags']) ? trim($_POST['tags']) : null,
+			'parent_task_id' => $existingTask->parent_task_id ?? null,
+			'references_text' => $existingTask->references_text ?? null,
+			'progress_percent' => $existingTask->progress_percent ?? 0,
+			'project_id_err' => '',
+			'title_err' => '',
+			'status_err' => '',
+			'priority_err' => '',
+			'start_date_err' => '',
+			'due_date_err' => ''
+		];
+
+		if (empty($data['project_id'])) {
+			$data['project_id_err'] = 'Please select a project';
+		}
+		if (empty($data['title'])) {
+			$data['title_err'] = 'Please enter task title';
+		}
+		if (empty($data['status'])) {
+			$data['status_err'] = 'Please select a status';
+		}
+		if (empty($data['priority'])) {
+			$data['priority_err'] = 'Please select a priority';
+		}
+		if (empty($data['start_date'])) {
+			$data['start_date_err'] = 'Please select a start date';
+		}
+		if (!empty($data['start_date']) && !empty($data['due_date']) && $data['due_date'] < $data['start_date']) {
+			$data['due_date_err'] = 'Due date must be on or after the start date';
+		}
+
+		if (empty($data['project_id_err']) && empty($data['title_err']) &&
+			empty($data['status_err']) && empty($data['priority_err']) &&
+			empty($data['start_date_err']) && empty($data['due_date_err'])) {
+
+			try {
+				$this->taskModel->update($data);
+				flash('task_message', 'Task updated successfully');
+			} catch (Exception $e) {
+				error_log('Task update error: ' . $e->getMessage());
+				flash('task_error', 'Error updating task', 'alert-danger');
+			}
+			redirect('tasks/show/' . $id);
+			return;
+		}
+
+		$projects = $this->projectModel->getAllProjects();
+		$users = $this->userModel->getAllUsers();
+
+		$this->view('tasks/edit', [
+			'title' => 'Edit Task',
+			'task' => (object)$data,
+			'projects' => $projects,
+			'users' => $users
+		]);
+	}
     
     // Delete a task
     public function delete($id) {
