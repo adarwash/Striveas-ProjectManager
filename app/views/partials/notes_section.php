@@ -33,7 +33,12 @@
                 </div>
                 <div class="notes-container">
                     <?php foreach ($notes as $index => $note): ?>
-                        <div class="note-item mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="<?= $note['id'] ?>">
+                        <?php 
+                            $rawTags = $note['tags'] ?? '';
+                            $noteTagList = array_values(array_filter(array_map('trim', explode(',', $rawTags))));
+                            $noteTagsAttr = strtolower(implode(' ', $noteTagList));
+                        ?>
+                        <div class="note-item mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="<?= $note['id'] ?>" data-tags="<?= htmlspecialchars($noteTagsAttr) ?>">
                             <div class="d-flex justify-content-between align-items-start">
                                 <h6 class="mb-1 note-title"><?= htmlspecialchars($note['title']) ?></h6>
                                 <div class="dropdown">
@@ -54,6 +59,13 @@
                                     </ul>
                                 </div>
                             </div>
+                            <?php if (!empty($noteTagList)): ?>
+                            <div class="mb-2 note-tag-list">
+                                <?php foreach ($noteTagList as $tag): ?>
+                                    <span class="badge note-tag-badge"><?= htmlspecialchars($tag) ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
                             <div class="note-content mb-2 note-text" style="max-height: 100px; overflow: hidden; position: relative;">
                                 <div class="note-text-inner">
                                     <?= nl2br(htmlspecialchars($note['content'])) ?>
@@ -103,6 +115,11 @@
                             <span id="content-count">0</span> characters
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <label for="modal-tags" class="form-label">Tags <span class="text-muted">(optional)</span></label>
+                        <input type="text" class="form-control" id="modal-tags" name="tags" placeholder="e.g., kickoff, finance, follow-up">
+                        <div class="form-text">Separate tags with commas</div>
+                    </div>
                     <input type="hidden" name="type" value="<?= $type ?>">
                     <input type="hidden" name="reference_id" value="<?= $reference_id ?>">
                 </div>
@@ -139,6 +156,21 @@
 .notes-container .note-item:hover {
     transform: translateY(-2px);
 }
+
+.note-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.note-tag-badge {
+    background: #eef2ff;
+    color: #3730a3;
+    border-radius: 999px;
+    padding: 0.1rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
 </style>
 
 <script>
@@ -170,7 +202,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 title: formData.get('title'),
                 content: formData.get('content'),
                 type: formData.get('type'),
-                reference_id: formData.get('reference_id')
+                reference_id: formData.get('reference_id'),
+                tags: formData.get('tags')
             });
             
             const params = new URLSearchParams(formData);
@@ -266,7 +299,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         title: document.getElementById('title')?.value || 'Not found',
                         content: document.getElementById('content')?.value || 'Not found',
                         type: document.querySelector('input[name="type"]')?.value || 'Not found',
-                        reference_id: document.querySelector('input[name="reference_id"]')?.value || 'Not found'
+                        reference_id: document.querySelector('input[name="reference_id"]')?.value || 'Not found',
+                        tags: document.getElementById('modal-tags')?.value || 'Not found'
                     };
                     
                     console.log('Form data:', formData);
@@ -408,9 +442,11 @@ function refreshNotesList() {
                 
                 notes.forEach((note, index) => {
                     const isLongContent = (note.content && note.content.split(' ').length > 30);
+                    const tagList = note.tags ? note.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
+                    const tagsAttr = tagList.map(tag => tag.toLowerCase()).join(' ');
                     
                     notesHtml += `
-                    <div class="note-item mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="${note.id}">
+                    <div class="note-item mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="${note.id}" data-tags="${tagsAttr}">
                         <div class="d-flex justify-content-between align-items-start">
                             <h6 class="mb-1 note-title">${escapeHtml(note.title)}</h6>
                             <div class="dropdown">
@@ -432,6 +468,7 @@ function refreshNotesList() {
                             </div>
                         </div>
                         <div class="note-content mb-2 note-text" style="max-height: 100px; overflow: hidden; position: relative;">
+                            ${tagList.length ? `<div class="note-tag-list mb-2">${tagList.map(tag => `<span class="badge note-tag-badge">${escapeHtml(tag)}</span>`).join(' ')}</div>` : ''}
                             <div class="note-text-inner">
                                 ${escapeHtml(note.content).replace(/\n/g, '<br>')}
                             </div>
@@ -479,13 +516,14 @@ function refreshNotesList() {
                 const notesFilter = document.getElementById('notes-filter');
                 if (notesFilter) {
                     notesFilter.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    document.querySelectorAll('.note-item').forEach(note => {
-                        const title = note.querySelector('.note-title').textContent.toLowerCase();
-                        const content = note.querySelector('.note-text-inner').textContent.toLowerCase();
-                        note.style.display = (title.includes(searchTerm) || content.includes(searchTerm)) ? '' : 'none';
+                        const searchTerm = this.value.toLowerCase();
+                        document.querySelectorAll('.note-item').forEach(note => {
+                            const title = note.querySelector('.note-title').textContent.toLowerCase();
+                            const content = note.querySelector('.note-text-inner').textContent.toLowerCase();
+                            const tags = (note.getAttribute('data-tags') || '');
+                            note.style.display = (title.includes(searchTerm) || content.includes(searchTerm) || tags.includes(searchTerm)) ? '' : 'none';
+                        });
                     });
-                });
                 }
                 
                 // Reattach sorting functionality

@@ -59,6 +59,17 @@ $title = 'Edit Note - HiveITPortal';
                     </div>
 
                     <div class="mb-4">
+                        <label for="tags" class="form-label">Tags <span class="text-muted">(optional)</span></label>
+                        <input type="text" class="form-control <?= isset($tags_err) && !empty($tags_err) ? 'is-invalid' : '' ?>" 
+                               id="tags" name="tags" value="<?= htmlspecialchars($note['tags'] ?? '') ?>" 
+                               placeholder="e.g., discovery, q4-planning, follow-up">
+                        <?php if (isset($tags_err) && !empty($tags_err)): ?>
+                            <div class="invalid-feedback"><?= $tags_err ?></div>
+                        <?php endif; ?>
+                        <div class="form-text">Use commas to separate tags. Example: meeting, finance, follow-up</div>
+                    </div>
+
+                    <div class="mb-4">
                         <label class="form-label">
                             <i class="bi bi-link-45deg"></i> Linked to
                         </label>

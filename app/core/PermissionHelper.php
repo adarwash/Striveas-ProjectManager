@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Setting.php';
 
 class PermissionHelper {
     private static $userModel = null;
@@ -327,6 +328,28 @@ class PermissionHelper {
                 'permission' => 'gantt.access'
             ]
         ];
+
+        // Append Level.io Devices shortcut when integration is active
+        static $levelDevicesEnabled = null;
+        if ($levelDevicesEnabled === null) {
+            try {
+                $settingModel = new Setting();
+                $settings = $settingModel->getSystemSettings();
+                $levelDevicesEnabled = !empty($settings['level_io_enabled']) && !empty($settings['level_io_api_key']);
+            } catch (Exception $e) {
+                error_log('Sidebar Level.io check failed: ' . $e->getMessage());
+                $levelDevicesEnabled = false;
+            }
+        }
+
+        if ($levelDevicesEnabled) {
+            $menuItems[] = [
+                'title' => 'Level Devices',
+                'url' => '/devices',
+                'icon' => 'bi bi-pc-display',
+                'permission' => 'clients.read'
+            ];
+        }
         
         $adminItems = [
             [

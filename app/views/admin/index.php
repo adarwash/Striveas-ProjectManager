@@ -108,6 +108,19 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-diagram-3 text-primary" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-3">Level.io Integration</h5>
+                                    <p class="card-text text-muted">Sync Level.io groups with CRM clients for automation.</p>
+                                    <a href="<?= URLROOT ?>/admin/levelIntegration" class="btn btn-primary">
+                                        <i class="bi bi-link-45deg me-2"></i>Manage Level.io
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

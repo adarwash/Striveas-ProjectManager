@@ -282,7 +282,9 @@ class Setting {
             'azure_connected_at' => $this->get('azure_connected_at', ''),
             'customer_domain_restriction' => $this->get('customer_domain_restriction', ''),
             'ticket_visibility' => $this->get('ticket_visibility', 'email_match'),
-            'allow_ticket_creation' => $this->get('allow_ticket_creation', false)
+            'allow_ticket_creation' => $this->get('allow_ticket_creation', false),
+            'level_io_enabled' => $this->get('level_io_enabled', false),
+            'level_io_api_key' => $this->get('level_io_api_key', '')
         ];
     }
     
@@ -350,7 +352,9 @@ class Setting {
                 'azure_connected_at',
                 'customer_domain_restriction',
                 'ticket_visibility',
-                'allow_ticket_creation'
+                'allow_ticket_creation',
+                'level_io_enabled',
+                'level_io_api_key'
             ];
             
             // Update each provided setting if it's valid

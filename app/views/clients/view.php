@@ -33,6 +33,15 @@
                 <p class="text-muted mb-0">Client details and site assignments</p>
             </div>
             <div class="d-flex gap-2">
+                <?php
+                $levelEnabled = !empty($level_io_enabled);
+                $hasLevelGroups = !empty($level_io_groups);
+                ?>
+                <?php if ($levelEnabled && $hasLevelGroups): ?>
+                <a href="/clients/levelDevices/<?= (int)$client['id'] ?>" class="btn btn-info text-white">
+                    <i class="bi bi-pc-display-horizontal"></i> Level.io Devices
+                </a>
+                <?php endif; ?>
                 <?php if (hasPermission('clients.update')): ?>
                 <form action="/clients/addQuickCallback/<?= (int)$client['id'] ?>" method="post">
                     <button type="submit" class="btn btn-success">

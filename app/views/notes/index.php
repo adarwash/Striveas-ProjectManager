@@ -159,7 +159,12 @@ flash('note_error');
         <!-- Notes Grid View (Default) -->
         <div id="gridView" class="row g-4">
             <?php foreach ($data['notes'] as $note): ?>
-                <div class="col-xl-4 col-lg-6 col-md-6 note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>">
+                <?php 
+                    $rawTags = $note['tags'] ?? '';
+                    $noteTagList = array_values(array_filter(array_map('trim', explode(',', $rawTags))));
+                    $noteTagsAttr = strtolower(implode(' ', $noteTagList));
+                ?>
+                <div class="col-xl-4 col-lg-6 col-md-6 note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>" data-tags="<?= htmlspecialchars($noteTagsAttr) ?>">
                     <div class="modern-note-card">
                         <div class="note-header">
                             <div class="d-flex gap-2">
@@ -230,6 +235,13 @@ flash('note_error');
                         </div>
                         
                         <div class="note-content">
+                            <?php if (!empty($noteTagList)): ?>
+                                <div class="note-tag-list mb-2">
+                                    <?php foreach ($noteTagList as $tag): ?>
+                                        <span class="badge note-tag-badge"><?= htmlspecialchars($tag) ?></span>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
                             <h5 class="note-title">
                                 <a href="/notes/show/<?= $note['id'] ?>" class="text-decoration-none text-dark">
                                     <?= htmlspecialchars($note['title']) ?>
@@ -302,6 +314,13 @@ flash('note_error');
                                 <div class="mb-3 note-full-content">
                                     <?= nl2br(htmlspecialchars($note['content'])) ?>
                                 </div>
+                                <?php if (!empty($noteTagList)): ?>
+                                <div class="note-tag-list mb-3">
+                                    <?php foreach ($noteTagList as $tag): ?>
+                                        <span class="badge note-tag-badge"><?= htmlspecialchars($tag) ?></span>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php endif; ?>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <span class="note-type-badge note-type-<?= $note['type'] ?>">
@@ -352,11 +371,23 @@ flash('note_error');
                         </thead>
                         <tbody>
                             <?php foreach ($data['notes'] as $note): ?>
-                                <tr class="note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>">
+                                <?php 
+                                    $rawTags = $note['tags'] ?? '';
+                                    $noteTagList = array_values(array_filter(array_map('trim', explode(',', $rawTags))));
+                                    $noteTagsAttr = strtolower(implode(' ', $noteTagList));
+                                ?>
+                                <tr class="note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>" data-tags="<?= htmlspecialchars($noteTagsAttr) ?>">
                                     <td>
                                         <a href="#" class="note-title-link" data-bs-toggle="modal" data-bs-target="#noteModal<?= $note['id'] ?>">
                                             <?= htmlspecialchars($note['title']) ?>
                                         </a>
+                                        <?php if (!empty($noteTagList)): ?>
+                                            <div class="mt-1 note-tag-list">
+                                                <?php foreach ($noteTagList as $tag): ?>
+                                                    <span class="badge note-tag-badge"><?= htmlspecialchars($tag) ?></span>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <span class="note-type-badge note-type-<?= $note['type'] ?>">
@@ -638,6 +669,21 @@ flash('note_error');
 .note-menu-btn:hover {
     background: #f7fafc;
     color: #4a5568;
+}
+
+.note-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.note-tag-badge {
+    background: #eef2ff;
+    color: #3730a3;
+    border-radius: 999px;
+    padding: 0.15rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
 }
 
 .note-content {
@@ -1192,8 +1238,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             item.textContent.toLowerCase();
             const noteTitle = item.getAttribute('data-title').toLowerCase();
             const noteType = item.getAttribute('data-type');
+            const noteTags = (item.getAttribute('data-tags') || '');
             
-            const matchesSearch = !searchTerm || noteTitle.includes(searchTerm) || noteText.includes(searchTerm);
+            const matchesSearch = !searchTerm || noteTitle.includes(searchTerm) || noteText.includes(searchTerm) || noteTags.includes(searchTerm);
             const matchesType = typeFilter === 'all' || noteType === typeFilter;
             
             if (matchesSearch && matchesType) {

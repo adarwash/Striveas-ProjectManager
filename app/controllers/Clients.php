@@ -173,6 +173,20 @@ class Clients extends Controller {
         } catch (Exception $e) {
             $contracts = [];
         }
+
+        // Level.io integration info
+        $levelIoEnabled = false;
+        $levelIoGroups = [];
+        try {
+            $systemSettings = $this->settingModel->getSystemSettings();
+            $levelIoEnabled = !empty($systemSettings['level_io_enabled']) && !empty($systemSettings['level_io_api_key']);
+            if ($levelIoEnabled && method_exists($this->clientModel, 'getLevelGroups')) {
+                $levelIoGroups = $this->clientModel->getLevelGroups((int)$id);
+            }
+        } catch (Exception $e) {
+            $levelIoEnabled = false;
+            $levelIoGroups = [];
+        }
         
         $data = [
             'title' => $client['name'],
@@ -188,7 +202,9 @@ class Clients extends Controller {
             'client_notes' => $clientNotes,
 			'meetings' => $this->clientMeetingModel->listByClient((int)$id),
             'currency' => $this->settingModel->getCurrency(),
-			'documents' => $documents
+            'documents' => $documents,
+            'level_io_enabled' => $levelIoEnabled,
+            'level_io_groups' => $levelIoGroups
         ];
         
         $this->view('clients/view', $data);
@@ -1319,6 +1335,169 @@ class Clients extends Controller {
 			flash('client_error', 'Failed to delete follow-up.', 'alert-danger');
 		}
 		redirect('clients/callbacksHistory/' . $clientId);
+	}
+
+	/**
+	 * Level.io Devices page for a client
+	 * Shows all devices from linked Level.io groups
+	 */
+	public function levelDevices($clientId = null) {
+		if (!hasPermission('clients.read')) {
+			flash('client_error', 'You do not have permission to view clients', 'alert-danger');
+			redirect('dashboard');
+			return;
+		}
+
+		if (!$clientId) {
+			redirect('clients');
+			return;
+		}
+
+		$client = $this->clientModel->getClientById($clientId);
+		if (!$client) {
+			flash('client_error', 'Client not found', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+
+		// Check if Level.io integration is enabled
+		require_once APPROOT . '/app/services/LevelApiService.php';
+		$levelApi = new LevelApiService();
+
+		if (!$levelApi->isEnabled()) {
+			flash('client_error', 'Level.io integration is not enabled. Please configure it in Admin Settings.', 'alert-warning');
+			redirect('clients/viewClient/' . $clientId);
+			return;
+		}
+
+		// Get linked Level.io groups for this client
+		$linkedGroups = $this->clientModel->getLevelGroups((int)$clientId);
+
+		if (empty($linkedGroups)) {
+			flash('client_error', 'This client has no Level.io groups linked. Link groups in Admin → Level.io Integration.', 'alert-warning');
+			redirect('clients/viewClient/' . $clientId);
+			return;
+		}
+
+		// Fetch devices from all linked groups
+		$allDevices = [];
+		$errors = [];
+
+		foreach ($linkedGroups as $group) {
+			$groupId = $group['level_group_id'] ?? '';
+			$groupName = $group['level_group_name'] ?? $groupId;
+
+			if (empty($groupId)) continue;
+
+			try {
+				$response = $levelApi->listDevices(1, 200, $groupId);
+				$devices = $response['data'] ?? $response ?? [];
+
+				foreach ($devices as $device) {
+					$device['_group_name'] = $groupName;
+					$device['_group_id'] = $groupId;
+					$allDevices[] = $device;
+				}
+			} catch (Exception $e) {
+				$errors[] = "Failed to fetch devices for group '{$groupName}': " . $e->getMessage();
+				error_log("Level.io device fetch error for group {$groupId}: " . $e->getMessage());
+			}
+		}
+
+		$data = [
+			'title' => 'Level.io Devices - ' . $client['name'],
+			'client' => $client,
+			'devices' => $allDevices,
+			'linked_groups' => $linkedGroups,
+			'errors' => $errors
+		];
+
+		$this->view('clients/level_devices', $data);
+	}
+
+	/**
+	 * Detailed view for a specific Level.io device
+	 */
+	public function levelDevice($clientId = null, $deviceId = null) {
+		if (!hasPermission('clients.read')) {
+			flash('client_error', 'You do not have permission to view clients', 'alert-danger');
+			redirect('dashboard');
+			return;
+		}
+
+		if (!$clientId || !$deviceId) {
+			redirect('clients');
+			return;
+		}
+
+		$client = $this->clientModel->getClientById($clientId);
+		if (!$client) {
+			flash('client_error', 'Client not found', 'alert-danger');
+			redirect('clients');
+			return;
+		}
+
+		require_once APPROOT . '/app/services/LevelApiService.php';
+		$levelApi = new LevelApiService();
+
+		if (!$levelApi->isEnabled()) {
+			flash('client_error', 'Level.io integration is not enabled.', 'alert-warning');
+			redirect('clients/viewClient/' . $clientId);
+			return;
+		}
+
+		$linkedGroups = $this->clientModel->getLevelGroups((int)$clientId);
+		if (empty($linkedGroups)) {
+			flash('client_error', 'This client has no Level.io groups linked.', 'alert-warning');
+			redirect('clients/viewClient/' . $clientId);
+			return;
+		}
+
+		$requestedGroupId = trim((string)($_GET['group_id'] ?? ''));
+		$selectedGroup = null;
+		if ($requestedGroupId !== '') {
+			foreach ($linkedGroups as $group) {
+				if (($group['level_group_id'] ?? '') === $requestedGroupId) {
+					$selectedGroup = $group;
+					break;
+				}
+			}
+			if ($selectedGroup === null) {
+				flash('client_error', 'Selected group is not linked to this client.', 'alert-danger');
+				redirect('clients/levelDevices/' . $clientId);
+				return;
+			}
+		}
+
+		try {
+			$device = $levelApi->getDevice($deviceId);
+		} catch (Exception $e) {
+			flash('client_error', 'Unable to load device details: ' . $e->getMessage(), 'alert-danger');
+			redirect('clients/levelDevices/' . $clientId);
+			return;
+		}
+
+		$alerts = [];
+		$alertsError = null;
+		try {
+			$alertResp = $levelApi->listDeviceAlerts($deviceId, 1, 100);
+			$alerts = $alertResp['data'] ?? $alertResp ?? [];
+		} catch (Exception $e) {
+			$alertsError = $e->getMessage();
+			error_log('Level.io device alerts error: ' . $e->getMessage());
+		}
+
+		$data = [
+			'title' => 'Device Details - ' . ($device['name'] ?? $device['hostname'] ?? 'Device'),
+			'client' => $client,
+			'device' => $device,
+			'alerts' => $alerts,
+			'alerts_error' => $alertsError,
+			'group' => $selectedGroup,
+			'linked_groups' => $linkedGroups
+		];
+
+		$this->view('clients/level_device_detail', $data);
 	}
 }
 ?> 

@@ -299,9 +299,19 @@ class Projects extends Controller {
         
         // Get all tasks for this project
         $tasks = $this->taskModel->getTasksByProject($id);
+        $taskStatusCounts = [
+            'Pending' => 0,
+            'In Progress' => 0,
+            'Completed' => 0,
+            'Testing' => 0,
+            'Blocked' => 0,
+            'Other' => 0
+        ];
         $taskLookup = [];
         foreach ($tasks as $t) {
             $taskLookup[$t->id] = $t;
+            $statusKey = isset($taskStatusCounts[$t->status]) ? $t->status : 'Other';
+            $taskStatusCounts[$statusKey]++;
         }
         $parentTasks = [];
         $subTasksByParent = [];
@@ -389,6 +399,7 @@ class Projects extends Controller {
             'tasks' => $tasks,
             'parentTasks' => $parentTasks,
             'subTasksByParent' => $subTasksByParent,
+            'task_status_counts' => $taskStatusCounts,
             'notes' => $notes,
             'task_activities' => $taskActivities,
             'assigned_users' => $assignedUsers,

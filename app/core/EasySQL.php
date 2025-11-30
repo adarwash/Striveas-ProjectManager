@@ -69,13 +69,14 @@ class EasySQL {
                 } else {
                     // For other tables, use OUTPUT clause approach
                     if (stripos($statement, 'OUTPUT') === false) {
-                        // Accept bracketed or unbracketed table names
-                        $pattern = '/INSERT\s+INTO\s+\[?\w+\]?\s*\(([^)]+)\)\s*VALUES/i';
+                        // Accept schema-qualified and/or bracketed table names (e.g. dbo.Table, [dbo].[Table])
+                        $pattern = '/INSERT\s+INTO\s+((?:\[[^\]]+\]|\w+)(?:\.(?:\[[^\]]+\]|\w+))?)\s*\(([^)]+)\)\s*VALUES/i';
                         if (preg_match($pattern, $statement)) {
                             $statement = preg_replace(
-                                '/INSERT\s+INTO\s+(\[?\w+\]?)\s*\(([^)]+)\)\s*VALUES/i',
+                                $pattern,
                                 'INSERT INTO $1 ($2) OUTPUT INSERTED.id VALUES',
-                                $statement
+                                $statement,
+                                1
                             );
                         }
                     }

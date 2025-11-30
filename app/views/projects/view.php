@@ -355,6 +355,16 @@
     color: #3b82f6;
 }
 
+.task-status-chart-wrapper {
+    max-width: 260px;
+    margin: 0 auto 1rem;
+}
+
+#taskStatusChart {
+    width: 100% !important;
+    height: 260px !important;
+}
+
 /* Timeline Improvements */
 .timeline-simple {
     position: relative;
@@ -592,6 +602,34 @@
                                 </div>
                             </div>
                         </div>
+                    
+                    <!-- Task Status Chart Card -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-pie-chart text-primary me-2"></i>Task Status Overview
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-lg-6 col-md-7">
+                                    <div class="task-status-chart-wrapper">
+                                        <canvas id="taskStatusChart"></canvas>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-md-5">
+                                    <ul class="list-unstyled mb-0 small text-muted">
+                                        <?php foreach ($task_status_counts as $statusLabel => $count): ?>
+                                            <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                                <span><?= htmlspecialchars($statusLabel) ?></span>
+                                                <strong><?= (int)$count ?></strong>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                         
                         <!-- Team Members Card -->
                         <div class="card border-0 shadow-sm mb-4">
@@ -1250,6 +1288,7 @@
 <link href='https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@4.4.0/main.min.css' rel='stylesheet' />
 <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@4.4.0/main.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@4.4.0/main.min.js'></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -1331,6 +1370,63 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     });
     calendar.render();
+
+    // Task status chart
+    var taskStatusCtx = document.getElementById('taskStatusChart');
+    if (taskStatusCtx) {
+        var taskStatusLabels = <?= json_encode(array_keys($task_status_counts)) ?>;
+        var taskStatusData = <?= json_encode(array_values($task_status_counts)) ?>;
+        var taskStatusColors = ['#2563eb','#16a34a','#f97316','#a855f7','#ef4444','#94a3b8'];
+        new Chart(taskStatusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: taskStatusLabels,
+                datasets: [{
+                    data: taskStatusData,
+                    backgroundColor: taskStatusColors.slice(0, taskStatusLabels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Task status chart
+    var taskStatusCtx = document.getElementById('taskStatusChart');
+    if (taskStatusCtx) {
+        var taskStatusLabels = <?= json_encode(array_keys($task_status_counts)) ?>;
+        var taskStatusData = <?= json_encode(array_values($task_status_counts)) ?>;
+        var taskStatusColors = ['#2563eb','#16a34a','#f97316','#a855f7','#ef4444','#94a3b8'];
+        new Chart(taskStatusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: taskStatusLabels,
+                datasets: [{
+                    data: taskStatusData,
+                    backgroundColor: taskStatusColors.slice(0, taskStatusLabels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
 
     // Handle tab changes
     document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {

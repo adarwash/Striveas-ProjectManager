@@ -6,6 +6,25 @@ class Note {
     public function __construct() {
         $this->db = new EasySQL(DB1);
     }
+	
+	private function ensureNoteColumns() {
+		$columns = [
+			'tags' => "NVARCHAR(255) NULL"
+		];
+		
+		foreach ($columns as $column => $definition) {
+			$sql = "
+			IF COL_LENGTH('dbo.Notes', '{$column}') IS NULL
+			BEGIN
+				ALTER TABLE [dbo].[Notes] ADD [{$column}] {$definition};
+			END";
+			try {
+				$this->db->query($sql);
+			} catch (Exception $e) {
+				error_log('ensureNoteColumn ' . $column . ' error: ' . $e->getMessage());
+			}
+		}
+	}
     
     /**
      * Create a new note
@@ -17,11 +36,14 @@ class Note {
         try {
             // Ensure the Notes table exists
             $this->createNotesTable();
+			$this->ensureNoteColumns();
             
             // For personal notes, ensure reference_id is null
             if ($data['type'] === 'personal') {
                 $data['reference_id'] = null;
             }
+			
+			$data['tags'] = isset($data['tags']) && $data['tags'] !== '' ? $data['tags'] : null;
             
             // Validate reference_id based on type
             if (in_array($data['type'], ['project', 'task', 'client']) && empty($data['reference_id'])) {
@@ -39,17 +61,18 @@ class Note {
             ]));
             
             // Prepare the query with proper parameter handling
-            $query = "INSERT INTO Notes (title, content, type, reference_id, created_by) 
-                     VALUES (?, ?, ?, ?, ?)";
+			$query = "INSERT INTO Notes (title, content, type, reference_id, created_by, tags) 
+			         VALUES (?, ?, ?, ?, ?, ?)";
             
             // Fix the error logging to properly show all parameters
-            error_log("Note::create - Executing query with parameters: " . json_encode([
-                'title' => $data['title'], 
-                'content' => (strlen($data['content']) > 30) ? substr($data['content'], 0, 30) . '...' : $data['content'],
-                'type' => $data['type'], 
-                'reference_id' => $data['reference_id'], 
-                'created_by' => $data['created_by']
-            ]));
+			error_log("Note::create - Executing query with parameters: " . json_encode([
+				'title' => $data['title'], 
+				'content' => (strlen($data['content']) > 30) ? substr($data['content'], 0, 30) . '...' : $data['content'],
+				'type' => $data['type'], 
+				'reference_id' => $data['reference_id'], 
+				'created_by' => $data['created_by'],
+				'tags' => $data['tags']
+			]));
             
             // Handle the insertion manually to ensure proper NULL handling for SQL Server
             try {
@@ -75,7 +98,12 @@ class Note {
                     $stmt->bindParam(4, $data['reference_id'], PDO::PARAM_INT);
                 }
                 
-                $stmt->bindParam(5, $data['created_by'], PDO::PARAM_INT);
+				$stmt->bindParam(5, $data['created_by'], PDO::PARAM_INT);
+				if ($data['tags'] === null || $data['tags'] === '') {
+					$stmt->bindValue(6, null, PDO::PARAM_NULL);
+				} else {
+					$stmt->bindParam(6, $data['tags'], PDO::PARAM_STR);
+				}
                 
                 // Execute the statement
                 $result = $stmt->execute();
@@ -151,13 +179,14 @@ class Note {
                 // Try again using the normal approach in case the direct approach fails
                 try {
                     // Execute the insert query using the EasySQL class
-                    $result = $this->db->insert($query, [
-                        $data['title'],
-                        $data['content'],
-                        $data['type'],
-                        $data['reference_id'],  // Will be null for personal notes
-                        $data['created_by']
-                    ]);
+					$result = $this->db->insert($query, [
+						$data['title'],
+						$data['content'],
+						$data['type'],
+						$data['reference_id'],  // Will be null for personal notes
+						$data['created_by'],
+						$data['tags']
+					]);
                     
                     if ($result !== null) {
                         error_log("Note::create - Successfully created note with ID: " . $result);
@@ -308,26 +337,29 @@ class Note {
      * @param array $data Note data
      * @return bool True if successful, false otherwise
      */
-    public function update(array $data): bool {
-        try {
-            $query = "UPDATE Notes SET 
-                     title = ?, 
-                     content = ?,
-                     updated_at = GETDATE()
-                     WHERE id = ? AND created_by = ?";
-            
-            $this->db->update($query, [
-                $data['title'],
-                $data['content'],
-                $data['id'],
-                $data['created_by']
-            ]);
-            return true;
-        } catch (Exception $e) {
-            error_log('Update Note Error: ' . $e->getMessage());
-            return false;
-        }
-    }
+	public function update(array $data): bool {
+		try {
+			$this->ensureNoteColumns();
+			$query = "UPDATE Notes SET 
+			         title = ?, 
+			         content = ?,
+			         tags = ?,
+			         updated_at = GETDATE()
+			         WHERE id = ? AND created_by = ?";
+			
+			$this->db->update($query, [
+				$data['title'],
+				$data['content'],
+			    $data['tags'] ?? null,
+				$data['id'],
+				$data['created_by']
+			]);
+			return true;
+		} catch (Exception $e) {
+			error_log('Update Note Error: ' . $e->getMessage());
+			return false;
+		}
+	}
     
     /**
      * Delete a note
@@ -514,7 +546,8 @@ class Note {
                 }
             }
             
-            return true;
+			$this->ensureNoteColumns();
+			return true;
         } catch (Exception $e) {
             error_log('Create Notes Table Error: ' . $e->getMessage());
             error_log('Stack trace: ' . $e->getTraceAsString());

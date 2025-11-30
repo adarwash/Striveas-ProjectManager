@@ -134,17 +134,20 @@ class Notes extends Controller {
             $content = isset($_POST['content']) ? htmlspecialchars(trim($_POST['content']), ENT_QUOTES, 'UTF-8') : '';
             $type = isset($_POST['type']) ? htmlspecialchars(trim($_POST['type']), ENT_QUOTES, 'UTF-8') : '';
             $reference_id = isset($_POST['reference_id']) ? (int)$_POST['reference_id'] : null;
+			$tags = isset($_POST['tags']) ? trim($_POST['tags']) : '';
             
             $data = [
                 'title' => $title,
                 'content' => $content,
                 'type' => $type,
                 'reference_id' => $reference_id,
+				'tags' => $tags,
                 'created_by' => $_SESSION['user_id'],
                 'title_err' => '',
                 'content_err' => '',
                 'type_err' => '',
-                'reference_id_err' => ''
+				'reference_id_err' => '',
+				'tags_err' => ''
             ];
             
             // Validate title
@@ -182,10 +185,15 @@ class Notes extends Controller {
                 // For personal notes, no reference needed
                 $data['reference_id_err'] = '';
             }
+			
+			// Validate tags length
+			if (!empty($data['tags']) && strlen($data['tags']) > 255) {
+				$data['tags_err'] = 'Tags must be 255 characters or fewer';
+			}
             
             // Make sure no errors
             if (empty($data['title_err']) && empty($data['content_err']) && 
-                empty($data['type_err']) && empty($data['reference_id_err'])) {
+				empty($data['type_err']) && empty($data['reference_id_err']) && empty($data['tags_err'])) {
                 
                 // Create note
                 if ($this->noteModel->create($data)) {
@@ -219,7 +227,9 @@ class Notes extends Controller {
                 'tasks' => $tasks,
                 'clients' => $clients,
                 'type' => $preType,
-                'reference_id' => $preRefId
+				'reference_id' => $preRefId,
+				'tags' => '',
+				'tags_err' => ''
             ];
             
             $this->view('notes/add', $data);
@@ -243,21 +253,23 @@ class Notes extends Controller {
             // Sanitize POST data - using modern alternatives to deprecated FILTER_SANITIZE_STRING
             $title = isset($_POST['title']) ? htmlspecialchars(trim($_POST['title']), ENT_QUOTES, 'UTF-8') : '';
             $content = isset($_POST['content']) ? htmlspecialchars(trim($_POST['content']), ENT_QUOTES, 'UTF-8') : '';
-            $type = isset($_POST['type']) ? htmlspecialchars(trim($_POST['type']), ENT_QUOTES, 'UTF-8') : '';
+			$type = isset($_POST['type']) ? htmlspecialchars(trim($_POST['type']), ENT_QUOTES, 'UTF-8') : '';
             $reference_id = isset($_POST['reference_id']) ? (int)$_POST['reference_id'] : null;
+			$tags = isset($_POST['tags']) ? trim($_POST['tags']) : '';
             
             $data = [
                 'title' => $title,
                 'content' => $content,
                 'type' => $type,
                 'reference_id' => $reference_id,
-                'created_by' => $_SESSION['user_id'] ?? 0
+				'tags' => $tags,
+				'created_by' => $_SESSION['user_id'] ?? 0
             ];
             
             error_log('AJAX Note Add - Data: ' . json_encode($data));
             
             // Check for missing required data
-            if (empty($title) || empty($content) || empty($type)) {
+			if (empty($title) || empty($content) || empty($type)) {
                 error_log('AJAX Note Add - Missing form fields: ' . json_encode($_POST));
                 echo json_encode([
                     'success' => false,
@@ -274,7 +286,7 @@ class Notes extends Controller {
             $errors = [];
             
             // Validate title
-            if (empty($data['title'])) {
+			if (empty($data['title'])) {
                 $errors['title'] = 'Please enter a title';
             }
             
@@ -284,10 +296,14 @@ class Notes extends Controller {
             }
             
             // Validate type
-            if (!in_array($data['type'], ['project', 'task', 'client', 'personal'])) {
+			if (!in_array($data['type'], ['project', 'task', 'client', 'personal'])) {
                 $errors['type'] = 'Invalid note type';
                 error_log('AJAX Note Add - Invalid type: ' . $data['type']);
             }
+			
+			if (!empty($data['tags']) && strlen($data['tags']) > 255) {
+				$errors['tags'] = 'Tags must be 255 characters or fewer';
+			}
             
             // Validate reference exists (only for project and task types)
             if ($data['type'] === 'project') {
@@ -422,14 +438,18 @@ class Notes extends Controller {
             $title = isset($_POST['title']) ? htmlspecialchars(trim($_POST['title']), ENT_QUOTES, 'UTF-8') : '';
             $content = isset($_POST['content']) ? htmlspecialchars(trim($_POST['content']), ENT_QUOTES, 'UTF-8') : '';
             
-            $data = [
-                'id' => $id,
-                'title' => $title,
-                'content' => $content,
-                'created_by' => $_SESSION['user_id'],
-                'title_err' => '',
-                'content_err' => ''
-            ];
+			$tags = isset($_POST['tags']) ? trim($_POST['tags']) : '';
+			
+			$data = [
+				'id' => $id,
+				'title' => $title,
+				'content' => $content,
+				'tags' => $tags,
+				'created_by' => $_SESSION['user_id'],
+				'title_err' => '',
+				'content_err' => '',
+				'tags_err' => ''
+			];
             
             // Validate title
             if (empty($data['title'])) {
@@ -437,12 +457,16 @@ class Notes extends Controller {
             }
             
             // Validate content
-            if (empty($data['content'])) {
+			if (empty($data['content'])) {
                 $data['content_err'] = 'Please enter note content';
             }
+			
+			if (!empty($data['tags']) && strlen($data['tags']) > 255) {
+				$data['tags_err'] = 'Tags must be 255 characters or fewer';
+			}
             
             // Make sure no errors
-            if (empty($data['title_err']) && empty($data['content_err'])) {
+			if (empty($data['title_err']) && empty($data['content_err']) && empty($data['tags_err'])) {
                 // Update note
                 if ($this->noteModel->update($data)) {
                     flash('note_success', 'Note updated successfully');
@@ -452,12 +476,38 @@ class Notes extends Controller {
                 }
             }
             
-            // Load view with errors
-            $this->view('notes/edit', [
+			$note['title'] = $data['title'];
+			$note['content'] = $data['content'];
+			$note['tags'] = $data['tags'];
+			
+			$projects = [];
+			$tasks = [];
+			if ($note['type'] === 'project') {
+				$project = $this->projectModel->getProjectById($note['reference_id']);
+				if ($project) {
+					$projects[$project->id] = [
+						'id' => $project->id,
+						'title' => $project->title
+					];
+				}
+			} elseif ($note['type'] === 'task') {
+				$task = $this->taskModel->getTaskById($note['reference_id']);
+				if ($task) {
+					$tasks[$task->id] = [
+						'id' => $task->id,
+						'title' => $task->title
+					];
+				}
+			}
+
+			$this->view('notes/edit', [
                 'title' => 'Edit Note',
                 'note' => $note,
-                'title_err' => $data['title_err'],
-                'content_err' => $data['content_err']
+				'projects' => $projects,
+				'tasks' => $tasks,
+				'title_err' => $data['title_err'],
+				'content_err' => $data['content_err'],
+				'tags_err' => $data['tags_err']
             ]);
         } else {
             // Get related projects and tasks for display
@@ -488,14 +538,15 @@ class Notes extends Controller {
             }
             
             // Load view with note data
-            $this->view('notes/edit', [
-                'title' => 'Edit Note',
-                'note' => $note,
-                'projects' => $projects,
-                'tasks' => $tasks,
-                'title_err' => '',
-                'content_err' => ''
-            ]);
+			$this->view('notes/edit', [
+				'title' => 'Edit Note',
+				'note' => $note,
+				'projects' => $projects,
+				'tasks' => $tasks,
+				'title_err' => '',
+				'content_err' => '',
+				'tags_err' => ''
+			]);
         }
     }
     

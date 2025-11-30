@@ -48,6 +48,17 @@
                             <div class="form-text">You can use plain text - line breaks will be preserved</div>
                         </div>
 
+                    <div class="mb-4">
+                        <label for="tags" class="form-label">Tags <span class="text-muted">(optional)</span></label>
+                        <input type="text" class="form-control <?= isset($tags_err) && !empty($tags_err) ? 'is-invalid' : '' ?>" 
+                               id="tags" name="tags" value="<?= htmlspecialchars($tags ?? '') ?>" 
+                               placeholder="e.g., discovery, q4-planning, follow-up">
+                        <?php if (isset($tags_err) && !empty($tags_err)): ?>
+                            <div class="invalid-feedback"><?= $tags_err ?></div>
+                        <?php endif; ?>
+                        <div class="form-text">Separate tags with commas to help categorize your notes</div>
+                    </div>
+
                         <hr class="my-4">
                         <h5 class="mb-3">Link your note</h5>
 

@@ -296,6 +296,143 @@ class Admin extends Controller {
         
         $this->view('admin/settings_clean', $viewData);
     }
+
+    /**
+     * Manage Level.io integration (linking groups to clients)
+     */
+    public function levelIntegration() {
+        if (!hasPermission('admin.system_settings')) {
+            flash('error', 'You do not have permission to manage integrations.');
+            redirect('admin');
+        }
+
+        $settingModel = $this->model('Setting');
+        $systemSettings = $settingModel->getSystemSettings();
+
+        $clientModel = $this->model('Client');
+        if (method_exists($clientModel, 'ensureLevelIntegrationColumns')) {
+            $clientModel->ensureLevelIntegrationColumns();
+        }
+        if (method_exists($clientModel, 'ensureLevelGroupLinkTable')) {
+            $clientModel->ensureLevelGroupLinkTable();
+        }
+        $clients = $clientModel->getAllClients();
+        $clientGroupsMap = [];
+        if (method_exists($clientModel, 'getLevelGroups')) {
+            foreach ($clients as $client) {
+                $clientGroupsMap[$client['id']] = $clientModel->getLevelGroups((int)$client['id']);
+            }
+        }
+
+        $levelGroups = [];
+        $levelError = null;
+        $levelMeta = null;
+
+        if (!class_exists('LevelApiService')) {
+            require_once APPROOT . '/app/services/LevelApiService.php';
+        }
+
+        try {
+            $service = new LevelApiService();
+            $raw = $service->listGroups();
+            $levelGroups = $raw['data'] ?? $raw['groups'] ?? (is_array($raw) ? $raw : []);
+            if (!is_array($levelGroups)) {
+                $levelGroups = [];
+            }
+            $levelMeta = $raw['meta'] ?? ($raw['pagination'] ?? null);
+        } catch (Exception $e) {
+            $levelError = $e->getMessage();
+        }
+
+        $viewData = [
+            'title' => 'Level.io Integration',
+            'clients' => $clients,
+            'client_groups_map' => $clientGroupsMap,
+            'level_groups' => $levelGroups,
+            'level_error' => $levelError,
+            'level_meta' => $levelMeta,
+            'level_settings' => [
+                'enabled' => !empty($systemSettings['level_io_enabled']),
+                'has_key' => !empty($systemSettings['level_io_api_key']),
+                'doc_url' => 'https://levelapi.readme.io/reference/getting-started-with-your-api'
+            ]
+        ];
+
+        $this->view('admin/level_integration', $viewData);
+    }
+
+    /**
+     * Link a Level.io group to a client
+     */
+    public function linkLevelGroup() {
+        if (!hasPermission('admin.system_settings')) {
+            flash('error', 'You do not have permission to manage integrations.');
+            redirect('admin');
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('admin/levelIntegration');
+        }
+
+        $clientId = (int)($_POST['client_id'] ?? 0);
+        $groupId = trim((string)($_POST['group_id'] ?? ''));
+        $groupName = trim((string)($_POST['group_name'] ?? ''));
+
+        if ($clientId <= 0 || $groupId === '') {
+            flash('settings_error', 'Client and group are required.');
+            redirect('admin/levelIntegration');
+        }
+
+        $clientModel = $this->model('Client');
+        if (method_exists($clientModel, 'addLevelGroup')) {
+            if ($clientModel->addLevelGroup($clientId, $groupId, $groupName ?: null)) {
+                flash('settings_success', 'Level.io group linked to client.');
+            } else {
+                flash('settings_error', 'Unable to link Level.io group. Check logs for details.');
+            }
+        } else {
+            flash('settings_error', 'Client model does not support Level.io integration yet.');
+        }
+
+        redirect('admin/levelIntegration');
+    }
+
+    /**
+     * Remove Level.io group link from a client
+     */
+    public function unlinkLevelGroup() {
+        if (!hasPermission('admin.system_settings')) {
+            flash('error', 'You do not have permission to manage integrations.');
+            redirect('admin');
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('admin/levelIntegration');
+        }
+
+        $clientId = (int)($_POST['client_id'] ?? 0);
+        if ($clientId <= 0) {
+            flash('settings_error', 'Client is required.');
+            redirect('admin/levelIntegration');
+        }
+
+        $groupId = trim((string)($_POST['group_id'] ?? ''));
+        if ($groupId === '') {
+            flash('settings_error', 'Group ID is required to remove a link.');
+            redirect('admin/levelIntegration');
+        }
+
+        $clientModel = $this->model('Client');
+        if (method_exists($clientModel, 'unlinkLevelGroup')) {
+            if ($clientModel->unlinkLevelGroup($clientId, $groupId)) {
+                flash('settings_success', 'Level.io group link removed.');
+            } else {
+                flash('settings_error', 'Unable to remove Level.io group link. Check logs for details.');
+            }
+        } else {
+            flash('settings_error', 'Client model does not support Level.io integration yet.');
+        }
+
+        redirect('admin/levelIntegration');
+    }
     
     /**
      * Create and download a full MSSQL database backup (.bak)

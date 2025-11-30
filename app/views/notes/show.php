@@ -25,6 +25,10 @@ flash('note_message');
     <?php return; ?>
 <?php endif; ?>
 
+<?php 
+$noteTagList = array_values(array_filter(array_map('trim', explode(',', $note['tags'] ?? ''))));
+?>
+
 <div class="container-fluid px-4 py-4">
     <!-- Page Header -->
     <div class="note-header mb-4">
@@ -57,6 +61,13 @@ flash('note_message');
                         </span>
                     <?php endif; ?>
                 </div>
+            <?php if (!empty($noteTagList)): ?>
+                <div class="note-tag-list mt-3">
+                    <?php foreach ($noteTagList as $tag): ?>
+                        <span class="badge note-tag-badge"><?= htmlspecialchars($tag) ?></span>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
             </div>
             
             <div class="note-actions">
@@ -205,6 +216,17 @@ flash('note_message');
                             <label class="detail-label">Character Count:</label>
                             <span class="detail-value"><?= strlen($note['content'] ?? '') ?> characters</span>
                         </div>
+                        
+                        <?php if (!empty($noteTagList)): ?>
+                        <div class="detail-item">
+                            <label class="detail-label">Tags:</label>
+                            <span class="detail-value">
+                                <?php foreach ($noteTagList as $tag): ?>
+                                    <span class="badge note-tag-badge me-1"><?= htmlspecialchars($tag) ?></span>
+                                <?php endforeach; ?>
+                            </span>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -337,6 +359,21 @@ flash('note_message');
     font-size: 0.95rem;
     color: #6c757d;
     margin: 0;
+}
+
+.note-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.note-tag-badge {
+    background: #eef2ff;
+    color: #3730a3;
+    border-radius: 999px;
+    padding: 0.15rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
 }
 
 .note-meta .badge {

@@ -194,6 +194,58 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row g-4 mt-1">
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white py-3">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-plug text-primary me-2"></i>Level.io Integration
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small">
+                                        Manage the Level.io integration for enriched account insights and automation.
+                                    </p>
+                                    <div class="mb-3">
+                                        <input type="hidden" name="level_io_enabled" value="0">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input level-io-toggle"
+                                                   type="checkbox"
+                                                   id="level_io_enabled"
+                                                   name="level_io_enabled"
+                                                   value="1"
+                                                   <?= !empty($data['systemSettings']['level_io_enabled']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label fw-medium" for="level_io_enabled">
+                                                Enable Level.io Integration
+                                            </label>
+                                            <div class="form-text">When disabled, no requests are made to Level.io even if an API key is stored.</div>
+                                        </div>
+                                    </div>
+                                    <label for="level_io_api_key" class="form-label fw-medium">API Key</label>
+                                    <div class="input-group mb-2">
+                                        <input type="password"
+                                               class="form-control"
+                                               id="level_io_api_key"
+                                               name="level_io_api_key"
+                                               value="<?= htmlspecialchars($data['systemSettings']['level_io_api_key'] ?? '') ?>"
+                                               placeholder="lvl_live_XXXXXXXXXXXXXXXX"
+                                               <?= empty($data['systemSettings']['level_io_enabled']) ? 'disabled' : '' ?>
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary toggle-api-visibility"
+                                                type="button"
+                                                data-target="#level_io_api_key"
+                                                aria-label="Toggle API key visibility">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">
+                                        The key is stored securely. Leave blank to remove.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Defaults Tab -->
@@ -969,6 +1021,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    document.querySelectorAll('.toggle-api-visibility').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const targetSelector = this.getAttribute('data-target');
+            const targetInput = targetSelector ? document.querySelector(targetSelector) : null;
+            if (!targetInput) return;
+            const icon = this.querySelector('i');
+            if (targetInput.type === 'password') {
+                targetInput.type = 'text';
+                if (icon) {
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                }
+            } else {
+                targetInput.type = 'password';
+                if (icon) {
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                }
+            }
+        });
+    });
+
+    const levelToggle = document.getElementById('level_io_enabled');
+    const levelInput = document.getElementById('level_io_api_key');
+    if (levelToggle && levelInput) {
+        const updateLevelState = () => {
+            levelInput.disabled = !levelToggle.checked;
+        };
+        levelToggle.addEventListener('change', updateLevelState);
+        updateLevelState();
+    }
 });
 </script>
 

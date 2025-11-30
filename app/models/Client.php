@@ -8,6 +8,29 @@ class Client {
     }
 
     /**
+     * Ensure optional Level.io columns exist on Clients table
+     */
+    public function ensureLevelIntegrationColumns(): void {
+        try {
+            $columns = [
+                'level_io_group_id' => 'NVARCHAR(255) NULL',
+                'level_io_group_name' => 'NVARCHAR(255) NULL'
+            ];
+            foreach ($columns as $column => $definition) {
+                $exists = $this->db->select(
+                    "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Clients' AND COLUMN_NAME = ?",
+                    [$column]
+                );
+                if (!$exists) {
+                    $this->db->query("ALTER TABLE Clients ADD {$column} {$definition}");
+                }
+            }
+        } catch (Exception $e) {
+            error_log('ensureLevelIntegrationColumns error: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Get all clients
      *
      * @return array Array of clients
@@ -151,6 +174,86 @@ class Client {
             return true;
         } catch (Exception $e) {
             error_log('Error updating client: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Ensure link table for multiple Level.io groups per client
+     */
+    public function ensureLevelGroupLinkTable(): void {
+        try {
+            $exists = $this->db->select("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ClientLevelGroups'");
+            if (!$exists) {
+            $this->db->query("
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ClientLevelGroups]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE ClientLevelGroups (
+                        id INT IDENTITY(1,1) PRIMARY KEY,
+                        client_id INT NOT NULL,
+                        level_group_id NVARCHAR(255) NOT NULL,
+                        level_group_name NVARCHAR(255) NULL,
+                        created_at DATETIME DEFAULT GETDATE(),
+                        CONSTRAINT UQ_ClientLevelGroups UNIQUE (client_id, level_group_id),
+                        CONSTRAINT FK_ClientLevelGroups_Client FOREIGN KEY (client_id) REFERENCES Clients(id) ON DELETE CASCADE
+                    );
+                END
+            ");
+            }
+        } catch (Exception $e) {
+            error_log('ensureLevelGroupLinkTable error: ' . $e->getMessage());
+        }
+    }
+
+    public function getLevelGroups(int $clientId): array {
+        try {
+            $this->ensureLevelGroupLinkTable();
+            $query = "SELECT * FROM ClientLevelGroups WHERE client_id = ? ORDER BY level_group_name";
+            return $this->db->select($query, [$clientId]) ?: [];
+        } catch (Exception $e) {
+            error_log('getLevelGroups error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function addLevelGroup(int $clientId, string $groupId, ?string $groupName = null): bool {
+        try {
+            $this->ensureLevelGroupLinkTable();
+            // Check if already exists
+            $check = $this->db->select(
+                "SELECT id FROM ClientLevelGroups WHERE client_id = ? AND level_group_id = ?",
+                [$clientId, $groupId]
+            );
+            if ($check && count($check) > 0) {
+                // Already linked, update name if provided
+                if ($groupName !== null) {
+                    $this->db->update(
+                        "UPDATE ClientLevelGroups SET level_group_name = ? WHERE client_id = ? AND level_group_id = ?",
+                        [$groupName, $clientId, $groupId]
+                    );
+                }
+                return true;
+            }
+            // Insert new link
+            $this->db->insert(
+                "INSERT INTO ClientLevelGroups (client_id, level_group_id, level_group_name, created_at) VALUES (?, ?, ?, GETDATE())",
+                [$clientId, $groupId, $groupName]
+            );
+            return true;
+        } catch (Exception $e) {
+            error_log('addLevelGroup error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function unlinkLevelGroup(int $clientId, string $groupId): bool {
+        try {
+            $this->ensureLevelGroupLinkTable();
+            $query = "DELETE FROM ClientLevelGroups WHERE client_id = ? AND level_group_id = ?";
+            $this->db->remove($query, [$clientId, $groupId]);
+            return true;
+        } catch (Exception $e) {
+            error_log('unlinkLevelGroup error: ' . $e->getMessage());
             return false;
         }
     }
