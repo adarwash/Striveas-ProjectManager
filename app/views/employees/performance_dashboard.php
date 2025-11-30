@@ -86,6 +86,83 @@
         </div>
     </div>
 
+    <?php 
+        $activity_summary = $activity_summary ?? [
+            'project_updates' => 0,
+            'task_updates' => 0,
+            'task_completions' => 0,
+            'ticket_replies' => 0,
+            'login_count' => 0
+        ];
+    ?>
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Project Updates</h6>
+                        <h2 class="mb-0"><?= number_format($activity_summary['project_updates']) ?></h2>
+                    </div>
+                    <span class="badge bg-primary rounded-circle p-3">
+                        <i class="fas fa-diagram-project"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Task Updates</h6>
+                        <h2 class="mb-0"><?= number_format($activity_summary['task_updates']) ?></h2>
+                    </div>
+                    <span class="badge bg-success rounded-circle p-3">
+                        <i class="fas fa-list-check"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Tasks Closed</h6>
+                        <h2 class="mb-0"><?= number_format($activity_summary['task_completions']) ?></h2>
+                    </div>
+                    <span class="badge bg-warning rounded-circle p-3">
+                        <i class="fas fa-check-circle"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Ticket Replies</h6>
+                        <h2 class="mb-0"><?= number_format($activity_summary['ticket_replies']) ?></h2>
+                    </div>
+                    <span class="badge bg-info rounded-circle p-3">
+                        <i class="fas fa-headset"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Successful Logins</h6>
+                        <h2 class="mb-0"><?= number_format($activity_summary['login_count']) ?></h2>
+                    </div>
+                    <span class="badge bg-secondary rounded-circle p-3">
+                        <i class="fas fa-right-to-bracket"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Filter and Sort Controls -->
     <div class="row mb-4">
         <div class="col-12">
@@ -122,6 +199,62 @@
         </div>
     </div>
 
+    <?php if (!empty($employees) && !empty($daily_tracker_dates)): ?>
+    <!-- Daily Activity Tracker -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="card-title mb-0">Daily Activity Tracker</h5>
+                        <small class="text-muted">Hours logged per employee across the last <?= count($daily_tracker_dates) ?> days</small>
+                    </div>
+                    <span class="badge bg-light text-muted">Darker cells indicate longer work days</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-muted small">Employee</th>
+                                    <?php foreach ($daily_tracker_dates as $trackerDate): ?>
+                                        <th class="text-center text-muted small">
+                                            <?= date('M j', strtotime($trackerDate)) ?>
+                                        </th>
+                                    <?php endforeach; ?>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($employees as $employee): ?>
+                                <tr>
+                                    <td class="fw-semibold text-nowrap">
+                                        <?= htmlspecialchars($employee['full_name']) ?>
+                                        <div class="text-muted small"><?= htmlspecialchars($employee['role']) ?></div>
+                                    </td>
+                                    <?php foreach ($employee['daily_tracker'] ?? [] as $dateKey => $hours): ?>
+                                        <?php
+                                            $intensity = min(1, ($hours / 8));
+                                            $label = $hours > 0 ? number_format($hours, 1) . ' h' : '-';
+                                        ?>
+                                        <td class="text-center">
+                                            <div class="daily-tracker-cell" 
+                                                 style="background-color: rgba(59,130,246,<?= $intensity ?>); color: <?= $hours > 0 ? '#fff' : '#6b7280' ?>;" 
+                                                 title="<?= date('l, M j', strtotime($dateKey)) ?> · <?= $label ?>">
+                                                <?= $hours > 0 ? number_format($hours, 1) : '&nbsp;' ?>
+                                            </div>
+                                        </td>
+                                    <?php endforeach; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Employee Performance Table -->
     <div class="row">
         <div class="col-12">
@@ -142,6 +275,12 @@
                                     <th>Avg Hours/Day</th>
                                     <th>Punctuality</th>
                                     <th>Attendance</th>
+                                    <th>Task Updates</th>
+                                    <th>Tasks Closed</th>
+                                    <th>Project Touches</th>
+                                    <th>Ticket Replies</th>
+                                    <th>Logins</th>
+                                    <th>Last Activity</th>
                                     <th>Current Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -213,6 +352,38 @@
                                                     <span><?= $employee['time_performance']['attendance_rate'] ?>%</span>
                                                 </div>
                                             </td>
+                                            <?php $activityStats = $employee['activity_stats'] ?? []; ?>
+                                            <td>
+                                                <span class="badge bg-light text-success border fw-semibold px-3">
+                                                    <?= $activityStats['task_updates'] ?? 0 ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-warning border fw-semibold px-3">
+                                                    <?= $activityStats['task_completions'] ?? 0 ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-primary border fw-semibold px-3">
+                                                    <?= $activityStats['project_updates'] ?? 0 ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-info border fw-semibold px-3">
+                                                    <?= $activityStats['ticket_replies'] ?? 0 ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-secondary border fw-semibold px-3">
+                                                    <?= $activityStats['login_count'] ?? 0 ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <?php 
+                                                    $latestActivity = $activityStats['recent_activity'][0] ?? null;
+                                                    echo $latestActivity ? formatDateTime($latestActivity['created_at']) : '<span class="text-muted">No recent activity</span>';
+                                                ?>
+                                            </td>
                                             <td>
                                                 <?php 
                                                 $status = $employee['current_status']['status'];
@@ -254,7 +425,7 @@
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="10" class="text-center text-muted py-4">
+                                        <td colspan="16" class="text-center text-muted py-4">
                                             <i class="fas fa-users fa-3x mb-3"></i>
                                             <br>No employee performance data available
                                         </td>
@@ -296,6 +467,21 @@
 .badge {
     font-size: 0.75rem;
     padding: 0.375rem 0.75rem;
+}
+
+.daily-tracker-cell {
+    min-width: 48px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+    padding: 0.35rem 0.25rem;
+    line-height: 1;
+    transition: transform 0.1s ease;
+}
+
+.daily-tracker-cell:hover {
+    transform: scale(1.05);
 }
 </style>
 

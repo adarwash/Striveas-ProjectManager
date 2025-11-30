@@ -1,26 +1,22 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- Modern Page Header -->
+    <div class="page-header">
         <div>
-            <h1 class="h3 mb-0">
-                <i class="bi bi-envelope me-2"></i>Email Inbox
-            </h1>
-            <p class="text-muted">Manage email communications and ticket integration</p>
+            <h1 class="page-title"><i class="fas fa-envelope me-3"></i>Email Inbox</h1>
+            <p class="mb-0">Manage email communications and ticket integration</p>
         </div>
         <div>
             <?php if (hasPermission('email.manage') || in_array($_SESSION['role'] ?? '', ['admin','manager','technician'])): ?>
-                <form method="POST" action="<?= URLROOT ?>/emailinbox/syncFromGraph" class="d-inline me-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-cloud-download me-2"></i>Sync from Microsoft 365
-                    </button>
-                </form>
-                <form method="POST" action="<?= URLROOT ?>/emailinbox/processPending" class="d-inline">
-                    <button type="submit" class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-clockwise me-2"></i>Process Pending
-                    </button>
-                </form>
+            <form method="POST" action="<?= URLROOT ?>/emailinbox/syncFromGraph" class="d-inline me-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-cloud-download-alt me-2"></i>Sync from Microsoft 365
+                </button>
+            </form>
+            <form method="POST" action="<?= URLROOT ?>/emailinbox/processPending" class="d-inline">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-rotate me-2"></i>Process Pending
+                </button>
+            </form>
             <?php endif; ?>
         </div>
     </div>
@@ -563,5 +559,3 @@ document.addEventListener('keypress', () => lastUserInteraction = Date.now());
     font-size: 0.75em;
 }
 </style>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?>

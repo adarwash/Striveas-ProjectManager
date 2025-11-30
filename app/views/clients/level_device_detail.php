@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <?php
 $hasClientContext = isset($client) && is_array($client) && !empty($client);
 $backUrl = $hasClientContext
@@ -63,35 +61,7 @@ if (is_string($tags)) {
     }
 }
 ?>
-
-<style>
-.security-score-card .security-gauge {
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    background: conic-gradient(var(--gauge-color, #22c55e) var(--gauge-angle, 0deg), #e5e7eb 0);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    position: relative;
-}
-.security-score-card .security-gauge::after {
-    content: '';
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    background: #fff;
-    border-radius: 50%;
-}
-.security-score-card .security-gauge-value {
-    position: relative;
-    font-size: 2.25rem;
-    font-weight: 700;
-    color: var(--gauge-color, #22c55e);
-    z-index: 1;
-}
-</style>
+<!-- Styles moved to /public/css/app.css -->
 
 <div class="container-fluid">
     <div class="rounded-3 p-4 mb-4 bg-light border">
@@ -340,6 +310,4 @@ if (is_string($tags)) {
         </div>
     </div>
 </div>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?>
 

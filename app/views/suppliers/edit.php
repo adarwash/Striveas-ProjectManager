@@ -1,11 +1,19 @@
 <div class="container-fluid px-4">
-    <h1 class="mt-4"><?= $pageTitle ?></h1>
-    
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/suppliers">Suppliers</a></li>
-        <li class="breadcrumb-item active">Edit Supplier</li>
-    </ol>
+    <!-- Modern Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-truck me-3"></i>Edit Supplier</h1>
+            <p class="mb-0">Update supplier information</p>
+        </div>
+        <div>
+            <a href="/suppliers/viewDetail/<?= htmlspecialchars($supplier['id']) ?>" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-eye me-2"></i>View
+            </a>
+            <a href="/suppliers" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Suppliers
+            </a>
+        </div>
+    </div>
     
     <div class="row">
         <div class="col-lg-8">

@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -244,11 +242,4 @@
     </div>
 </div>
 
-<style>
-.bg-primary-light { background-color: rgba(13, 110, 253, 0.1); }
-.bg-success-light { background-color: rgba(25, 135, 84, 0.1); }
-.bg-info-light { background-color: rgba(13, 202, 240, 0.1); }
-.bg-warning-light { background-color: rgba(255, 193, 7, 0.1); }
-</style>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?> 
+<!-- Styles moved to /public/css/app.css --> 

@@ -1,15 +1,15 @@
 <div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- Modern Page Header -->
+    <div class="page-header">
         <div>
-            <h1 class="h3 mb-0">Tickets</h1>
-            <p class="text-muted">Manage and track support tickets</p>
+            <h1 class="page-title"><i class="fas fa-ticket-alt me-3"></i>Tickets</h1>
+            <p class="mb-0">Manage and track support tickets</p>
         </div>
         <div>
             <?php if (hasPermission('tickets.create')): ?>
-                <a href="<?= URLROOT ?>/tickets/create" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-2"></i>New Ticket
-                </a>
+            <a href="<?= URLROOT ?>/tickets/create" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Ticket
+            </a>
             <?php endif; ?>
         </div>
     </div>

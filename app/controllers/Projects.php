@@ -313,6 +313,51 @@ class Projects extends Controller {
             $statusKey = isset($taskStatusCounts[$t->status]) ? $t->status : 'Other';
             $taskStatusCounts[$statusKey]++;
         }
+        // Compute At-a-glance KPI metrics
+        $nowTs = time();
+        $totalTasks = count($tasks);
+        $openTasks = 0;
+        $overdueTasks = 0;
+        $estimatedHoursTotal = 0.0;
+        $weightedProgressSum = 0.0;
+        foreach ($tasks as $t) {
+            $isCompleted = (isset($t->status) && $t->status === 'Completed');
+            if (!$isCompleted) {
+                $openTasks++;
+            }
+            // Overdue if due_date exists, is in the past, and not completed
+            if (!$isCompleted && !empty($t->due_date)) {
+                $dueTs = strtotime($t->due_date);
+                if ($dueTs !== false && $dueTs < $nowTs) {
+                    $overdueTasks++;
+                }
+            }
+            // Weighted completion by estimated hours
+            $estimated = isset($t->estimated_hours) && is_numeric($t->estimated_hours) ? (float)$t->estimated_hours : 0.0;
+            $progress = 0.0;
+            if (isset($t->progress_percent) && is_numeric($t->progress_percent)) {
+                $progress = max(0.0, min(100.0, (float)$t->progress_percent));
+            } elseif ($isCompleted) {
+                $progress = 100.0;
+            }
+            if ($estimated > 0) {
+                $estimatedHoursTotal += $estimated;
+                $weightedProgressSum += ($progress / 100.0) * $estimated;
+            }
+        }
+        // Fallback simple completion when no estimates available
+        if ($estimatedHoursTotal > 0) {
+            $weightedCompletionPct = ($weightedProgressSum / $estimatedHoursTotal) * 100.0;
+        } else {
+            $completedCount = isset($taskStatusCounts['Completed']) ? (int)$taskStatusCounts['Completed'] : 0;
+            $weightedCompletionPct = $totalTasks > 0 ? ($completedCount / $totalTasks) * 100.0 : 0.0;
+        }
+        $kpis = [
+            'total_tasks' => $totalTasks,
+            'open_tasks' => $openTasks,
+            'overdue_tasks' => $overdueTasks,
+            'weighted_completion_pct' => $weightedCompletionPct,
+        ];
         $parentTasks = [];
         $subTasksByParent = [];
         foreach ($tasks as $task) {
@@ -400,6 +445,7 @@ class Projects extends Controller {
             'parentTasks' => $parentTasks,
             'subTasksByParent' => $subTasksByParent,
             'task_status_counts' => $taskStatusCounts,
+            'kpis' => $kpis,
             'notes' => $notes,
             'task_activities' => $taskActivities,
             'assigned_users' => $assignedUsers,
@@ -747,6 +793,14 @@ class Projects extends Controller {
     public function update($id) {
         // Check update permission
         PermissionHelper::requirePermission('projects.update');
+
+        // Fetch existing project to compare changes
+        $projectBeforeUpdate = $this->projectModel->getProjectById($id);
+        if (!$projectBeforeUpdate) {
+            flash('project_error', 'Project not found', 'alert-danger');
+            redirect('/projects');
+            return;
+        }
         
         // Process form data if POST request
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -819,6 +873,34 @@ class Projects extends Controller {
 
                 // Update project
                 $this->projectModel->update($data);
+
+                // Log activity if anything changed
+                $fieldsToTrack = ['title','description','start_date','end_date','status','department_id','client_id','budget'];
+                $changes = [];
+                foreach ($fieldsToTrack as $field) {
+                    $oldValue = $projectBeforeUpdate->{$field} ?? null;
+                    $newValue = $data[$field];
+                    if ((string)$oldValue !== (string)$newValue) {
+                        $changes[$field] = [
+                            'old' => $oldValue,
+                            'new' => $newValue
+                        ];
+                    }
+                }
+                if (!empty($changes)) {
+                    $activityLogModel = $this->model('ActivityLog');
+                    $activityLogModel->log(
+                        $_SESSION['user_id'],
+                        'project',
+                        $id,
+                        'updated',
+                        sprintf('Updated project "%s"', $projectBeforeUpdate->title ?? $data['title']),
+                        [
+                            'project_id' => $id,
+                            'changes' => $changes
+                        ]
+                    );
+                }
                 
                 // Set flash message
                 flash('project_message', 'Project updated successfully');

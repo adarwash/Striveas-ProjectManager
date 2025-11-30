@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">
@@ -126,6 +124,4 @@
             </div>
         </div>
     </div>
-</div>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?> 
+</div> 

@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -167,20 +165,7 @@
     </form>
 </div>
 
-<style>
-.bg-primary-light { background-color: rgba(13, 110, 253, 0.1); }
-.permission-module {
-    border-left: 3px solid #007bff;
-    padding-left: 15px;
-}
-.form-check-input:checked {
-    background-color: #007bff;
-    border-color: #007bff;
-}
-.form-check-label {
-    cursor: pointer;
-}
-</style>
+<!-- Styles moved to /public/css/app.css -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -241,6 +226,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial counter update
     updateCounters();
 });
-</script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?> 
+</script> 

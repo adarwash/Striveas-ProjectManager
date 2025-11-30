@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid">
     <!-- Page Header -->
     <div class="row mb-4">
@@ -268,6 +266,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-check migration status on page load
     checkUsersNeedingMigration();
 });
-</script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?> 
+</script> 

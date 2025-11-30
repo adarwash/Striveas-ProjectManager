@@ -1,439 +1,4 @@
-<style>
-/* Modern Clean Project View Styling */
-.project-page {
-    padding: 2rem 0;
-}
-
-.project-header {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.08);
-    border: 1px solid #e2e8f0;
-}
-
-.project-title {
-    color: #1a202c;
-    font-weight: 600;
-    font-size: 2.25rem;
-    margin: 0;
-    letter-spacing: -0.025em;
-}
-
-.breadcrumb {
-    background: transparent;
-    padding: 0;
-    margin: 0.75rem 0 0 0;
-}
-
-.breadcrumb-item a {
-    color: #64748b;
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s ease;
-}
-
-.breadcrumb-item a:hover {
-    color: #3b82f6;
-}
-
-.breadcrumb-item.active {
-    color: #475569;
-    font-weight: 500;
-}
-
-/* Clean Button Styling */
-.btn {
-    border-radius: 8px;
-    font-weight: 500;
-    padding: 0.625rem 1.25rem;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-    border: none;
-}
-
-.btn-primary {
-    background: #3b82f6;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.btn-success {
-    background: #10b981;
-    color: white;
-}
-
-.btn-success:hover {
-    background: #059669;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.btn-light {
-    background: white;
-    color: #374151;
-    border: 1px solid #d1d5db;
-}
-
-.btn-light:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
-    color: #111827;
-    transform: translateY(-1px);
-}
-
-.btn-outline-primary {
-    border: 1px solid #3b82f6;
-    color: #3b82f6;
-    background: white;
-}
-
-.btn-outline-primary:hover {
-    background: #3b82f6;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.btn-outline-secondary {
-    border: 1px solid #d1d5db;
-    color: #374151;
-    background: white;
-}
-
-.btn-outline-secondary:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
-    color: #111827;
-}
-
-/* Clean Card Styling */
-.card {
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.08);
-    transition: box-shadow 0.2s ease;
-    background: white;
-}
-
-.card:hover {
-    box-shadow: 0 4px 25px rgba(0,0,0,0.12);
-}
-
-.card-header {
-    border-radius: 12px 12px 0 0 !important;
-    background: #f8fafc !important;
-    border-bottom: 1px solid #e2e8f0;
-    padding: 1.5rem;
-    font-weight: 600;
-}
-
-.card-body {
-    padding: 1.5rem;
-}
-
-/* Modern Tab Styling */
-.nav-tabs {
-    border-bottom: 1px solid #e2e8f0;
-    margin-bottom: 2rem;
-    background: transparent;
-    border: none;
-    padding: 0;
-}
-
-.nav-tabs .nav-link {
-    color: #6b7280;
-    border: none;
-    border-bottom: 3px solid transparent;
-    padding: 1rem 1.5rem;
-    font-weight: 500;
-    border-radius: 8px 8px 0 0;
-    transition: all 0.2s ease;
-    background: white;
-    margin-right: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-bottom: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-
-.nav-tabs .nav-link:hover {
-    color: #3b82f6;
-    background: #f8fafc;
-    border-color: #d1d5db;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.nav-tabs .nav-link.active {
-    color: #3b82f6;
-    background: white;
-    font-weight: 600;
-    border-color: #e2e8f0;
-    border-bottom: 3px solid #3b82f6;
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.15);
-    transform: translateY(-1px);
-}
-
-/* Badge Improvements */
-.badge {
-    font-weight: 500;
-    padding: 0.375rem 0.75rem;
-    border-radius: 6px;
-}
-
-/* Custom styling for the project view page */
-.avatar-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-}
-
-.timeline-simple .timeline-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-color: #f0f5ff;
-    color: #0d6efd;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.description-content {
-    min-height: 50px;
-    line-height: 1.6;
-}
-
-/* List Group Improvements */
-.list-group-item {
-    border: none;
-    border-bottom: 1px solid #f1f5f9;
-    padding: 1rem 1.5rem;
-}
-
-.list-group-item:last-child {
-    border-bottom: none;
-}
-
-.list-group-item-action:hover {
-    background-color: #f8fafc;
-}
-
-/* Progress Bar Improvements */
-.progress {
-    background-color: #f1f5f9;
-    border-radius: 6px;
-}
-
-.progress-bar {
-    border-radius: 6px;
-}
-
-/* Table Improvements */
-.table {
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #e2e8f0;
-}
-
-.table thead th {
-    background: #f8fafc;
-    color: #374151;
-    font-weight: 600;
-    border: none;
-    padding: 1rem 1.5rem;
-    font-size: 0.875rem;
-}
-
-.table tbody tr {
-    transition: background-color 0.2s ease;
-    border-top: 1px solid #f1f5f9;
-}
-
-.table tbody tr:hover {
-    background-color: #f8fafc;
-}
-
-.table tbody td {
-    padding: 1rem 1.5rem;
-    vertical-align: middle;
-    border: none;
-}
-
-.parent-task-row {
-    background-color: #fff;
-    border-bottom: 1px solid #edf2f7;
-}
-
-.parent-task-row .task-title {
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.task-overdue a,
-.task-overdue span {
-    color: #dc2626 !important;
-}
-
-.task-overdue .badge {
-    background-color: #dc2626 !important;
-    color: #fff !important;
-}
-
-.subtask-row td {
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
-    font-size: 0.92rem;
-    padding: 0.75rem 1.25rem;
-}
-
-.subtask-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.subtask-indicator {
-    width: 12px;
-    height: 2px;
-    background: #3b82f6;
-    display: inline-block;
-    border-radius: 2px;
-}
-
-.toggle-subtasks-btn {
-    border: none;
-    background: transparent;
-    color: #3b82f6;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    transition: background 0.2s;
-}
-
-.toggle-subtasks-btn:hover {
-    background: rgba(59,130,246,0.1);
-}
-
-.subtasks-collapsed {
-    display: none;
-}
-
-/* Dropdown Improvements */
-.dropdown-menu {
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    padding: 0.5rem 0;
-}
-
-.dropdown-item {
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-    background-color: #f8fafc;
-    color: #3b82f6;
-}
-
-.task-status-chart-wrapper {
-    max-width: 260px;
-    margin: 0 auto 1rem;
-}
-
-#taskStatusChart {
-    width: 100% !important;
-    height: 260px !important;
-}
-
-/* Timeline Improvements */
-.timeline-simple {
-    position: relative;
-}
-
-.timeline-simple .list-group-item {
-    border-left: 3px solid transparent;
-    transition: all 0.2s ease;
-}
-
-.timeline-simple .list-group-item:hover {
-    border-left-color: #3b82f6;
-    background-color: #f8fafc;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .project-page {
-        padding: 1rem 0;
-    }
-    
-    .project-header {
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .project-title {
-        font-size: 1.875rem;
-    }
-    
-    .btn-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        width: 100%;
-    }
-    
-    .btn-group .btn {
-        width: 100%;
-    }
-    
-    .nav-tabs .nav-link {
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-    }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .project-header, .card {
-        background: #1e293b;
-        border-color: #334155;
-    }
-    
-    .project-title {
-        color: #f1f5f9;
-    }
-    
-    .card-header {
-        background: #334155 !important;
-        color: #cbd5e1;
-    }
-    
-    .table thead th {
-        background: #334155;
-        color: #cbd5e1;
-    }
-}
-</style>
+<!-- Styles moved to /public/css/app.css -->
 
 <div class="project-page">
     <div class="container-fluid">
@@ -479,17 +44,17 @@
                     </div>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="btn-group">
-                        <a href="<?= URLROOT ?>/tasks/create?project_id=<?= $project->id ?>" class="btn btn-success">
-                            <i class="bi bi-plus-lg"></i> New Task
+                    <div class="action-button-group d-inline-flex">
+                        <a href="<?= URLROOT ?>/tasks/create?project_id=<?= $project->id ?>" class="btn btn-success action-btn rounded-end-0">
+                            <i class="bi bi-plus-lg me-1"></i> New Task
                         </a>
                         <form action="/projects/addQuickCallback/<?= (int)$project->id ?>" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-bell-fill"></i> Quick Follow-up
+                            <button type="submit" class="btn btn-primary action-btn rounded-0">
+                                <i class="bi bi-bell-fill me-1"></i> Quick Follow-up
                             </button>
                         </form>
                         <div class="dropdown">
-                            <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <button class="btn btn-light action-btn dropdown-toggle rounded-start-0" type="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-three-dots"></i> Actions
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -552,6 +117,78 @@
             <!-- Details Tab -->
             <div class="tab-pane fade show active" id="details" role="tabpanel">
                 <div class="row">
+                    <!-- At-a-glance KPIs -->
+                    <div class="col-12">
+                        <div class="row mb-4">
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="modern-stats-card card-primary" style="--card-color:#3b82f6;--card-color-light:#60a5fa;">
+                                    <div class="stats-icon">
+                                        <i class="bi bi-list-task"></i>
+                                    </div>
+                                    <div class="stats-content">
+                                        <div class="stats-value"><?= (int)($kpis['total_tasks'] ?? count($tasks)) ?></div>
+                                        <div class="stats-label">Total Tasks</div>
+                                        <div class="stats-progress">
+                                            <div class="progress-bar" style="width: 100%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="modern-stats-card card-warning" style="--card-color:#f59e0b;--card-color-light:#fbbf24;">
+                                    <div class="stats-icon">
+                                        <i class="bi bi-clipboard-check"></i>
+                                    </div>
+                                    <div class="stats-content">
+                                        <div class="stats-value"><?= (int)($kpis['open_tasks'] ?? 0) ?></div>
+                                        <div class="stats-label">Open Tasks</div>
+                                        <div class="stats-progress">
+                                            <?php
+                                                $totalCntOpen = (int)($kpis['total_tasks'] ?? count($tasks));
+                                                $openCnt = (int)($kpis['open_tasks'] ?? 0);
+                                                $openPct = $totalCntOpen > 0 ? ($openCnt / $totalCntOpen) * 100 : 0;
+                                            ?>
+                                            <div class="progress-bar" style="width: <?= round($openPct) ?>%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="modern-stats-card card-danger" style="--card-color:#ef4444;--card-color-light:#f87171;">
+                                    <div class="stats-icon">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                    </div>
+                                    <div class="stats-content">
+                                        <div class="stats-value"><?= (int)($kpis['overdue_tasks'] ?? 0) ?></div>
+                                        <div class="stats-label">Overdue</div>
+                                        <div class="stats-progress">
+                                            <?php
+                                                $totalCntOver = (int)($kpis['total_tasks'] ?? count($tasks));
+                                                $overCnt = (int)($kpis['overdue_tasks'] ?? 0);
+                                                $overPct = $totalCntOver > 0 ? ($overCnt / $totalCntOver) * 100 : 0;
+                                            ?>
+                                            <div class="progress-bar" style="width: <?= round($overPct) ?>%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="modern-stats-card card-success" style="--card-color:#10b981;--card-color-light:#34d399;">
+                                    <div class="stats-icon">
+                                        <i class="bi bi-check-circle"></i>
+                                    </div>
+                                    <div class="stats-content">
+                                        <?php $wPct = isset($kpis['weighted_completion_pct']) ? (float)$kpis['weighted_completion_pct'] : 0.0; ?>
+                                        <div class="stats-value"><?= number_format($wPct, 0) ?>%</div>
+                                        <div class="stats-label">Completion (weighted)</div>
+                                        <div class="stats-progress">
+                                            <div class="progress-bar" style="width: <?= max(0, min(100, round($wPct))) ?>%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="col-lg-8">
                         <!-- Description Card -->
                         <div class="card border-0 shadow-sm mb-4">
@@ -1283,11 +920,32 @@
 <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css">
 <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
 
+<?php
+$calendarEvents = [
+    [
+        'title' => $project->title,
+        'start' => $project->start_date,
+        'end' => $project->end_date,
+        'color' => '#2563eb',
+        'url' => URLROOT . '/projects/viewProject/' . (int)$project->id,
+        'type' => 'project'
+    ]
+];
+foreach ($tasks as $task) {
+    $calendarEvents[] = [
+        'title' => $task->title,
+        'start' => !empty($task->start_date) ? $task->start_date : $project->start_date,
+        'end' => !empty($task->due_date) ? $task->due_date : $project->end_date,
+        'color' => $task->status === 'Completed' ? '#16a34a' : ($task->status === 'In Progress' ? '#2563eb' : '#94a3b8'),
+        'url' => URLROOT . '/tasks/show/' . (int)$task->id,
+        'type' => 'task'
+    ];
+}
+?>
+
 <!-- Include FullCalendar -->
-<link href='https://cdn.jsdelivr.net/npm/@fullcalendar/core@4.4.0/main.min.css' rel='stylesheet' />
-<link href='https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@4.4.0/main.min.css' rel='stylesheet' />
-<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@4.4.0/main.min.js'></script>
-<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@4.4.0/main.min.js'></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -1343,62 +1001,39 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     });
 
-    // Initialize Calendar
+    // Initialize Calendar (render when tab becomes visible)
+    var calendarInstance = null;
+    var calendarRendered = false;
     var calendarEl = document.getElementById('calendar_here');
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-        plugins: ['dayGrid'],
-        header: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,dayGridWeek'
-        },
-        events: [
-            {
-                title: '<?= htmlspecialchars(addslashes($project->title)) ?>',
-                start: '<?= $project->start_date ?>',
-                end: '<?= $project->end_date ?>',
-                color: '#007bff'
+    if (calendarEl) {
+        calendarInstance = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,dayGridWeek'
             },
-            <?php foreach ($tasks as $task): ?>
-            {
-                title: '<?= htmlspecialchars(addslashes($task->title)) ?>',
-                start: '<?= !empty($task->start_date) ? $task->start_date : $project->start_date ?>',
-                end: '<?= !empty($task->due_date) ? $task->due_date : $project->end_date ?>',
-                color: '<?= $task->status === 'Completed' ? '#28a745' : ($task->status === 'In Progress' ? '#007bff' : '#6c757d') ?>'
-            },
-            <?php endforeach; ?>
-        ]
-    });
-    calendar.render();
-
-    // Task status chart
-    var taskStatusCtx = document.getElementById('taskStatusChart');
-    if (taskStatusCtx) {
-        var taskStatusLabels = <?= json_encode(array_keys($task_status_counts)) ?>;
-        var taskStatusData = <?= json_encode(array_values($task_status_counts)) ?>;
-        var taskStatusColors = ['#2563eb','#16a34a','#f97316','#a855f7','#ef4444','#94a3b8'];
-        new Chart(taskStatusCtx, {
-            type: 'doughnut',
-            data: {
-                labels: taskStatusLabels,
-                datasets: [{
-                    data: taskStatusData,
-                    backgroundColor: taskStatusColors.slice(0, taskStatusLabels.length),
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '65%',
-                plugins: {
-                    legend: {
-                        display: false
-                    }
+            events: <?= json_encode($calendarEvents) ?>,
+            eventClick: function(info) {
+                var targetUrl = info.event.extendedProps.url || info.event.url;
+                if (targetUrl) {
+                    info.jsEvent.preventDefault();
+                    window.location.href = targetUrl;
                 }
             }
         });
     }
+
+    function renderCalendarIfNeeded() {
+        if (!calendarInstance) return;
+        if (!calendarRendered) {
+            calendarInstance.render();
+            calendarRendered = true;
+        } else {
+            calendarInstance.updateSize();
+        }
+    }
+
 
     // Task status chart
     var taskStatusCtx = document.getElementById('taskStatusChart');
@@ -1434,10 +1069,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.target.id === 'gantt-tab') {
                 gantt.render(); // Refresh Gantt chart when tab is shown
             } else if (e.target.id === 'calendar-tab') {
-                calendar.render(); // Refresh calendar when tab is shown
+                renderCalendarIfNeeded();
             }
         });
     });
+
+    // If calendar tab is active by default (edge case)
+    var calendarTab = document.getElementById('calendar-tab');
+    if (calendarTab && calendarTab.classList.contains('active')) {
+        renderCalendarIfNeeded();
+    }
 
     // Gantt zoom controls
     document.getElementById('zoom-in').addEventListener('click', function() {

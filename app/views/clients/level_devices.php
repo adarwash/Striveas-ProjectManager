@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid">
     <!-- Page Header -->
     <div class="rounded-3 p-4 mb-4 bg-light border">
@@ -265,6 +263,4 @@ document.addEventListener('DOMContentLoaded', function() {
     statusFilter.addEventListener('change', filterDevices);
 });
 </script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?>
 

@@ -807,6 +807,29 @@ class Tickets extends Controller {
         if ($messageId) {
             flash('success', 'Message added successfully.');
             
+            try {
+                $activityLogModel = $this->model('ActivityLog');
+                $activityLogModel->log(
+                    $_SESSION['user_id'],
+                    'ticket',
+                    $id,
+                    'commented',
+                    sprintf(
+                        'Added a %s reply to ticket #%d',
+                        !empty($messageData['is_public']) ? 'public' : 'private',
+                        $id
+                    ),
+                    [
+                        'message_id' => $messageId,
+                        'message_type' => $messageData['message_type'],
+                        'is_public' => (bool)$messageData['is_public'],
+                        'snippet' => mb_substr($messageData['content'], 0, 120)
+                    ]
+                );
+            } catch (Exception $e) {
+                error_log('Failed to log ticket reply activity: ' . $e->getMessage());
+            }
+            
             // Update first_response_at if this is the first response
             if (empty($ticket['first_response_at'])) {
                 try {

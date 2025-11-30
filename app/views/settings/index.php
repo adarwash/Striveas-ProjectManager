@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid mt-4">
     <!-- Page Header -->
     <div class="row mb-4">
@@ -365,5 +363,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?>

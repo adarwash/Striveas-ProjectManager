@@ -1,5 +1,3 @@
-<?php include_once VIEWSPATH . '/inc/header.php'; ?>
-
 <!-- Modern Page Header -->
 <div class="page-header">
     <div>

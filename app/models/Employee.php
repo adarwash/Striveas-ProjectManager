@@ -847,12 +847,15 @@ class Employee {
             // Get current status
             $currentStatus = $timeModel->getUserStatus($userId);
             
+            $activityStats = $this->getEmployeeActivityStats($userId, $startDate, $endDate);
+            
             // Combine all data
             return array_merge($employee, [
                 'time_performance' => $timePerformance,
                 'recent_time_entries' => $recentEntries,
                 'current_status' => $currentStatus,
-                'analysis_period' => $days
+                'analysis_period' => $days,
+                'activity_stats' => $activityStats
             ]);
             
         } catch (Exception $e) {
@@ -945,6 +948,133 @@ class Employee {
             error_log('Error calculating time performance metrics: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Aggregate activity metrics (projects, tickets, logins) for an employee
+     *
+     * @param int $userId
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
+     */
+    private function getEmployeeActivityStats($userId, $startDate, $endDate) {
+        $stats = [
+            'project_updates' => 0,
+            'ticket_replies' => 0,
+            'login_count' => 0,
+            'task_updates' => 0,
+            'task_completions' => 0,
+            'recent_activity' => [],
+            'task_activity' => []
+        ];
+
+        $startDateTime = $startDate . ' 00:00:00';
+        $endDateTime = $endDate . ' 23:59:59';
+
+        try {
+            // Aggregate activity log counts
+            $activityRows = $this->db->select(
+                "SELECT entity_type, action, COUNT(*) as total
+                 FROM activity_logs
+                 WHERE user_id = ? AND created_at BETWEEN ? AND ?
+                 GROUP BY entity_type, action",
+                [$userId, $startDateTime, $endDateTime]
+            ) ?: [];
+
+            foreach ($activityRows as $row) {
+                $entity = strtolower($row['entity_type'] ?? '');
+                $action = strtolower($row['action'] ?? '');
+                $count = (int)($row['total'] ?? 0);
+
+                if ($entity === 'project' && in_array($action, ['created','updated','uploaded','linked','unlinked'], true)) {
+                    $stats['project_updates'] += $count;
+                }
+                if ($entity === 'ticket' && in_array($action, ['commented','updated','status_changed'], true)) {
+                    $stats['ticket_replies'] += $count;
+                }
+                if ($entity === 'task') {
+                    if (in_array($action, ['updated','status_changed','progress_updated'], true)) {
+                        $stats['task_updates'] += $count;
+                    }
+                    if ($action === 'completed') {
+                        $stats['task_completions'] += $count;
+                    }
+                }
+            }
+
+            // Recent activity from activity log
+            $recentActivityRows = $this->db->select(
+                "SELECT TOP 15 entity_type, entity_id, action, description, metadata, created_at
+                 FROM activity_logs
+                 WHERE user_id = ? AND created_at BETWEEN ? AND ?
+                 ORDER BY created_at DESC",
+                [$userId, $startDateTime, $endDateTime]
+            ) ?: [];
+
+            $recent = [];
+            foreach ($recentActivityRows as $row) {
+                $metadata = [];
+                if (!empty($row['metadata'])) {
+                    $decoded = json_decode($row['metadata'], true);
+                    if (is_array($decoded)) {
+                        $metadata = $decoded;
+                    }
+                }
+                $recent[] = [
+                    'entity_type' => $row['entity_type'],
+                    'entity_id' => $row['entity_id'],
+                    'action' => $row['action'],
+                    'description' => $row['description'],
+                    'metadata' => $metadata,
+                    'created_at' => $row['created_at']
+                ];
+                if ($row['entity_type'] === 'task') {
+                    $stats['task_activity'][] = end($recent);
+                }
+            }
+
+            // Login counts and recent logins
+            $loginCountRow = $this->db->select(
+                "SELECT COUNT(*) as total
+                 FROM UserLoginAudit
+                 WHERE user_id = ? AND success = 1 AND created_at BETWEEN ? AND ?",
+                [$userId, $startDateTime, $endDateTime]
+            );
+            $stats['login_count'] = (int)($loginCountRow[0]['total'] ?? 0);
+
+            $recentLogins = $this->db->select(
+                "SELECT TOP 10 created_at
+                 FROM UserLoginAudit
+                 WHERE user_id = ? AND success = 1 AND created_at BETWEEN ? AND ?
+                 ORDER BY created_at DESC",
+                [$userId, $startDateTime, $endDateTime]
+            ) ?: [];
+
+            foreach ($recentLogins as $loginRow) {
+                $entry = [
+                    'entity_type' => 'login',
+                    'entity_id' => null,
+                    'action' => 'login',
+                    'description' => 'Successful login',
+                    'metadata' => [],
+                    'created_at' => $loginRow['created_at']
+                ];
+                $recent[] = $entry;
+            }
+
+            // Sort and limit recent activity feed
+            usort($recent, function ($a, $b) {
+                return strtotime($b['created_at']) <=> strtotime($a['created_at']);
+            });
+            $stats['recent_activity'] = array_slice($recent, 0, 10);
+            $stats['task_activity'] = array_slice($stats['task_activity'], 0, 10);
+
+        } catch (Exception $e) {
+            error_log('Error getting employee activity stats: ' . $e->getMessage());
+        }
+
+        return $stats;
     }
     
     /**

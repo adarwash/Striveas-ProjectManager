@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid mt-4">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -421,5 +419,3 @@ function refreshReportSection(section) {
     console.log('Refreshing section:', section);
 }
 </script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?>

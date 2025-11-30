@@ -1,11 +1,21 @@
 <div class="container-fluid">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?= URLROOT ?>/tickets">Tickets</a></li>
-            <li class="breadcrumb-item active"><?= htmlspecialchars($data['ticket']['ticket_number']) ?></li>
-        </ol>
-    </nav>
+    <!-- Modern Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-ticket-alt me-3"></i>Ticket #<?= htmlspecialchars($data['ticket']['ticket_number']) ?></h1>
+            <p class="mb-0"><?= htmlspecialchars($data['ticket']['subject']) ?></p>
+        </div>
+        <div>
+            <?php if ($data['can_edit']): ?>
+            <a href="<?= URLROOT ?>/tickets/edit/<?= $data['ticket']['id'] ?>" class="btn btn-primary me-2">
+                <i class="fas fa-edit me-2"></i>Edit
+            </a>
+            <?php endif; ?>
+            <a href="<?= URLROOT ?>/tickets" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Tickets
+            </a>
+        </div>
+    </div>
 
     <div class="row">
         <!-- Main Content -->
@@ -708,28 +718,4 @@ document.getElementById('message').addEventListener('input', function() {
 });
 </script>
 
-<style>
-.timeline-item:last-child {
-    border-bottom: none !important;
-}
-
-.avatar {
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.html-content {
-    /* Show full email content without clipping */
-    max-height: none;
-    overflow: visible;
-    border: 1px solid #e9ecef;
-    border-radius: 0.375rem;
-    padding: 1rem;
-    background-color: #f8f9fa;
-}
-
-.html-content img {
-    max-width: 100%;
-    height: auto;
-}
-</style>
+<!-- Styles moved to /public/css/app.css -->

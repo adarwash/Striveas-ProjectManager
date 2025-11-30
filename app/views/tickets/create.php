@@ -1,19 +1,20 @@
 <div class="container-fluid">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?= URLROOT ?>/tickets">Tickets</a></li>
-            <li class="breadcrumb-item active">Create New Ticket</li>
-        </ol>
-    </nav>
+    <!-- Modern Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-ticket-alt me-3"></i>Create New Ticket</h1>
+            <p class="mb-0">Submit a new support request or issue</p>
+        </div>
+        <div>
+            <a href="<?= URLROOT ?>/tickets" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Tickets
+            </a>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-lg-12 mx-auto">
-            <!-- Page Header -->
-            <div class="text-center mb-4">
-                <h1 class="h3 mb-2">Create New Ticket</h1>
-                <p class="text-muted">Submit a new support request or issue</p>
-            </div>
+            <!-- Page Header replaced by global header above -->
 
             <!-- Create Ticket Form -->
             <div class="card border-0 shadow-sm">

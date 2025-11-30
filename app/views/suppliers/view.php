@@ -1,11 +1,19 @@
 <div class="container-fluid px-4">
-    <h1 class="mt-4"><?= $pageTitle ?></h1>
-    
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/suppliers">Suppliers</a></li>
-        <li class="breadcrumb-item active">View Supplier</li>
-    </ol>
+    <!-- Modern Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-truck me-3"></i>Supplier Details</h1>
+            <p class="mb-0">View and manage supplier information</p>
+        </div>
+        <div>
+            <a href="/suppliers/edit/<?= htmlspecialchars($supplier['id']) ?>" class="btn btn-primary me-2">
+                <i class="fas fa-edit me-2"></i>Edit Supplier
+            </a>
+            <a href="/suppliers" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Suppliers
+            </a>
+        </div>
+    </div>
     
     <?php if (isset($_SESSION['success'])): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">

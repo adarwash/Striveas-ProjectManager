@@ -2,6 +2,14 @@
 
 <!-- Employee Performance Detail -->
 <div class="container-fluid mt-4">
+    <?php 
+        $activityStats = $employee['activity_stats'] ?? [
+            'project_updates' => 0,
+            'ticket_replies' => 0,
+            'login_count' => 0,
+            'recent_activity' => []
+        ];
+    ?>
     <!-- Header with employee info -->
     <div class="row mb-4">
         <div class="col-12">
@@ -104,6 +112,65 @@
         </div>
     </div>
 
+    <!-- Activity Contribution Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 text-primary mb-2">
+                        <?= number_format($activityStats['project_updates'] ?? 0) ?>
+                    </div>
+                    <h6 class="card-title mb-0">Project Updates</h6>
+                    <small class="text-muted">Interactions with projects</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 text-success mb-2">
+                        <?= number_format($activityStats['task_updates'] ?? 0) ?>
+                    </div>
+                    <h6 class="card-title mb-0">Task Updates</h6>
+                    <small class="text-muted">Edits & progress changes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 text-warning mb-2">
+                        <?= number_format($activityStats['task_completions'] ?? 0) ?>
+                    </div>
+                    <h6 class="card-title mb-0">Tasks Closed</h6>
+                    <small class="text-muted">Marked as complete</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 text-info mb-2">
+                        <?= number_format($activityStats['ticket_replies'] ?? 0) ?>
+                    </div>
+                    <h6 class="card-title mb-0">Ticket Replies</h6>
+                    <small class="text-muted">Support responses</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 text-secondary mb-2">
+                        <?= number_format($activityStats['login_count'] ?? 0) ?>
+                    </div>
+                    <h6 class="card-title mb-0">Successful Logins</h6>
+                    <small class="text-muted"><?= $employee['analysis_period'] ?> day window</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Detailed Metrics -->
     <div class="row mb-4">
         <div class="col-lg-8">
@@ -194,6 +261,210 @@
             </div>
         </div>
     </div>
+
+    <?php 
+        $dailyTrends = $employee['time_performance']['trends'] ?? [];
+        $dailyTrackerLabels = [];
+        $dailyTrackerHours = [];
+        $dailyTrackerEntries = [];
+        foreach (array_reverse($dailyTrends) as $trend) { // chronological
+            $dailyTrackerLabels[] = date('M j', strtotime($trend['work_date']));
+            $dailyTrackerHours[] = round($trend['daily_hours'] ?? 0, 2);
+            $dailyTrackerEntries[] = (int)($trend['entries_count'] ?? 0);
+        }
+    ?>
+
+    <!-- Daily Tracker Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Daily Activity Tracker</h5>
+                        <small class="text-muted">Hours logged and time entries over the last <?= $employee['analysis_period'] ?> days</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="text-center">
+                            <strong class="d-block fs-5"><?= number_format(array_sum($dailyTrackerHours), 1) ?>h</strong>
+                            <span class="text-muted small">Total hours</span>
+                        </div>
+                        <div class="text-center">
+                            <strong class="d-block fs-5"><?= array_sum($dailyTrackerEntries) ?></strong>
+                            <span class="text-muted small">Total entries</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($dailyTrackerLabels)): ?>
+                        <canvas id="dailyTrackerChart" height="120"></canvas>
+                    <?php else: ?>
+                        <p class="text-muted mb-0">Not enough time tracking data to visualize.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Timeline -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Activity</h5>
+                    <span class="badge bg-light text-muted"><?= count($activityStats['recent_activity'] ?? []) ?> events</span>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($activityStats['recent_activity'])): ?>
+                        <div class="list-group list-group-flush">
+                            <?php foreach ($activityStats['recent_activity'] as $activity): ?>
+                                <?php
+                                    $icon = 'bi bi-circle';
+                                    $label = ucfirst($activity['action']);
+                                    $link = null;
+                                    if ($activity['entity_type'] === 'project' && !empty($activity['entity_id'])) {
+                                        $icon = 'bi bi-kanban';
+                                        $label .= ' project';
+                                        $link = URLROOT . '/projects/viewProject/' . (int)$activity['entity_id'];
+                                    } elseif ($activity['entity_type'] === 'task' && !empty($activity['entity_id'])) {
+                                        $icon = 'bi bi-check2-square';
+                                        $taskTitle = $activity['metadata']['task_title'] ?? null;
+                                        $label = ucfirst(str_replace('_', ' ', $activity['action'])) . ' task';
+                                        if ($taskTitle) {
+                                            $label .= ' "' . $taskTitle . '"';
+                                        }
+                                        $link = URLROOT . '/tasks/show/' . (int)$activity['entity_id'];
+                                    } elseif ($activity['entity_type'] === 'ticket' && !empty($activity['entity_id'])) {
+                                        $icon = 'bi bi-ticket-detailed';
+                                        $label .= ' ticket';
+                                        $link = URLROOT . '/tickets/show/' . (int)$activity['entity_id'];
+                                    } elseif ($activity['entity_type'] === 'login') {
+                                        $icon = 'bi bi-box-arrow-in-right';
+                                        $label = 'Logged in';
+                                    }
+                                ?>
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="<?= $icon ?> text-primary me-2"></i>
+                                            <?php if ($link): ?>
+                                                <a href="<?= $link ?>" class="text-decoration-none">
+                                                    <?= htmlspecialchars($label) ?>
+                                                </a>
+                                            <?php else: ?>
+                                                <span><?= htmlspecialchars($label) ?></span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($activity['description'])): ?>
+                                                <div class="text-muted small"><?= htmlspecialchars($activity['description']) ?></div>
+                                            <?php endif; ?>
+                                        </div>
+                                        <small class="text-muted"><?= formatDateTime($activity['created_at']) ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted mb-0">No tracked activity during this period.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Engagement Summary</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span><i class="bi bi-kanban me-2 text-primary"></i>Project updates</span>
+                            <strong><?= number_format($activityStats['project_updates'] ?? 0) ?></strong>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span><i class="bi bi-list-check me-2 text-success"></i>Task updates</span>
+                            <strong><?= number_format($activityStats['task_updates'] ?? 0) ?></strong>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span><i class="bi bi-check-circle me-2 text-warning"></i>Tasks closed</span>
+                            <strong><?= number_format($activityStats['task_completions'] ?? 0) ?></strong>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span><i class="bi bi-chat-left-text me-2 text-info"></i>Ticket replies</span>
+                            <strong><?= number_format($activityStats['ticket_replies'] ?? 0) ?></strong>
+                        </li>
+                        <li class="d-flex justify-content-between py-2">
+                            <span><i class="bi bi-box-arrow-in-right me-2 text-secondary"></i>Successful logins</span>
+                            <strong><?= number_format($activityStats['login_count'] ?? 0) ?></strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php $taskActivityFeed = $activityStats['task_activity'] ?? []; ?>
+    <?php if (!empty($taskActivityFeed)): ?>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Task Updates &amp; Closures</h5>
+                    <span class="badge bg-light text-muted"><?= count($taskActivityFeed) ?> entries</span>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="text-muted small">
+                            <tr>
+                                <th>Task</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                                <th>When</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($taskActivityFeed as $entry): ?>
+                                <?php 
+                                    $taskTitle = $entry['metadata']['task_title'] ?? ('Task #' . $entry['entity_id']);
+                                    $actionLabel = ucwords(str_replace('_', ' ', $entry['action']));
+                                    $statusAfter = $entry['metadata']['new_status'] ?? null;
+                                    $statusBefore = $entry['metadata']['old_status'] ?? null;
+                                    $changes = $entry['metadata']['changes'] ?? [];
+                                ?>
+                                <tr>
+                                    <td>
+                                        <a href="<?= URLROOT ?>/tasks/show/<?= (int)$entry['entity_id'] ?>" class="text-decoration-none">
+                                            <?= htmlspecialchars($taskTitle) ?>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border fw-semibold px-3">
+                                            <?= htmlspecialchars($actionLabel) ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ($statusAfter): ?>
+                                            <small class="text-muted">
+                                                Status: <?= htmlspecialchars($statusBefore ?? 'N/A') ?> → <?= htmlspecialchars($statusAfter) ?>
+                                            </small>
+                                        <?php elseif (!empty($changes)): ?>
+                                            <small class="text-muted">
+                                                <?= count($changes) ?> field<?= count($changes) === 1 ? '' : 's' ?> updated
+                                            </small>
+                                        <?php else: ?>
+                                            <small class="text-muted">
+                                                <?= htmlspecialchars($entry['description'] ?? 'Updated task') ?>
+                                            </small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= formatDateTime($entry['created_at']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Daily Time Tracking Trends -->
     <div class="row">
@@ -328,11 +599,68 @@
 }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Add any interactive features here
+const dailyTrackerData = {
+    labels: <?= json_encode($dailyTrackerLabels) ?>,
+    hours: <?= json_encode($dailyTrackerHours) ?>,
+    entries: <?= json_encode($dailyTrackerEntries) ?>
+};
+
 document.addEventListener('DOMContentLoaded', function() {
-    // You can add charts or interactive elements here
-    console.log('Employee performance detail loaded');
+    const trackerCtx = document.getElementById('dailyTrackerChart');
+    if (trackerCtx && dailyTrackerData.labels.length) {
+        new Chart(trackerCtx, {
+            data: {
+                labels: dailyTrackerData.labels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Hours Worked',
+                        data: dailyTrackerData.hours,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                        fill: true,
+                        tension: 0.35,
+                        yAxisID: 'y'
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Time Entries',
+                        data: dailyTrackerData.entries,
+                        backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                        borderRadius: 4,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Hours' }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'Entries' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
 });
 </script>
 

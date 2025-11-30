@@ -1,5 +1,3 @@
-<?php include_once VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="page-header d-flex justify-content-between align-items-center">
 	<div>
 		<h1 class="page-title"><i class="fas fa-user-shield me-2"></i>Login Audit</h1>
@@ -86,7 +84,5 @@
 		</div>
 	</div>
 </div>
-
-<?php include_once VIEWSPATH . '/inc/footer.php'; ?>
 
 

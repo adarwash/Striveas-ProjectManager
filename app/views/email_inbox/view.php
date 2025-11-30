@@ -1,17 +1,16 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid">
-    <!-- Navigation Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="<?= URLROOT ?>/emailinbox" class="text-decoration-none">
-                    <i class="bi bi-envelope me-1"></i>Email Inbox
-                </a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">Email Details</li>
-        </ol>
-    </nav>
+    <!-- Modern Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-envelope me-3"></i>Email Details</h1>
+            <p class="mb-0">View message metadata, content, and linked ticket</p>
+        </div>
+        <div>
+            <a href="<?= URLROOT ?>/emailinbox" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Inbox
+            </a>
+        </div>
+    </div>
 
     <!-- Email Header -->
     <div class="card border-0 shadow-sm mb-4">
@@ -492,5 +491,3 @@ function redownloadAll() {
     font-size: 0.875em;
 }
 </style>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?>

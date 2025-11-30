@@ -1,5 +1,3 @@
-<?php include_once VIEWSPATH . '/inc/header.php'; ?>
-
 <!-- Main Content Container -->
 <div class="container-fluid px-4 py-3">
     
@@ -1479,6 +1477,4 @@ document.getElementById('shareForm').addEventListener('submit', function(e) {
     const noteId = document.getElementById('shareNoteId').value;
     this.action = `/notes/share/${noteId}`;
 });
-</script>
-
-<?php include_once VIEWSPATH . '/inc/footer.php'; ?> 
+</script> 

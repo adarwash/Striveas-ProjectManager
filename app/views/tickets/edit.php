@@ -1,12 +1,19 @@
 <div class="container-fluid">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?= URLROOT ?>/tickets">Tickets</a></li>
-            <li class="breadcrumb-item"><a href="<?= URLROOT ?>/tickets/show/<?= $data['ticket']['id'] ?>">Ticket <?= htmlspecialchars($data['ticket']['ticket_number']) ?></a></li>
-            <li class="breadcrumb-item active">Edit</li>
-        </ol>
-    </nav>
+    <!-- Modern Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-ticket-alt me-3"></i>Edit Ticket</h1>
+            <p class="mb-0">Update ticket details and status</p>
+        </div>
+        <div>
+            <a href="<?= URLROOT ?>/tickets/show/<?= $data['ticket']['id'] ?>" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-eye me-2"></i>View Ticket
+            </a>
+            <a href="<?= URLROOT ?>/tickets" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Tickets
+            </a>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-lg-12 mx-auto">

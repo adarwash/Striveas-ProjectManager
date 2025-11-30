@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid mt-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <div>
@@ -205,6 +203,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?>
 

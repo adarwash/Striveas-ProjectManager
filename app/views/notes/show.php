@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <?php 
 // Clear any conflicting messages from other pages
 if (isset($_SESSION['flash']['note_success'])) {
@@ -21,7 +19,6 @@ flash('note_message');
             </a>
         </div>
     </div>
-    <?php require VIEWSPATH . '/inc/footer.php'; ?>
     <?php return; ?>
 <?php endif; ?>
 
@@ -684,6 +681,4 @@ function removeShare(noteId, userId) {
         form.submit();
     }
 }
-</script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?> 
+</script> 

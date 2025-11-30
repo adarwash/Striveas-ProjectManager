@@ -1,10 +1,16 @@
 <div class="container-fluid px-4">
-    <h1 class="mt-4"><?= $pageTitle ?></h1>
-    
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item active">Suppliers</li>
-    </ol>
+    <!-- Modern Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-truck me-3"></i>Suppliers</h1>
+            <p class="mb-0">Manage your vendors and purchasing partners</p>
+        </div>
+        <div>
+            <a href="/suppliers/add" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Supplier
+            </a>
+        </div>
+    </div>
     
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">

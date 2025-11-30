@@ -6,6 +6,7 @@ class Tasks extends Controller {
     private $noteModel;
     private $clientModel;
     private $reminderModel;
+    private $activityLogModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -25,13 +26,13 @@ class Tasks extends Controller {
         $this->noteModel = $this->model('Note');
         $this->clientModel = $this->model('Client');
         $this->reminderModel = $this->model('Reminder');
+        $this->activityLogModel = $this->model('ActivityLog');
         
         // Create task_users table if it doesn't exist
         $this->taskModel->createTaskUsersTable();
         // Create task_sites table if it doesn't exist
         $this->taskModel->createTaskSitesTable();
     }
-    
     // List all tasks (can be filtered by project)
     public function index() {
         // Get filter parameters from query string
@@ -61,7 +62,7 @@ class Tasks extends Controller {
                 $project = $this->projectModel->getProjectById($projectId);
                 if ($project) {
                     $title = 'Tasks for ' . $project->title;
-                }
+    }
             }
         } else {
             // Get all tasks if no filters
@@ -99,7 +100,6 @@ class Tasks extends Controller {
                 }
             }
         }
-        
         // Get all users for assignments
         $users = $this->userModel->getAllUsers();
         
@@ -745,6 +745,9 @@ class Tasks extends Controller {
 
 			try {
 				$this->taskModel->update($data);
+
+                $this->logTaskChanges($existingTask, $data);
+
 				flash('task_message', 'Task updated successfully');
 			} catch (Exception $e) {
 				error_log('Task update error: ' . $e->getMessage());
@@ -959,6 +962,15 @@ class Tasks extends Controller {
         // Update task status
         if ($this->taskModel->updateStatus($id, $newStatus)) {
             flash('task_message', 'Task status updated successfully');
+            $action = $this->isCompletionStatus($newStatus) ? 'completed' : 'status_changed';
+            $description = $this->isCompletionStatus($newStatus)
+                ? sprintf('Completed task "%s"', $task->title)
+                : sprintf('Updated status of task "%s" to %s', $task->title, $newStatus);
+            $this->logTaskActivity($id, $action, $description, [
+                'task_title' => $task->title,
+                'old_status' => $task->status,
+                'new_status' => $newStatus
+            ]);
         } else {
             flash('task_error', 'Error updating task status', 'alert-danger');
         }
@@ -984,6 +996,10 @@ class Tasks extends Controller {
 		$progress = max(0, min(100, $progress));
 		if ($this->taskModel->updateProgress((int)$id, $progress)) {
 			flash('task_message', 'Progress updated to ' . $progress . '%');
+            $this->logTaskActivity($id, 'progress_updated', sprintf('Updated progress to %d%%', $progress), [
+                'task_title' => $task->title,
+                'progress_percent' => $progress
+            ]);
 		} else {
 			flash('task_error', 'Failed to update progress', 'alert-danger');
 		}
@@ -1002,4 +1018,86 @@ class Tasks extends Controller {
         $_POST['status'] = 'Completed';
         $this->updateStatus($id);
     }
-} 
+ 
+
+    /**
+     * Determine if a status indicates completion/closure
+     */
+    private function isCompletionStatus($status) {
+        $normalized = strtolower(trim($status));
+        return in_array($normalized, ['completed','complete','closed','resolved','done'], true);
+    }
+
+    /**
+     * Log a task-related activity
+     */
+    private function logTaskActivity($taskId, $action, $description, array $metadata = []) {
+        try {
+            if (!isset($_SESSION['user_id'])) {
+                return;
+            }
+            $this->activityLogModel->log(
+                (int)$_SESSION['user_id'],
+                'task',
+                (int)$taskId,
+                $action,
+                $description,
+                $metadata
+            );
+        } catch (Exception $e) {
+            error_log('logTaskActivity error: ' . $e->getMessage());
+    }
+    }
+
+    /**
+     * Log detailed task field changes
+     */
+    private function logTaskChanges($existingTask, $newData) {
+        $fields = [
+            'title', 'description', 'status', 'priority',
+            'start_date', 'due_date', 'assigned_to', 'estimated_hours', 'progress_percent'
+        ];
+        $changes = [];
+        foreach ($fields as $field) {
+            $old = $existingTask->$field ?? null;
+            $new = $newData[$field] ?? ($existingTask->$field ?? null);
+            if ((string)$old !== (string)$new) {
+                $changes[$field] = [
+                    'old' => $old,
+                    'new' => $new
+                ];
+            }
+        }
+
+        if (!empty($changes)) {
+            $this->logTaskActivity(
+                $existingTask->id,
+                'updated',
+                sprintf('Updated task "%s"', $existingTask->title ?? $newData['title']),
+                [
+                    'task_title' => $existingTask->title ?? $newData['title'],
+                    'project_id' => $existingTask->project_id ?? $newData['project_id'],
+                    'changes' => $changes
+                ]
+            );
+
+            if (isset($changes['status'])) {
+                $newStatus = $changes['status']['new'];
+                $action = $this->isCompletionStatus($newStatus) ? 'completed' : 'status_changed';
+                $description = $this->isCompletionStatus($newStatus)
+                    ? sprintf('Completed task "%s"', $existingTask->title ?? $newData['title'])
+                    : sprintf('Updated status of task "%s" to %s', $existingTask->title ?? $newData['title'], $newStatus);
+                $this->logTaskActivity(
+                    $existingTask->id,
+                    $action,
+                    $description,
+                    [
+                        'task_title' => $existingTask->title ?? $newData['title'],
+                        'old_status' => $changes['status']['old'],
+                        'new_status' => $newStatus
+                    ]
+                );
+            }
+        }
+    }
+}

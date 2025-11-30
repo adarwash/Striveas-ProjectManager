@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -398,5 +396,3 @@ function showAlert(type, message) {
     }, 5000);
 }
 </script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?>

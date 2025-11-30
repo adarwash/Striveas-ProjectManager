@@ -324,46 +324,7 @@
 </div>
 <?php endforeach; ?>
 
-<style>
-.avatar-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-}
-
-.card-icon {
-    width: 35px;
-    height: 35px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.bg-primary-light {
-    background-color: rgba(59, 130, 246, 0.15);
-}
-
-.bg-success-light {
-    background-color: rgba(34, 197, 94, 0.15);
-}
-
-.bg-info-light {
-    background-color: rgba(14, 165, 233, 0.15);
-}
-
-.bg-warning-light {
-    background-color: rgba(245, 158, 11, 0.15);
-}
-
-.rating-stars {
-    font-size: 0.8rem;
-}
-</style>
+<!-- Styles moved to /public/css/app.css -->
 
 <script>
     // Initialize any interactive elements here

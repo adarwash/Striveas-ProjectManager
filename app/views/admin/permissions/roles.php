@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -188,9 +186,7 @@
     </div>
 </div>
 
-<style>
-.bg-primary-light { background-color: rgba(13, 110, 253, 0.1); }
-</style>
+<!-- Styles moved to /public/css/app.css -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -223,6 +219,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-</script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?> 
+</script> 

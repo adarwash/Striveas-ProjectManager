@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <!-- Custom CSS for enhanced UI -->
 <style>
 .settings-container {
@@ -2124,6 +2122,4 @@ function testAzureConnection() {
         button.innerHTML = originalText;
     });
 }
-</script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?> 
+</script> 

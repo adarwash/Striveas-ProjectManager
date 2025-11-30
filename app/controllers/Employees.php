@@ -976,6 +976,41 @@ class Employees extends Controller {
             // All employees performance overview
             $employees = $this->employeeModel->getAllEmployeesWithTimeTrackingPerformance($days, $sortBy);
             $performanceSummary = $this->employeeModel->getTimeTrackingPerformanceSummary($days);
+            $trackerDays = min(14, max(3, (int)$days));
+            $dailyTrackerDates = [];
+            for ($i = $trackerDays - 1; $i >= 0; $i--) {
+                $dailyTrackerDates[] = date('Y-m-d', strtotime("-{$i} days"));
+            }
+            $activitySummary = [
+                'project_updates' => 0,
+                'task_updates' => 0,
+                'task_completions' => 0,
+                'ticket_replies' => 0,
+                'login_count' => 0
+            ];
+            foreach ($employees as &$employee) {
+                $stats = $employee['activity_stats'] ?? [];
+                $activitySummary['project_updates'] += $stats['project_updates'] ?? 0;
+                $activitySummary['task_updates'] += $stats['task_updates'] ?? 0;
+                $activitySummary['task_completions'] += $stats['task_completions'] ?? 0;
+                $activitySummary['ticket_replies'] += $stats['ticket_replies'] ?? 0;
+                $activitySummary['login_count'] += $stats['login_count'] ?? 0;
+
+                // Build daily tracker map
+                $trendMap = [];
+                if (!empty($employee['time_performance']['trends'])) {
+                    foreach ($employee['time_performance']['trends'] as $trend) {
+                        $trendMap[$trend['work_date']] = $trend['daily_hours'] ?? 0;
+                    }
+                }
+                $employee['daily_tracker'] = [];
+                foreach ($dailyTrackerDates as $trackerDate) {
+                    $employee['daily_tracker'][$trackerDate] = isset($trendMap[$trackerDate])
+                        ? round((float)$trendMap[$trackerDate], 2)
+                        : 0;
+                }
+            }
+            unset($employee);
             
             $data = [
                 'title' => 'Employee Performance Dashboard',
@@ -983,6 +1018,8 @@ class Employees extends Controller {
                 'performance_summary' => $performanceSummary,
                 'days' => $days,
                 'sort_by' => $sortBy,
+                'activity_summary' => $activitySummary,
+                'daily_tracker_dates' => $dailyTrackerDates,
                 'single_view' => false
             ];
             

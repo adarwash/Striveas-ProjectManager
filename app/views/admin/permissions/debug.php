@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -269,6 +267,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-</script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?> 
+</script> 

@@ -1,5 +1,3 @@
-<?php require VIEWSPATH . '/inc/header.php'; ?>
-
 <style>
     .settings-nav .list-group-item {
         transition: background-color 0.2s ease-in-out, border-left-color 0.2s ease-in-out;
@@ -1055,5 +1053,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-<?php require VIEWSPATH . '/inc/footer.php'; ?>
