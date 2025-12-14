@@ -54,6 +54,21 @@ class Search extends Controller {
             $this->ticketModel = null;
         }
     }
+
+    private function currentRoleId(): ?int {
+        return isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+    }
+
+    private function isAdminRole(): bool {
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+    }
+
+    private function blockedClientIds(): array {
+        if (!$this->clientModel) {
+            return [];
+        }
+        return $this->clientModel->getBlockedClientIdsForRole($this->currentRoleId(), $this->isAdminRole());
+    }
     
     /**
      * Check if user has permission to search a specific entity type
@@ -251,12 +266,19 @@ class Search extends Controller {
     private function performSearch($query, $type = 'all', $limit = 10) {
         $results = [];
         $searchQuery = '%' . $query . '%';
+        $blockedClientIds = $this->blockedClientIds();
         
         // Search Projects (with permission checks)
         if (($type === 'all' || $type === 'projects') && $this->canSearchEntity('projects')) {
             try {
                 $projects = $this->projectModel->searchProjects($searchQuery, $limit);
                 foreach ($projects as $project) {
+                    if (!empty($blockedClientIds)) {
+                        $clientId = $project['client_id'] ?? $project->client_id ?? null;
+                        if (!empty($clientId) && in_array((int)$clientId, $blockedClientIds, true)) {
+                            continue;
+                        }
+                    }
                     // Check if user can view this specific project
                     if ($this->canViewItem($project, 'projects')) {
                         $results[] = [
@@ -282,8 +304,14 @@ class Search extends Controller {
         // Search Tasks (with permission checks)
         if (($type === 'all' || $type === 'tasks') && $this->canSearchEntity('tasks')) {
             try {
-                $tasks = $this->taskModel->searchTasks($searchQuery, $limit);
+                $tasks = $this->taskModel->searchTasks($searchQuery, $limit, $blockedClientIds);
                 foreach ($tasks as $task) {
+                    if (!empty($blockedClientIds)) {
+                        $clientId = $task['client_id'] ?? $task->client_id ?? null;
+                        if (!empty($clientId) && in_array((int)$clientId, $blockedClientIds, true)) {
+                            continue;
+                        }
+                    }
                     // Check if user can view this specific task
                     if ($this->canViewItem($task, 'tasks')) {
                         $results[] = [

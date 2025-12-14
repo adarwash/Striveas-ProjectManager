@@ -239,6 +239,11 @@ class Setting {
             'default_date_format' => $this->get('default_date_format', 'Y-m-d'),
             'max_upload_size' => $this->get('max_upload_size', 10),
             'max_projects' => $this->get('max_projects', 100),
+            'display_timezone' => $this->get('display_timezone', 'America/Los_Angeles'),
+            'db_timezone' => $this->get('db_timezone', 'America/Toronto'),
+            'prospect_followup_enabled' => $this->get('prospect_followup_enabled', false),
+            'prospect_followup_interval_days' => (int)$this->get('prospect_followup_interval_days', 14),
+            'prospect_followup_last_run' => $this->get('prospect_followup_last_run', null),
             
             // Email Configuration Settings
             'from_email' => $this->get('from_email', ''),
@@ -311,6 +316,11 @@ class Setting {
                 'default_date_format',
                 'max_upload_size',
                 'max_projects',
+                'display_timezone',
+                'db_timezone',
+                'prospect_followup_enabled',
+                'prospect_followup_interval_days',
+                'prospect_followup_last_run',
                 
                 // Email Configuration Settings
                 'from_email',

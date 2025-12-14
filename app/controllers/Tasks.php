@@ -33,6 +33,18 @@ class Tasks extends Controller {
         // Create task_sites table if it doesn't exist
         $this->taskModel->createTaskSitesTable();
     }
+
+    private function currentRoleId(): ?int {
+        return isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+    }
+
+    private function isAdminRole(): bool {
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+    }
+
+    private function blockedClientIds(): array {
+        return $this->clientModel->getBlockedClientIdsForRole($this->currentRoleId(), $this->isAdminRole());
+    }
     // List all tasks (can be filtered by project)
     public function index() {
         // Get filter parameters from query string
@@ -52,9 +64,11 @@ class Tasks extends Controller {
             $filters['priority'] = $priority;
         }
         
+        $blockedClientIds = $this->blockedClientIds();
+
         // Get tasks based on filters
         if (!empty($filters)) {
-            $tasks = $this->taskModel->getTasksByFilters($filters);
+            $tasks = $this->taskModel->getTasksByFilters($filters, $blockedClientIds);
             
             // Build title based on filters
             $title = 'Filtered Tasks';
@@ -66,12 +80,18 @@ class Tasks extends Controller {
             }
         } else {
             // Get all tasks if no filters
-            $tasks = $this->taskModel->getAllTasks();
+            $tasks = $this->taskModel->getAllTasks($blockedClientIds);
             $title = 'All Tasks';
         }
         
         // Get all projects for the project filter dropdown
         $projects = $this->projectModel->getAllProjects();
+        if (!empty($blockedClientIds)) {
+            $projects = array_values(array_filter($projects, function($proj) use ($blockedClientIds) {
+                $clientId = isset($proj->client_id) ? (int)$proj->client_id : null;
+                return empty($clientId) || !in_array($clientId, $blockedClientIds, true);
+            }));
+        }
         
         $this->view('tasks/index', [
             'title' => $title,
@@ -88,6 +108,13 @@ class Tasks extends Controller {
         }
         // Get all projects for dropdown
         $projects = $this->projectModel->getAllProjects();
+        $blockedClientIds = $this->blockedClientIds();
+        if (!empty($blockedClientIds)) {
+            $projects = array_values(array_filter($projects, function($proj) use ($blockedClientIds) {
+                $clientId = isset($proj->client_id) ? (int)$proj->client_id : null;
+                return empty($clientId) || !in_array($clientId, $blockedClientIds, true);
+            }));
+        }
         // Build a map of project_id => sites for the project's client (if any)
         $sitesByProjectId = [];
         foreach ($projects as $p) {
@@ -183,6 +210,12 @@ class Tasks extends Controller {
             } else {
                 // Get all projects for dropdown
                 $projects = $this->projectModel->getAllProjects();
+                if (!empty($blockedClientIds)) {
+                    $projects = array_values(array_filter($projects, function($proj) use ($blockedClientIds) {
+                        $clientId = isset($proj->client_id) ? (int)$proj->client_id : null;
+                        return empty($clientId) || !in_array($clientId, $blockedClientIds, true);
+                    }));
+                }
                 
                 // Get all users for assignments
                 $users = $this->userModel->getAllUsers();
@@ -227,6 +260,16 @@ class Tasks extends Controller {
         
         // Get project details
         $project = $this->projectModel->getProjectById($task->project_id);
+
+        if (!$this->clientModel->canAccessClientId(
+            $project->client_id ?? null,
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        )) {
+            flash('task_error', 'You do not have access to this task', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
         
         // Get notes for this task
         $notes = $this->noteModel->getNotesByReference('task', $id);
@@ -664,10 +707,28 @@ class Tasks extends Controller {
             flash('task_error', 'Task not found', 'alert alert-danger');
             redirect('tasks');
         }
+
+        $project = $this->projectModel->getProjectById($task->project_id);
+        if (!$this->clientModel->canAccessClientId(
+            $project->client_id ?? null,
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        )) {
+            flash('task_error', 'You do not have access to this task', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
         
         // Get all projects for dropdown
         $this->projectModel = $this->model('Project');
         $projects = $this->projectModel->getAllProjects();
+        $blockedClientIds = $this->blockedClientIds();
+        if (!empty($blockedClientIds)) {
+            $projects = array_values(array_filter($projects, function($proj) use ($blockedClientIds) {
+                $clientId = isset($proj->client_id) ? (int)$proj->client_id : null;
+                return empty($clientId) || !in_array($clientId, $blockedClientIds, true);
+            }));
+        }
         
         // Get all users for assignments
         // Placeholder: $users = $this->userModel->getAllUsers();
@@ -694,6 +755,17 @@ class Tasks extends Controller {
 			redirect('tasks');
 			return;
 		}
+
+        $existingProject = $this->projectModel->getProjectById($existingTask->project_id);
+        if (!$this->clientModel->canAccessClientId(
+            $existingProject->client_id ?? null,
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        )) {
+            flash('task_error', 'You do not have access to this task', 'alert-danger');
+            redirect('tasks');
+            return;
+        }
 
 		$_POST = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) ?? $_POST;
 
@@ -742,6 +814,17 @@ class Tasks extends Controller {
 		if (empty($data['project_id_err']) && empty($data['title_err']) &&
 			empty($data['status_err']) && empty($data['priority_err']) &&
 			empty($data['start_date_err']) && empty($data['due_date_err'])) {
+
+            $newProject = $this->projectModel->getProjectById((int)$data['project_id']);
+            if (!$this->clientModel->canAccessClientId(
+                $newProject->client_id ?? null,
+                $this->currentRoleId(),
+                $this->isAdminRole()
+            )) {
+                flash('task_error', 'You cannot assign this task to a restricted client', 'alert-danger');
+                redirect('tasks');
+                return;
+            }
 
 			try {
 				$this->taskModel->update($data);

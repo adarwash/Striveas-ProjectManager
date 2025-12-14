@@ -161,6 +161,20 @@ class Reminder {
 		}
 	}
 
+	/**
+	 * Get the latest reminder for an entity (any status), ordered by remind_at desc
+	 */
+	public function getLatestReminderForEntity(string $entityType, int $entityId) {
+		try {
+			$query = "SELECT TOP 1 * FROM Reminders WHERE entity_type = ? AND entity_id = ? ORDER BY remind_at DESC";
+			$result = $this->db->select($query, [$entityType, $entityId]);
+			return $result ? $result[0] : null;
+		} catch (Exception $e) {
+			error_log('Reminder getLatestReminderForEntity error: ' . $e->getMessage());
+			return null;
+		}
+	}
+
 	public function getById(int $id) {
 		try {
 			$query = "SELECT * FROM Reminders WHERE id = ?";

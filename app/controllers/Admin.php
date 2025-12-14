@@ -35,6 +35,10 @@ class Admin extends Controller {
     public function logins() {
         // Permissions already enforced in __construct
         $auditModel = $this->model('LoginAudit');
+        $settingModel = $this->model('Setting');
+        $systemSettings = $settingModel->getSystemSettings();
+        $displayTz = $systemSettings['display_timezone'] ?? 'America/Los_Angeles';
+        $dbTz = $systemSettings['db_timezone'] ?? 'America/Toronto';
         
         // Optional filters
         $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 200;
@@ -43,7 +47,9 @@ class Admin extends Controller {
         $this->view('admin/login_audit', [
             'title' => 'Login Audit',
             'entries' => $entries,
-            'limit' => $limit
+            'limit' => $limit,
+            'display_timezone' => $displayTz,
+            'db_timezone' => $dbTz
         ]);
     }
     

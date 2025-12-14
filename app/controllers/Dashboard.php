@@ -5,6 +5,7 @@ class Dashboard extends Controller {
     private $taskModel;
     private $departmentModel;
     private $clientModel;
+    private $settingModel;
     
     public function __construct() {
         // Load models
@@ -13,6 +14,88 @@ class Dashboard extends Controller {
         $this->taskModel = $this->model('Task');
         $this->departmentModel = $this->model('Department');
         $this->clientModel = $this->model('Client');
+        $this->settingModel = $this->model('Setting');
+    }
+
+    /**
+     * Automatically create follow-ups for prospect clients based on admin-configured interval.
+     * Runs at most once every 12 hours.
+     */
+    private function ensureProspectFollowups(): void {
+        try {
+            $settings = $this->settingModel->getSystemSettings();
+            $enabled = !empty($settings['prospect_followup_enabled']);
+            $intervalDays = max(1, (int)($settings['prospect_followup_interval_days'] ?? 14));
+            if (!$enabled) {
+                return;
+            }
+
+            $lastRunRaw = $settings['prospect_followup_last_run'] ?? null;
+            $now = time();
+            if (!empty($lastRunRaw)) {
+                $lastRunTs = strtotime($lastRunRaw);
+                // Avoid running more than twice a day
+                if ($lastRunTs !== false && ($now - $lastRunTs) < 43200) {
+                    return;
+                }
+            }
+
+            $prospects = $this->clientModel->getClientsByStatus('Prospect');
+            if (empty($prospects)) {
+                $this->settingModel->set('prospect_followup_last_run', date('Y-m-d H:i:s', $now));
+                return;
+            }
+
+            $reminderModel = $this->model('Reminder');
+            $creatorId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 1;
+            $intervalSeconds = $intervalDays * 86400;
+
+            foreach ($prospects as $p) {
+                $clientId = (int)$p['id'];
+                $latest = $reminderModel->getLatestReminderForEntity('client', $clientId);
+
+                $needNew = false;
+                if (empty($latest)) {
+                    $needNew = true;
+                } else {
+                    $lastRemindTs = strtotime($latest['remind_at'] ?? '');
+                    if ($lastRemindTs === false || ($now - $lastRemindTs) >= $intervalSeconds) {
+                        $needNew = true;
+                    }
+                }
+
+                if ($needNew) {
+                    $remindAt = date('Y-m-d H:i:s', $now + $intervalSeconds);
+                    $title = 'Prospect follow-up';
+                    $notes = 'Automated follow-up for prospect client ' . ($p['name'] ?? ('#' . $clientId));
+                    $reminderModel->add([
+                        'entity_type' => 'client',
+                        'entity_id' => $clientId,
+                        'title' => $title,
+                        'notes' => $notes,
+                        'remind_at' => $remindAt,
+                        'created_by' => $creatorId,
+                        'notify_all' => 1,
+                    ]);
+                }
+            }
+
+            $this->settingModel->set('prospect_followup_last_run', date('Y-m-d H:i:s', $now));
+        } catch (Exception $e) {
+            error_log('Prospect follow-up scheduler error: ' . $e->getMessage());
+        }
+    }
+
+    private function currentRoleId(): ?int {
+        return isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+    }
+
+    private function isAdminRole(): bool {
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+    }
+
+    private function blockedClientIds(): array {
+        return $this->clientModel->getBlockedClientIdsForRole($this->currentRoleId(), $this->isAdminRole());
     }
     
     public function index() {
@@ -23,30 +106,53 @@ class Dashboard extends Controller {
         }
         // Get user ID from session
         $userId = $_SESSION['user_id'];
+
+        // Auto follow-ups for prospect clients (admin-configurable)
+        $this->ensureProspectFollowups();
         
-        // Get projects
+        $blockedClientIds = $this->blockedClientIds();
+
+        // Get projects (filtered)
         $projects = $this->projectModel->getAllProjects();
+        if (!empty($blockedClientIds)) {
+            $projects = array_values(array_filter($projects, function($project) use ($blockedClientIds) {
+                $clientId = isset($project->client_id) ? (int)$project->client_id : null;
+                return empty($clientId) || !in_array($clientId, $blockedClientIds, true);
+            }));
+        }
         
         // Get tasks
-        $tasks = $this->taskModel->getAllTasks();
+        $tasks = $this->taskModel->getAllTasks($blockedClientIds);
         
         // Get tasks assigned to the current user
-        $assignedTasks = $this->taskModel->getTasksByUserId($userId);
+        $assignedTasks = $this->taskModel->getTasksByUserId($userId, $blockedClientIds);
         
         // Get departments
         $departments = $this->departmentModel->getAllDepartments();
         
-        // Get project counts by status
-        $projectCounts = $this->projectModel->getProjectCountsByStatus();
+        // Get project counts by status (filtered)
+        $projectCounts = [
+            'Planning' => 0,
+            'In Progress' => 0,
+            'Active' => 0,
+            'Completed' => 0,
+            'On Hold' => 0
+        ];
+        foreach ($projects as $p) {
+            $status = $p->status ?? 'Active';
+            if (isset($projectCounts[$status])) {
+                $projectCounts[$status]++;
+            }
+        }
         
         // Get task counts by status
-        $taskCounts = $this->taskModel->getTaskCountsByStatus();
+        $taskCounts = $this->taskModel->getTaskCountsByStatus($blockedClientIds);
         
         // Get projects assigned to the current user
         $userProjects = $this->projectModel->getProjectsCountByUser($userId);
         
         // Get dashboard statistics
-        $dashboardStats = $this->getDashboardStats();
+        $dashboardStats = $this->getDashboardStats($blockedClientIds);
         
         // Determine range for top clients by tickets (today|week|month), capped at 90 days
         $range = isset($_GET['top_client_range']) ? strtolower(trim($_GET['top_client_range'])) : 'month';
@@ -76,7 +182,7 @@ class Dashboard extends Controller {
     /**
      * Get dashboard statistics
      */
-    private function getDashboardStats() {
+    private function getDashboardStats(array $blockedClientIds = []) {
         $stats = [];
         
         try {
@@ -112,8 +218,8 @@ class Dashboard extends Controller {
             $stats['open_tickets'] = 0;
         }
         
-        // Get open tasks count from existing task counts
-        $stats['open_tasks'] = $this->taskModel->getOpenTasksCount() ?? 0;
+            // Get open tasks count from existing task counts
+            $stats['open_tasks'] = $this->taskModel->getOpenTasksCount($blockedClientIds) ?? 0;
         
         // Removed pending requests from dashboard
         

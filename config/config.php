@@ -27,9 +27,9 @@
     }
     
     // Site Name
-    define('SITENAME', 'Meraki Tech IT Portal');
+    define('SITENAME', 'Meraki IT CRM');
     
-    define('DEFAULT_TITLE', 'Meraki Tech IT Portal');
+    define('DEFAULT_TITLE', 'Meraki IT CRM');
     
     // SQL Server connection
     define('DB1', [

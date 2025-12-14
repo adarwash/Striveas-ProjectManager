@@ -71,16 +71,24 @@ class Task {
         }
     }
     
-    // Get all tasks
-    public function getAllTasks() {
-        $query = "SELECT t.*, p.title as project_title, u1.username as assigned_to_name, u2.username as created_by_name
+    // Get all tasks (optionally excluding blocked client IDs)
+    public function getAllTasks(array $blockedClientIds = []) {
+        $query = "SELECT t.*, p.title as project_title, p.client_id, u1.username as assigned_to_name, u2.username as created_by_name
                  FROM tasks t
                  LEFT JOIN projects p ON t.project_id = p.id
                  LEFT JOIN users u1 ON t.assigned_to = u1.id
-                 LEFT JOIN users u2 ON t.created_by = u2.id
-                 ORDER BY t.due_date ASC, t.priority DESC";
+                 LEFT JOIN users u2 ON t.created_by = u2.id";
+
+        $params = [];
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= " WHERE (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_map('intval', $blockedClientIds);
+        }
+
+        $query .= " ORDER BY t.due_date ASC, t.priority DESC";
         
-        $results = $this->db->select($query);
+        $results = $this->db->select($query, $params);
         
         // Convert arrays to objects
         $tasks = [];
@@ -94,16 +102,24 @@ class Task {
     }
     
     // Get tasks by project ID
-    public function getTasksByProject($projectId) {
-        $query = "SELECT t.*, p.title as project_title, u1.username as assigned_to_name, u2.username as created_by_name
+    public function getTasksByProject($projectId, array $blockedClientIds = []) {
+        $query = "SELECT t.*, p.title as project_title, p.client_id, u1.username as assigned_to_name, u2.username as created_by_name
                  FROM tasks t
                  LEFT JOIN projects p ON t.project_id = p.id
                  LEFT JOIN users u1 ON t.assigned_to = u1.id
                  LEFT JOIN users u2 ON t.created_by = u2.id
-                 WHERE t.project_id = ?
-                 ORDER BY t.due_date ASC, t.priority DESC";
+                 WHERE t.project_id = ?";
+
+        $params = [$projectId];
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= " AND (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_merge($params, array_map('intval', $blockedClientIds));
+        }
+
+        $query .= " ORDER BY t.due_date ASC, t.priority DESC";
         
-        $results = $this->db->select($query, [$projectId]);
+        $results = $this->db->select($query, $params);
         
         // Convert arrays to objects
         $tasks = [];
@@ -118,7 +134,7 @@ class Task {
     
     // Get task by ID
     public function getTaskById($id) {
-        $query = "SELECT t.*, p.title as project_title, u1.username as assigned_to_name, u2.username as created_by_name
+        $query = "SELECT t.*, p.title as project_title, p.client_id, u1.username as assigned_to_name, u2.username as created_by_name
                  FROM tasks t
                  LEFT JOIN projects p ON t.project_id = p.id
                  LEFT JOIN users u1 ON t.assigned_to = u1.id
@@ -132,15 +148,27 @@ class Task {
     /**
      * Search tasks by title, description, or project name
      */
-    public function searchTasks($searchQuery, $limit = 10) {
+    public function searchTasks($searchQuery, $limit = 10, array $blockedClientIds = []) {
         try {
-            $query = "SELECT t.*, p.title as project_title, u1.username as assigned_to_name, u2.username as created_by_name
+            $query = "SELECT t.*, p.title as project_title, p.client_id, u1.username as assigned_to_name, u2.username as created_by_name
                      FROM [tasks] t
                      LEFT JOIN [projects] p ON t.project_id = p.id
                      LEFT JOIN [users] u1 ON t.assigned_to = u1.id
                      LEFT JOIN [users] u2 ON t.created_by = u2.id
-                     WHERE (t.title LIKE ? OR t.description LIKE ? OR p.title LIKE ?)
-                     ORDER BY 
+                     WHERE (t.title LIKE ? OR t.description LIKE ? OR p.title LIKE ?)";
+            
+            $params = [
+                $searchQuery, $searchQuery, $searchQuery,
+                $searchQuery, $searchQuery, $searchQuery
+            ];
+
+            if (!empty($blockedClientIds)) {
+                $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+                $query .= " AND (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+                $params = array_merge($params, array_map('intval', $blockedClientIds));
+            }
+
+            $query .= " ORDER BY 
                          CASE 
                              WHEN t.title LIKE ? THEN 1
                              WHEN t.description LIKE ? THEN 2
@@ -149,14 +177,9 @@ class Task {
                          END,
                          t.due_date ASC, t.priority DESC";
             
-            $params = [
-                $searchQuery, $searchQuery, $searchQuery,
-                $searchQuery, $searchQuery, $searchQuery
-            ];
-            
             // SQL Server uses TOP instead of LIMIT
             if ($limit > 0) {
-                $query = str_replace("SELECT t.*", "SELECT TOP $limit t.*", $query);
+                $query = preg_replace('/^SELECT\\s+/i', 'SELECT TOP ' . (int)$limit . ' ', $query);
             }
             
             $results = $this->db->select($query, $params);
@@ -323,16 +346,24 @@ class Task {
     }
     
     // Get task statistics
-    public function getTaskStats() {
+    public function getTaskStats(array $blockedClientIds = []) {
+        $params = [];
         $query = "SELECT 
-                 SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_count,
-                 SUM(CASE WHEN status = 'In Progress' THEN 1 ELSE 0 END) as in_progress_count,
-                 SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_count,
-                 SUM(CASE WHEN priority = 'High' OR priority = 'Critical' THEN 1 ELSE 0 END) as high_priority_count,
+                 SUM(CASE WHEN t.status = 'Pending' THEN 1 ELSE 0 END) as pending_count,
+                 SUM(CASE WHEN t.status = 'In Progress' THEN 1 ELSE 0 END) as in_progress_count,
+                 SUM(CASE WHEN t.status = 'Completed' THEN 1 ELSE 0 END) as completed_count,
+                 SUM(CASE WHEN t.priority = 'High' OR t.priority = 'Critical' THEN 1 ELSE 0 END) as high_priority_count,
                  COUNT(*) as total_count
-                 FROM tasks";
+                 FROM tasks t";
+
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= " LEFT JOIN projects p ON t.project_id = p.id
+                        WHERE (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_map('intval', $blockedClientIds);
+        }
         
-        $result = $this->db->select($query);
+        $result = $this->db->select($query, $params);
         return !empty($result) ? (object)$result[0] : (object)[
             'pending_count' => 0, 
             'in_progress_count' => 0, 
@@ -343,16 +374,24 @@ class Task {
     }
     
     // Get tasks assigned to specific user
-    public function getTasksByUser($userId) {
-        $query = "SELECT t.*, p.title as project_title, u1.username as assigned_to_name, u2.username as created_by_name
+    public function getTasksByUser($userId, array $blockedClientIds = []) {
+        $query = "SELECT t.*, p.title as project_title, p.client_id, u1.username as assigned_to_name, u2.username as created_by_name
                  FROM tasks t
                  LEFT JOIN projects p ON t.project_id = p.id
                  LEFT JOIN users u1 ON t.assigned_to = u1.id
                  LEFT JOIN users u2 ON t.created_by = u2.id
-                 WHERE t.assigned_to = ?
-                 ORDER BY t.due_date ASC, t.priority DESC";
+                 WHERE t.assigned_to = ?";
+
+        $params = [$userId];
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= " AND (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_merge($params, array_map('intval', $blockedClientIds));
+        }
+
+        $query .= " ORDER BY t.due_date ASC, t.priority DESC";
         
-        $results = $this->db->select($query, [$userId]);
+        $results = $this->db->select($query, $params);
         
         // Convert arrays to objects
         $tasks = [];
@@ -366,15 +405,23 @@ class Task {
     }
     
     // Get recent activity (last 10 task updates)
-    public function getRecentActivity() {
+    public function getRecentActivity(array $blockedClientIds = []) {
         $query = "SELECT TOP 10 t.id, t.title, t.status, 
                  COALESCE(t.updated_at, t.created_at, GETDATE()) as updated_at, 
-                 p.id as project_id, p.title as project_title
+                 p.id as project_id, p.title as project_title, p.client_id
                  FROM tasks t
-                 LEFT JOIN projects p ON t.project_id = p.id
-                 ORDER BY t.updated_at DESC, t.created_at DESC";
+                 LEFT JOIN projects p ON t.project_id = p.id";
+
+        $params = [];
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= " WHERE (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_map('intval', $blockedClientIds);
+        }
+
+        $query .= " ORDER BY t.updated_at DESC, t.created_at DESC";
         
-        $results = $this->db->select($query);
+        $results = $this->db->select($query, $params);
         
         // Convert arrays to objects
         $activityItems = [];
@@ -390,8 +437,8 @@ class Task {
     /**
      * Get all tasks with project details
      */
-    public function getAllTasksWithProjects($userId = null) {
-        $query = "SELECT t.*, p.title as project_title, p.id as project_id, 
+    public function getAllTasksWithProjects($userId = null, array $blockedClientIds = []) {
+        $query = "SELECT t.*, p.title as project_title, p.id as project_id, p.client_id,
                   u1.username as created_by, u2.username as assigned_to_name
                   FROM tasks t
                   LEFT JOIN projects p ON t.project_id = p.id
@@ -403,6 +450,13 @@ class Task {
         if($userId) {
             $query .= " WHERE t.created_by = ? OR t.assigned_to = ?";
             $params = [$userId, $userId];
+        }
+
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= $userId ? " AND" : " WHERE";
+            $query .= " (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_merge($params, array_map('intval', $blockedClientIds));
         }
         
         $query .= " ORDER BY t.due_date ASC, t.created_at DESC";
@@ -421,18 +475,26 @@ class Task {
     }
 
     // Get tasks statistics by user
-    public function getTasksStatsByUser($userId) {
+    public function getTasksStatsByUser($userId, array $blockedClientIds = []) {
         $query = "SELECT 
                   COUNT(*) as total,
-                  SUM(CASE WHEN status = 'Not Started' THEN 1 ELSE 0 END) as not_started,
-                  SUM(CASE WHEN status = 'In Progress' THEN 1 ELSE 0 END) as in_progress,
-                  SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
-                  SUM(CASE WHEN status = 'Blocked' THEN 1 ELSE 0 END) as blocked,
-                  SUM(CASE WHEN due_date < GETDATE() AND status != 'Completed' THEN 1 ELSE 0 END) as overdue
-                  FROM tasks
-                  WHERE created_by = ? OR assigned_to = ?";
+                  SUM(CASE WHEN t.status = 'Not Started' THEN 1 ELSE 0 END) as not_started,
+                  SUM(CASE WHEN t.status = 'In Progress' THEN 1 ELSE 0 END) as in_progress,
+                  SUM(CASE WHEN t.status = 'Completed' THEN 1 ELSE 0 END) as completed,
+                  SUM(CASE WHEN t.status = 'Blocked' THEN 1 ELSE 0 END) as blocked,
+                  SUM(CASE WHEN t.due_date < GETDATE() AND t.status != 'Completed' THEN 1 ELSE 0 END) as overdue
+                  FROM tasks t
+                  LEFT JOIN projects p ON t.project_id = p.id
+                  WHERE (t.created_by = ? OR t.assigned_to = ?)";
+
+        $params = [$userId, $userId];
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= " AND (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_merge($params, array_map('intval', $blockedClientIds));
+        }
         
-        $results = $this->db->select($query, [$userId, $userId]);
+        $results = $this->db->select($query, $params);
         
         if (empty($results)) {
             return [
@@ -589,16 +651,24 @@ class Task {
      * @param int $userId User ID
      * @return array Array of tasks
      */
-    public function getTasksByUserId($userId) {
-        $sql = "SELECT t.*, p.title as project_title
+    public function getTasksByUserId($userId, array $blockedClientIds = []) {
+        $sql = "SELECT t.*, p.title as project_title, p.client_id
                 FROM tasks t
                 JOIN task_users tu ON t.id = tu.task_id
                 JOIN projects p ON t.project_id = p.id
-                WHERE tu.user_id = ?
-                ORDER BY t.due_date ASC";
+                WHERE tu.user_id = ?";
+
+        $params = [$userId];
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $sql .= " AND (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_merge($params, array_map('intval', $blockedClientIds));
+        }
+
+        $sql .= " ORDER BY t.due_date ASC";
                 
         try {
-            $results = $this->db->select($sql, [$userId]);
+            $results = $this->db->select($sql, $params);
             
             // Convert arrays to objects
             $tasks = [];
@@ -616,8 +686,8 @@ class Task {
     }
 
     // Get tasks by filters (project_id, status, priority)
-    public function getTasksByFilters($filters = []) {
-        $query = "SELECT t.*, p.title as project_title, u1.username as assigned_to_name, u2.username as created_by_name
+    public function getTasksByFilters($filters = [], array $blockedClientIds = []) {
+        $query = "SELECT t.*, p.title as project_title, p.client_id, u1.username as assigned_to_name, u2.username as created_by_name
                  FROM tasks t
                  LEFT JOIN projects p ON t.project_id = p.id
                  LEFT JOIN users u1 ON t.assigned_to = u1.id
@@ -642,6 +712,13 @@ class Task {
         if (!empty($filters['priority'])) {
             $query .= " AND t.priority = ?";
             $params[] = $filters['priority'];
+        }
+
+        // Exclude blocked client tasks
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= " AND (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_merge($params, array_map('intval', $blockedClientIds));
         }
         
         $query .= " ORDER BY t.due_date ASC, t.priority DESC";
@@ -670,21 +747,39 @@ class Task {
      * 
      * @return array Array with counts of tasks by status
      */
-    public function getTaskCountsByStatus() {
+    public function getTaskCountsByStatus(array $blockedClientIds = []) {
         $statuses = ['Pending', 'In Progress', 'Testing', 'Completed', 'Blocked'];
         $result = [];
         
         try {
             // Query for each status separately to handle empty counts properly
             foreach ($statuses as $status) {
-                $query = "SELECT COUNT(*) as count FROM tasks WHERE status = ?";
-                $data = $this->db->select($query, [$status]);
+                $params = [$status];
+                if (!empty($blockedClientIds)) {
+                    $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+                    $query = "SELECT COUNT(*) as count FROM tasks t
+                              LEFT JOIN projects p ON t.project_id = p.id
+                              WHERE t.status = ? AND (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+                    $params = array_merge($params, array_map('intval', $blockedClientIds));
+                } else {
+                    $query = "SELECT COUNT(*) as count FROM tasks WHERE status = ?";
+                }
+
+                $data = $this->db->select($query, $params);
                 $result[$status] = !empty($data) ? (int)$data[0]['count'] : 0;
             }
             
             // Add total count
-            $query = "SELECT COUNT(*) as count FROM tasks";
-            $data = $this->db->select($query);
+            if (!empty($blockedClientIds)) {
+                $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+                $query = "SELECT COUNT(*) as count FROM tasks t
+                          LEFT JOIN projects p ON t.project_id = p.id
+                          WHERE (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+                $data = $this->db->select($query, array_map('intval', $blockedClientIds));
+            } else {
+                $query = "SELECT COUNT(*) as count FROM tasks";
+                $data = $this->db->select($query);
+            }
             $result['Total'] = !empty($data) ? (int)$data[0]['count'] : 0;
             
             return $result;
@@ -713,9 +808,18 @@ class Task {
     }
     
     // Get count of open tasks
-    public function getOpenTasksCount() {
+    public function getOpenTasksCount(array $blockedClientIds = []) {
         try {
-            $result = $this->db->select("SELECT COUNT(*) as total FROM tasks WHERE status IN ('Pending', 'In Progress', 'Not Started')");
+            if (!empty($blockedClientIds)) {
+                $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+                $query = "SELECT COUNT(*) as total FROM tasks t
+                          LEFT JOIN projects p ON t.project_id = p.id
+                          WHERE t.status IN ('Pending', 'In Progress', 'Not Started')
+                          AND (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+                $result = $this->db->select($query, array_map('intval', $blockedClientIds));
+            } else {
+                $result = $this->db->select("SELECT COUNT(*) as total FROM tasks WHERE status IN ('Pending', 'In Progress', 'Not Started')");
+            }
             return $result[0]['total'] ?? 0;
         } catch (Exception $e) {
             error_log('GetOpenTasksCount Error: ' . $e->getMessage());

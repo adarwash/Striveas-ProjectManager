@@ -129,6 +129,89 @@ $title = 'Dashboard - HiveIT Portal';
     </div>
 </div>
 
+<!-- My Tasks -->
+<div class="card mb-5">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>My Tasks</h5>
+        <a href="/tasks" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body">
+        <?php if (empty($assigned_tasks)) : ?>
+            <div class="text-center py-4">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <p class="text-muted mb-0">You have no tasks assigned.</p>
+            </div>
+        <?php else : ?>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th class="d-none d-md-table-cell">Project</th>
+                            <th>Status</th>
+                            <th>Due</th>
+                            <th class="d-none d-md-table-cell">Priority</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($assigned_tasks as $task) : ?>
+                            <?php
+                                $statusClass = 'badge bg-secondary';
+                                if ($task->status === 'In Progress') $statusClass = 'badge bg-info';
+                                if ($task->status === 'Completed') $statusClass = 'badge bg-success';
+                                if ($task->status === 'Blocked') $statusClass = 'badge bg-danger';
+                                if ($task->status === 'Testing') $statusClass = 'badge bg-primary';
+                                
+                                $priorityClass = 'badge bg-light text-dark';
+                                if ($task->priority === 'High' || $task->priority === 'Critical') $priorityClass = 'badge bg-danger';
+                                if ($task->priority === 'Medium') $priorityClass = 'badge bg-warning text-dark';
+                                if ($task->priority === 'Low') $priorityClass = 'badge bg-success';
+                                
+                                $dueText = 'No due date';
+                                $dueClass = 'text-muted';
+                                if (!empty($task->due_date)) {
+                                    $dueTs = strtotime($task->due_date);
+                                    if ($dueTs) {
+                                        $now = time();
+                                        $daysDiff = floor(($dueTs - $now) / 86400);
+                                        $dueText = date('M j', $dueTs);
+                                        if ($daysDiff < 0) {
+                                            $dueText = 'Overdue (' . date('M j', $dueTs) . ')';
+                                            $dueClass = 'text-danger fw-semibold';
+                                        } elseif ($daysDiff <= 2) {
+                                            $dueClass = 'text-warning fw-semibold';
+                                        } else {
+                                            $dueClass = 'text-muted';
+                                        }
+                                    }
+                                }
+                            ?>
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold mb-1"><?= htmlspecialchars($task->title) ?></div>
+                                    <div class="small text-muted d-md-none">
+                                        <?= !empty($task->project_title) ? htmlspecialchars($task->project_title) : 'No project' ?>
+                                    </div>
+                                </td>
+                                <td class="d-none d-md-table-cell text-muted">
+                                    <?= !empty($task->project_title) ? htmlspecialchars($task->project_title) : 'No project' ?>
+                                </td>
+                                <td><span class="<?= $statusClass ?>"><?= htmlspecialchars($task->status ?? 'Pending') ?></span></td>
+                                <td class="<?= $dueClass ?>"><?= $dueText ?></td>
+                                <td class="d-none d-md-table-cell"><span class="<?= $priorityClass ?>"><?= htmlspecialchars($task->priority ?? 'Normal') ?></span></td>
+                                <td class="text-end">
+                                    <a href="/tasks/show/<?= (int)$task->id ?>" class="btn btn-sm btn-outline-primary">Open</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
 <!-- Recent Activity and Top Clients Section -->
 <div class="row g-4">
     <div class="col-lg-8">

@@ -237,7 +237,7 @@ class Settings extends Controller {
             // Make sure no errors
             if (empty($data['current_password_err']) && empty($data['new_password_err']) && empty($data['confirm_password_err'])) {
                 // Update password
-                if ($this->user->updatePassword($userId, $data['new_password'])) {
+                if ($this->user->updatePassword($userId, $data['new_password'], $data['current_password'])) {
                     $_SESSION['settings_success'] = 'Password updated successfully';
                     redirect('settings');
                 } else {
@@ -446,9 +446,11 @@ class Settings extends Controller {
             redirect('settings');
         }
         
-        $currentPassword = $_POST['current_password'] ?? '';
-        $newPassword = $_POST['new_password'] ?? '';
-        $confirmPassword = $_POST['confirm_password'] ?? '';
+        // Sanitize and normalize input
+        $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+        $currentPassword = trim($_POST['current_password'] ?? '');
+        $newPassword = trim($_POST['new_password'] ?? '');
+        $confirmPassword = trim($_POST['confirm_password'] ?? '');
         
         // Validate inputs
         if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {

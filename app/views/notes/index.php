@@ -1,5 +1,5 @@
 <!-- Main Content Container -->
-<div class="container-fluid px-4 py-3">
+<div class="container-fluid px-4 py-3 notes-page">
     
     <!-- Page Header -->
     <div class="page-header mb-4">
@@ -162,7 +162,7 @@ flash('note_error');
                     $noteTagList = array_values(array_filter(array_map('trim', explode(',', $rawTags))));
                     $noteTagsAttr = strtolower(implode(' ', $noteTagList));
                 ?>
-                <div class="col-xl-4 col-lg-6 col-md-6 note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>" data-tags="<?= htmlspecialchars($noteTagsAttr) ?>">
+                <div class="col-xl-4 col-lg-6 col-md-6" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>" data-tags="<?= htmlspecialchars($noteTagsAttr) ?>">
                     <div class="modern-note-card">
                         <div class="note-header">
                             <div class="d-flex gap-2">
@@ -374,7 +374,7 @@ flash('note_error');
                                     $noteTagList = array_values(array_filter(array_map('trim', explode(',', $rawTags))));
                                     $noteTagsAttr = strtolower(implode(' ', $noteTagList));
                                 ?>
-                                <tr class="note-item" data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>" data-tags="<?= htmlspecialchars($noteTagsAttr) ?>">
+                                <tr data-type="<?= $note['type'] ?>" data-date="<?= $note['created_at'] ?>" data-title="<?= htmlspecialchars($note['title']) ?>" data-note-id="<?= $note['id'] ?>" data-tags="<?= htmlspecialchars($noteTagsAttr) ?>">
                                     <td>
                                         <a href="#" class="note-title-link" data-bs-toggle="modal" data-bs-target="#noteModal<?= $note['id'] ?>">
                                             <?= htmlspecialchars($note['title']) ?>
@@ -441,513 +441,6 @@ flash('note_error');
     <?php endif; ?>
     
 </div> <!-- End Main Content Container -->
-
-<style>
-/* Stats Cards */
-.stats-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stats-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.stats-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: white;
-    margin-right: 1rem;
-}
-
-.stats-number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #2d3748;
-    margin-bottom: 0.25rem;
-}
-
-.stats-label {
-    color: #718096;
-    font-size: 0.9rem;
-    margin-bottom: 0;
-}
-
-/* Enhanced Filter Panel */
-.filter-panel-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
-
-.filter-panel-card .card-header {
-    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-    border-bottom: 1px solid #e2e8f0;
-    padding: 1.5rem;
-}
-
-.filter-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 0.25rem;
-}
-
-.filter-subtitle {
-    color: #718096;
-    font-size: 0.9rem;
-}
-
-.results-badge {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
-.search-label, .filter-label, .sort-label, .view-label {
-    display: block;
-    font-weight: 600;
-    color: #4a5568;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-}
-
-.search-box {
-    position: relative;
-}
-
-.search-input {
-    padding-left: 2.5rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.search-input:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-.search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #a0aec0;
-    z-index: 3;
-}
-
-.search-clear {
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #a0aec0;
-    cursor: pointer;
-    z-index: 3;
-}
-
-.modern-select {
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 0.75rem;
-    transition: all 0.3s ease;
-}
-
-.modern-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-.view-toggle-group {
-    display: flex;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.view-toggle {
-    background: white;
-    border: 1px solid #e2e8f0;
-    padding: 0.75rem 1rem;
-    color: #4a5568;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    flex: 1;
-}
-
-.view-toggle:hover {
-    background: #f7fafc;
-}
-
-.view-toggle.active {
-    background: #667eea;
-    color: white;
-    border-color: #667eea;
-}
-
-/* Modern Note Cards */
-.modern-note-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    overflow: hidden;
-    transition: all 0.3s ease;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.modern-note-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.15);
-}
-
-.note-header {
-    padding: 1.5rem 1.5rem 1rem;
-    display: flex;
-    justify-content: between;
-    align-items: flex-start;
-}
-
-.note-type-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: white;
-}
-
-.note-type-project {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.note-type-task {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-}
-
-.note-type-personal {
-    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-}
-
-/* Client-linked notes */
-.note-type-client {
-    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
-}
-
-.note-menu-btn {
-    background: none;
-    border: none;
-    color: #a0aec0;
-    padding: 0.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.note-menu-btn:hover {
-    background: #f7fafc;
-    color: #4a5568;
-}
-
-.note-tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-}
-
-.note-tag-badge {
-    background: #eef2ff;
-    color: #3730a3;
-    border-radius: 999px;
-    padding: 0.15rem 0.65rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.note-content {
-    padding: 0 1.5rem;
-    flex: 1;
-}
-
-.note-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 1rem;
-    line-height: 1.4;
-}
-
-.note-preview {
-    color: #4a5568;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-}
-
-.note-footer {
-    padding: 1rem 1.5rem;
-    background: #f7fafc;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-top: 1px solid #e2e8f0;
-}
-
-.note-date {
-    color: #718096;
-    font-size: 0.9rem;
-}
-
-.btn-read-more {
-    background: none;
-    border: none;
-    color: #667eea;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-read-more:hover {
-    color: #5a67d8;
-}
-
-/* Modern Table */
-.modern-table-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
-
-.modern-table {
-    margin-bottom: 0;
-}
-
-.modern-table thead th {
-    background: #f7fafc;
-    border-bottom: 2px solid #e2e8f0;
-    color: #4a5568;
-    font-weight: 600;
-    padding: 1rem;
-}
-
-.modern-table tbody tr {
-    transition: all 0.3s ease;
-}
-
-.modern-table tbody tr:hover {
-    background: #f7fafc;
-}
-
-.modern-table tbody td {
-    padding: 1rem;
-    vertical-align: middle;
-}
-
-.note-title-link {
-    color: #2d3748;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.note-title-link:hover {
-    color: #667eea;
-}
-
-.note-preview-cell {
-    max-width: 300px;
-}
-
-.note-preview-text {
-    color: #4a5568;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.table-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.table-action-btn {
-    background: none;
-    border: none;
-    color: #a0aec0;
-    padding: 0.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-}
-
-.table-action-btn:hover {
-    background: #f7fafc;
-    color: #4a5568;
-}
-
-.table-action-btn.text-danger:hover {
-    background: #fed7d7;
-    color: #e53e3e;
-}
-
-/* Enhanced Empty State */
-.empty-state-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 60vh;
-    padding: 3rem 0;
-}
-
-.empty-state-content {
-    text-align: center;
-    max-width: 500px;
-}
-
-.empty-state-icon {
-    width: 120px;
-    height: 120px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 2rem;
-    font-size: 3rem;
-    color: white;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-}
-
-.empty-state-title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #2d3748;
-    margin-bottom: 1rem;
-}
-
-.empty-state-subtitle {
-    font-size: 1.1rem;
-    color: #718096;
-    margin-bottom: 2rem;
-    line-height: 1.6;
-}
-
-/* Modern Modals */
-.modern-modal {
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-    border: none;
-}
-
-.modern-modal .modal-header {
-    background: #f7fafc;
-    border-bottom: 1px solid #e2e8f0;
-    padding: 1.5rem;
-}
-
-.modern-modal .modal-body {
-    padding: 1.5rem;
-}
-
-.modern-modal .modal-footer {
-    background: #f7fafc;
-    border-top: 1px solid #e2e8f0;
-    padding: 1rem 1.5rem;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .stats-card {
-        margin-bottom: 1rem;
-    }
-    
-    .filter-panel-card .card-body {
-        padding: 1rem !important;
-    }
-    
-    .note-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .note-type-badge {
-        margin-bottom: 0.5rem;
-    }
-    
-    .note-menu-btn {
-        align-self: flex-end;
-        margin-top: -2.5rem;
-    }
-    
-    .view-toggle-group {
-        width: 100%;
-        margin-top: 0.5rem;
-    }
-}
-
-/* Animation Effects */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.modern-note-card {
-    animation: fadeInUp 0.5s ease-out;
-}
-
-.stats-card {
-    animation: fadeInUp 0.5s ease-out;
-}
-
-.filter-panel-card {
-    animation: fadeInUp 0.3s ease-out;
-}
-
-/* Enhanced Hover Effects */
-.modern-note-card:hover .note-type-badge {
-    transform: scale(1.05);
-}
-
-.modern-note-card:hover .note-title {
-    color: #667eea;
-}
-
-.stats-card:hover .stats-icon {
-    transform: scale(1.1);
-}
-
-.stats-card:hover .stats-number {
-    color: #667eea;
-}
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -1137,7 +630,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     showAlert('success', data.message || 'Note deleted successfully');
                     
                     // Check if we need to show the empty state
-                    const notes = document.querySelectorAll('.note-item');
+                    const notes = document.querySelectorAll('#gridView [data-note-id], #listView [data-note-id]');
                     if (notes.length === 0) {
                         setTimeout(() => location.reload(), 1000); // Reload page to show empty state
                     }
@@ -1228,7 +721,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterNotes() {
         const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
         const typeFilter = document.getElementById('noteTypeFilter').value;
-        const noteItems = document.querySelectorAll('.note-item');
+        const noteItems = document.querySelectorAll('#gridView [data-note-id], #listView [data-note-id]');
         let visibleCount = 0;
         
         noteItems.forEach(item => {
@@ -1276,13 +769,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Sort grid view
         const gridContainer = document.getElementById('gridView');
-        const gridItems = Array.from(gridContainer.querySelectorAll('.note-item'));
+        const gridItems = Array.from(gridContainer.querySelectorAll('[data-note-id]'));
         sortItems(gridItems, gridContainer, sortValue);
         
         // Sort list view
         const listContainer = document.querySelector('#listView tbody');
         if (listContainer) {
-            const listItems = Array.from(listContainer.querySelectorAll('tr.note-item'));
+            const listItems = Array.from(listContainer.querySelectorAll('tr[data-note-id]'));
             sortItems(listItems, listContainer, sortValue);
         }
     }

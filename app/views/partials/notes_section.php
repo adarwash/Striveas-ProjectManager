@@ -21,7 +21,7 @@
             <?php else: ?>
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="input-group input-group-sm" style="max-width: 250px;">
-                        <span class="input-group-text bg-light border-end-0">
+                        <span class="input-group-text border-end-0">
                             <i class="bi bi-search"></i>
                         </span>
                         <input type="text" class="form-control border-start-0" id="notes-filter" placeholder="Filter notes...">
@@ -38,11 +38,11 @@
                             $noteTagList = array_values(array_filter(array_map('trim', explode(',', $rawTags))));
                             $noteTagsAttr = strtolower(implode(' ', $noteTagList));
                         ?>
-                        <div class="note-item mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="<?= $note['id'] ?>" data-tags="<?= htmlspecialchars($noteTagsAttr) ?>">
+                        <div class="mb-3 p-3 border rounded shadow-sm" data-note-id="<?= $note['id'] ?>" data-tags="<?= htmlspecialchars($noteTagsAttr) ?>">
                             <div class="d-flex justify-content-between align-items-start">
                                 <h6 class="mb-1 note-title"><?= htmlspecialchars($note['title']) ?></h6>
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-light rounded-circle" type="button" data-bs-toggle="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary rounded-circle" type="button" data-bs-toggle="dropdown">
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
@@ -134,44 +134,6 @@
         </div>
     </div>
 </div>
-
-<style>
-.note-fade-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 40px;
-    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1));
-}
-.note-text.expanded {
-    max-height: none !important;
-}
-.note-text.expanded .note-fade-overlay {
-    display: none;
-}
-.notes-container .note-item {
-    transition: transform 0.2s ease;
-}
-.notes-container .note-item:hover {
-    transform: translateY(-2px);
-}
-
-.note-tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-}
-
-.note-tag-badge {
-    background: #eef2ff;
-    color: #3730a3;
-    border-radius: 999px;
-    padding: 0.1rem 0.6rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -347,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (notesFilter) {
         notesFilter.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
-            document.querySelectorAll('.note-item').forEach(note => {
+            document.querySelectorAll('[data-note-id]').forEach(note => {
                 const title = note.querySelector('.note-title').textContent.toLowerCase();
                 const content = note.querySelector('.note-text-inner').textContent.toLowerCase();
                 note.style.display = (title.includes(searchTerm) || content.includes(searchTerm)) ? '' : 'none';
@@ -446,7 +408,7 @@ function refreshNotesList() {
                     const tagsAttr = tagList.map(tag => tag.toLowerCase()).join(' ');
                     
                     notesHtml += `
-                    <div class="note-item mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="${note.id}" data-tags="${tagsAttr}">
+                    <div class="mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="${note.id}" data-tags="${tagsAttr}">
                         <div class="d-flex justify-content-between align-items-start">
                             <h6 class="mb-1 note-title">${escapeHtml(note.title)}</h6>
                             <div class="dropdown">
@@ -517,7 +479,7 @@ function refreshNotesList() {
                 if (notesFilter) {
                     notesFilter.addEventListener('input', function() {
                         const searchTerm = this.value.toLowerCase();
-                        document.querySelectorAll('.note-item').forEach(note => {
+                        document.querySelectorAll('[data-note-id]').forEach(note => {
                             const title = note.querySelector('.note-title').textContent.toLowerCase();
                             const content = note.querySelector('.note-text-inner').textContent.toLowerCase();
                             const tags = (note.getAttribute('data-tags') || '');
@@ -564,7 +526,7 @@ function refreshNotesList() {
         const notesContainer = document.querySelector('.notes-container');
         if (!notesContainer) return;
         
-        const notes = Array.from(notesContainer.querySelectorAll('.note-item'));
+        const notes = Array.from(notesContainer.querySelectorAll('[data-note-id]'));
         const separators = Array.from(notesContainer.querySelectorAll('hr'));
         
         // Remove all notes and separators from container
@@ -601,7 +563,7 @@ function deleteNote(noteId) {
     .then(data => {
         if (data.success) {
                 // Remove note from DOM
-                const noteElement = document.querySelector(`.note-item[data-note-id="${noteId}"]`);
+                const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
                 const nextSeparator = noteElement.nextElementSibling;
                 
                 if (noteElement) {
@@ -615,7 +577,7 @@ function deleteNote(noteId) {
             showAlert('success', data.message || 'Note deleted successfully');
                 
                 // If no notes left, show empty state
-                const remainingNotes = document.querySelectorAll('.note-item');
+                const remainingNotes = document.querySelectorAll('[data-note-id]');
                 if (remainingNotes.length === 0) {
                     document.getElementById('notesList').innerHTML = `
                         <div class="text-center py-4">

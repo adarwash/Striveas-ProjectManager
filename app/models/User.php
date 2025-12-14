@@ -4,6 +4,36 @@ class User {
     private $db;
     
     /**
+     * Verify a submitted password against a stored value.
+     * Supports bcrypt/argon (password_hash), legacy plain text,
+     * and legacy MD5/SHA256 hex digests.
+     */
+    private function verifyPasswordValue(string $submitted, string $stored): bool {
+        $stored = trim($stored);
+        if ($stored === '') {
+            return false;
+        }
+        
+        // If stored is a modern hash, use password_verify
+        if (password_get_info($stored)['algo'] !== 0) {
+            return password_verify($submitted, $stored);
+        }
+        
+        // Legacy MD5 hex
+        if (preg_match('/^[a-f0-9]{32}$/i', $stored)) {
+            return hash_equals($stored, md5($submitted));
+        }
+        
+        // Legacy SHA-256 hex
+        if (preg_match('/^[a-f0-9]{64}$/i', $stored)) {
+            return hash_equals($stored, hash('sha256', $submitted));
+        }
+        
+        // Plain text fallback
+        return hash_equals($stored, $submitted);
+    }
+    
+    /**
      * Constructor - initializes the database connection
      */
     public function __construct() {
@@ -30,15 +60,8 @@ class User {
             $user = $result[0];
             $stored = $user['password'] ?? '';
             
-            // Support hashed passwords (preferred) and legacy plain-text fallback
-            $isValid = false;
-            if (is_string($stored) && $stored !== '') {
-                if (password_get_info($stored)['algo'] !== 0) {
-                    $isValid = password_verify($password, $stored);
-                } else {
-                    $isValid = hash_equals((string)$stored, (string)$password);
-                }
-            }
+            // Support hashed and legacy password formats
+            $isValid = (is_string($stored) && $this->verifyPasswordValue($password, $stored));
             
             if ($isValid) {
                 unset($user['password']);
@@ -144,8 +167,8 @@ class User {
                 return false;
             }
             
-            // In a real application, you would use password_verify() here
-            return $result[0]['password'] === $password;
+            $stored = $result[0]['password'] ?? '';
+            return $this->verifyPasswordValue($password, (string)$stored);
         } catch (Exception $e) {
             error_log('CheckPassword Error: ' . $e->getMessage());
             return false;
@@ -206,19 +229,38 @@ class User {
                     return false;
                 }
                 
-                $storedPassword = $result[0]['password'];
+                $storedPassword = $result[0]['password'] ?? '';
                 
-                // Verify current password
-                if (!password_verify($currentPassword, $storedPassword) && $currentPassword !== $storedPassword) {
+                if (!$this->verifyPasswordValue($currentPassword, (string)$storedPassword)) {
                     return false;
                 }
             }
             
             // Hash the new password
             $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            if ($hashedPassword === false) {
+                error_log('UpdatePassword Error: password_hash() failed');
+                return false;
+            }
             
-            // Update password
-            $query = "UPDATE [Users] SET password = ?, updated_at = GETDATE() WHERE id = ?";
+            // Update password (only touch updated_at if the column exists)
+            $hasUpdatedAt = false;
+            try {
+                $colCheck = $this->db->select(
+                    "SELECT 1 AS has_col
+                     FROM INFORMATION_SCHEMA.COLUMNS
+                     WHERE UPPER(TABLE_NAME) = UPPER('Users')
+                       AND UPPER(COLUMN_NAME) = UPPER('updated_at')"
+                );
+                $hasUpdatedAt = !empty($colCheck);
+            } catch (Exception $e) {
+                // If we can't check schema for any reason, fall back to a conservative update.
+                $hasUpdatedAt = false;
+            }
+            
+            $query = $hasUpdatedAt
+                ? "UPDATE [Users] SET password = ?, updated_at = GETDATE() WHERE id = ?"
+                : "UPDATE [Users] SET password = ? WHERE id = ?";
             $params = [$hashedPassword, $userId];
             
             $this->db->update($query, $params);

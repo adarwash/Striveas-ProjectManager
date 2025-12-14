@@ -44,9 +44,20 @@
 					<?php if (empty($entries)): ?>
 						<tr><td colspan="7" class="text-center text-muted py-4">No login activity recorded yet.</td></tr>
 					<?php else: ?>
-						<?php foreach ($entries as $e): ?>
+						<?php 
+						$displayTz = $display_timezone ?? date_default_timezone_get();
+						$dbTz = $db_timezone ?? date_default_timezone_get();
+						foreach ($entries as $e): 
+							try {
+								$dt = new DateTime($e['created_at'], new DateTimeZone($dbTz));
+								$dt->setTimezone(new DateTimeZone($displayTz));
+								$when = $dt->format('Y-m-d H:i:s');
+							} catch (Exception $ex) {
+								$when = htmlspecialchars($e['created_at']);
+							}
+						?>
 							<tr>
-								<td><?= htmlspecialchars(date('Y-m-d H:i:s', strtotime($e['created_at']))) ?></td>
+								<td><?= $when ?> <div class="small text-muted"><?= htmlspecialchars($displayTz) ?></div></td>
 								<td>
 									<?php if (!empty($e['full_name'])): ?>
 										<?= htmlspecialchars($e['full_name']) ?>

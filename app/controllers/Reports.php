@@ -16,6 +16,19 @@ class Reports extends Controller {
             redirect('dashboard');
         }
     }
+
+    private function currentRoleId(): ?int {
+        return isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+    }
+
+    private function isAdminRole(): bool {
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+    }
+
+    private function blockedClientIds(): array {
+        $clientModel = $this->model('Client');
+        return $clientModel->getBlockedClientIdsForRole($this->currentRoleId(), $this->isAdminRole());
+    }
     
     /**
      * Reports dashboard/index page
@@ -49,15 +62,25 @@ class Reports extends Controller {
         $lastMonth = date('Y-m-d', strtotime('-30 days'));
         $lastYear = date('Y-m-d', strtotime('-365 days'));
         
+        $blockedClientIds = $this->blockedClientIds();
+
+        $allProjects = $projectModel->getAllProjects();
+        if (!empty($blockedClientIds)) {
+            $allProjects = array_values(array_filter($allProjects, function($project) use ($blockedClientIds) {
+                $clientId = isset($project->client_id) ? (int)$project->client_id : null;
+                return empty($clientId) || !in_array($clientId, $blockedClientIds, true);
+            }));
+        }
+
         $reportData = [
             // Overview Statistics
             'overview' => [
                 'total_users' => $this->safeCount($userModel, 'getAllUsers'),
                 'active_clients' => $this->safeCount($clientModel, 'getActiveClientsCount'),
-                'total_projects' => $this->safeCount($projectModel, 'getAllProjects'),
+                'total_projects' => is_array($allProjects) ? count($allProjects) : 0,
                 'open_tickets' => $this->safeCount($ticketModel, 'getOpenTicketsCount'),
-                'completed_tasks' => $this->getTotalTasksByStatus($taskModel, 'completed'),
-                'pending_tasks' => $this->safeCount($taskModel, 'getOpenTasksCount')
+                'completed_tasks' => $this->getTotalTasksByStatus($taskModel, 'completed', $blockedClientIds),
+                'pending_tasks' => $taskModel->getOpenTasksCount($blockedClientIds)
             ],
             
             // User Statistics
@@ -119,9 +142,9 @@ class Reports extends Controller {
     /**
      * Get total tasks by status
      */
-    private function getTotalTasksByStatus($taskModel, $status) {
+    private function getTotalTasksByStatus($taskModel, $status, array $blockedClientIds = []) {
         try {
-            $tasks = $taskModel->getAllTasks();
+            $tasks = $taskModel->getAllTasks($blockedClientIds);
             if (!is_array($tasks)) {
                 return 0;
             }

@@ -2,11 +2,28 @@
     class Home extends Controller{
         private $projectModel;
         private $taskModel;
+        private $clientModel;
         
         public function __construct() {
             // Load models
             $this->projectModel = $this->model('Project');
             $this->taskModel = $this->model('Task');
+            $this->clientModel = $this->model('Client');
+        }
+
+        private function currentRoleId(): ?int {
+            return isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+        }
+
+        private function isAdminRole(): bool {
+            return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+        }
+
+        private function blockedClientIds(): array {
+            return $this->clientModel->getBlockedClientIdsForRole(
+                $this->currentRoleId(),
+                $this->isAdminRole()
+            );
         }
         
         public function index(){
@@ -16,33 +33,8 @@
             }
             
             if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in']) {
-                // User is logged in, show dashboard
-                $username = $_SESSION['username'] ?? 'User';
-                $userId = $_SESSION['user_id'] ?? null;
-                
-                // Get project stats
-                $projectStats = $this->projectModel->getProjectStats();
-                
-                // Get task stats
-                $taskStats = $this->taskModel->getTaskStats();
-                
-                // Get recent activity
-                $recentActivity = $this->taskModel->getRecentActivity();
-                
-                // Get budget usage by department
-                $budgetUsage = $this->projectModel->getDepartmentBudgetUsage();
-                
-                // Get user's assigned tasks (if user_id is set)
-                // $userTasks = $userId ? $this->taskModel->getTasksByUser($userId) : [];
-                
-                $this->view('home/dashboard', [
-                    'title' => 'Dashboard',
-                    'username' => $username,
-                    'project_stats' => $projectStats,
-                    'task_stats' => $taskStats,
-                    'recent_activity' => $recentActivity,
-                    'budget_usage' => $budgetUsage
-                ]);
+                // Redirect logged-in users to dashboard
+                redirect('dashboard');
             } else {
                 // User is not logged in, redirect to login page
                 header('Location: /auth');

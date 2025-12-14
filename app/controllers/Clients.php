@@ -11,6 +11,9 @@ class Clients extends Controller {
 	private $auditModel;
 	private $clientMeetingModel;
 	private $clientDocumentModel;
+    private $roleModel;
+    private $clientServiceModel;
+    private $clientStatusHistoryModel;
     
     /**
      * Initialize controller and load models
@@ -32,9 +35,20 @@ class Clients extends Controller {
 		$this->auditModel = $this->model('Networkaudit');
 		$this->clientMeetingModel = $this->model('ClientMeeting');
 		$this->clientDocumentModel = $this->model('ClientDocument');
+        $this->roleModel = $this->model('Role');
+        $this->clientServiceModel = $this->model('ClientService');
+        $this->clientStatusHistoryModel = $this->model('ClientStatusHistory');
         
         // Set the page for sidebar highlighting
         $_SESSION['page'] = 'clients';
+    }
+
+    private function currentRoleId(): ?int {
+        return isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+    }
+
+    private function isAdminRole(): bool {
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
     }
     
     /**
@@ -50,6 +64,11 @@ class Clients extends Controller {
         
         // Get all clients
         $clients = $this->clientModel->getAllClients();
+        $clients = $this->clientModel->filterClientsForRole(
+            $clients,
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        );
         
         $data = [
             'title' => 'Clients',
@@ -85,9 +104,38 @@ class Clients extends Controller {
             redirect('clients');
             return;
         }
+
+        if (!$this->clientModel->canAccessClientId(
+            (int)$client['id'],
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        )) {
+            flash('client_error', 'You do not have access to this client', 'alert-danger');
+            redirect('clients');
+            return;
+        }
         
         // Get sites assigned to this client
         $sites = $this->clientModel->getSiteClients($id);
+
+        // Compute client profile age
+        $clientAge = 'Unknown';
+        if (!empty($client['created_at'])) {
+            try {
+                $created = new DateTime($client['created_at']);
+                $now = new DateTime();
+                $diff = $created->diff($now);
+                if ($diff->y > 0) {
+                    $clientAge = $diff->y . 'y ' . $diff->m . 'm';
+                } elseif ($diff->m > 0) {
+                    $clientAge = $diff->m . 'm ' . $diff->d . 'd';
+                } else {
+                    $clientAge = $diff->d . 'd';
+                }
+            } catch (Exception $e) {
+                $clientAge = 'Unknown';
+            }
+        }
 
         // Ensure projects table has client_id column, then get projects for this client
         try {
@@ -127,11 +175,27 @@ class Clients extends Controller {
             // Fallback without services
         }
 
+        // Client-level services
+        $clientServices = [];
+        try {
+            $clientServices = $this->clientServiceModel->listByClient((int)$id);
+        } catch (Exception $e) {
+            $clientServices = [];
+        }
+
         // Get recent site visits for this client
         try {
             $recentVisits = $this->clientModel->getRecentSiteVisits($id, 10);
         } catch (Exception $e) {
             $recentVisits = [];
+        }
+
+        // Status history
+        $statusHistory = [];
+        try {
+            $statusHistory = $this->clientStatusHistoryModel->listByClient((int)$id, 10);
+        } catch (Exception $e) {
+            $statusHistory = [];
         }
 
 		// Client documents
@@ -188,6 +252,28 @@ class Clients extends Controller {
             $levelIoGroups = [];
         }
         
+        // Visibility info
+        $isRestricted = !empty($client['is_restricted']);
+        $allowedRoleIds = [];
+        if (!empty($client['allowed_role_ids'])) {
+            $allowedRoleIds = array_filter(array_map('intval', explode(',', (string)$client['allowed_role_ids'])));
+        }
+        $allowedRoleNames = [];
+        try {
+            $allRoles = $this->roleModel->getAllRoles();
+            $roleNameById = [];
+            foreach ($allRoles as $roleRow) {
+                $roleNameById[(int)$roleRow['id']] = $roleRow['display_name'] ?? $roleRow['name'] ?? ('Role ' . $roleRow['id']);
+            }
+            foreach ($allowedRoleIds as $rid) {
+                if (isset($roleNameById[$rid])) {
+                    $allowedRoleNames[] = $roleNameById[$rid];
+                }
+            }
+        } catch (Exception $e) {
+            $allowedRoleNames = [];
+        }
+
         $data = [
             'title' => $client['name'],
             'client' => $client,
@@ -204,10 +290,80 @@ class Clients extends Controller {
             'currency' => $this->settingModel->getCurrency(),
             'documents' => $documents,
             'level_io_enabled' => $levelIoEnabled,
-            'level_io_groups' => $levelIoGroups
+            'level_io_groups' => $levelIoGroups,
+            'is_restricted' => $isRestricted,
+            'allowed_role_names' => $allowedRoleNames,
+            'allowed_role_ids' => $allowedRoleIds,
+            'client_services' => $clientServices,
+            'status_history' => $statusHistory,
+            'client_age' => $clientAge
         ];
         
         $this->view('clients/view', $data);
+    }
+
+    /**
+     * Add a client service
+     */
+    public function addService($clientId = null) {
+        if (!hasPermission('clients.update')) {
+            flash('client_error', 'You do not have permission to update clients', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+        if (!$clientId) {
+            redirect('clients');
+            return;
+        }
+
+        $serviceName = trim($_POST['service_name'] ?? '');
+        $serviceType = trim($_POST['service_type'] ?? '');
+        $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
+        $startDate = trim($_POST['start_date'] ?? '');
+        $endDate = trim($_POST['end_date'] ?? '');
+        $notes = trim($_POST['notes'] ?? '');
+
+        if ($serviceName === '') {
+            flash('client_error', 'Service name is required', 'alert-danger');
+            redirect('clients/viewClient/' . (int)$clientId);
+            return;
+        }
+
+        $ok = $this->clientServiceModel->add((int)$clientId, [
+            'service_name' => $serviceName,
+            'service_type' => $serviceType ?: null,
+            'quantity' => $quantity > 0 ? $quantity : 1,
+            'start_date' => $startDate ?: null,
+            'end_date' => $endDate ?: null,
+            'notes' => $notes ?: null,
+        ]);
+
+        if ($ok) {
+            flash('client_success', 'Service added');
+        } else {
+            flash('client_error', 'Failed to add service', 'alert-danger');
+        }
+
+        redirect('clients/viewClient/' . (int)$clientId);
+    }
+
+    /**
+     * Delete a client service
+     */
+    public function deleteService($serviceId = null, $clientId = null) {
+        if (!hasPermission('clients.update')) {
+            flash('client_error', 'You do not have permission to update clients', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+        if (!$serviceId || !$clientId) {
+            redirect('clients');
+            return;
+        }
+
+        $this->clientServiceModel->delete((int)$serviceId);
+        flash('client_success', 'Service removed');
+        redirect('clients/viewClient/' . (int)$clientId);
     }
 
 	/**
@@ -740,8 +896,18 @@ class Clients extends Controller {
             // Sanitize POST data using modern approach
             $sanitizedPost = [];
             foreach ($_POST as $key => $value) {
-                $sanitizedPost[$key] = trim(htmlspecialchars($value, ENT_QUOTES, 'UTF-8'));
+                if (is_array($value)) {
+                    $sanitizedPost[$key] = array_map(function($v) {
+                        return trim(htmlspecialchars($v, ENT_QUOTES, 'UTF-8'));
+                    }, $value);
+                } else {
+                    $sanitizedPost[$key] = trim(htmlspecialchars($value, ENT_QUOTES, 'UTF-8'));
+                }
             }
+
+            $allowedRoles = isset($_POST['allowed_roles']) ? array_filter(array_map('intval', (array)$_POST['allowed_roles'])) : [];
+            $allowedRoleIds = !empty($allowedRoles) ? implode(',', $allowedRoles) : '';
+            $isRestricted = !empty($_POST['is_restricted']) ? 1 : 0;
             
             // Init data
             $data = [
@@ -754,8 +920,12 @@ class Clients extends Controller {
                 'industry' => $sanitizedPost['industry'] ?? '',
                 'status' => $sanitizedPost['status'] ?? '',
                 'notes' => $sanitizedPost['notes'] ?? '',
+                'is_restricted' => $isRestricted,
+                'allowed_roles_selected' => $allowedRoles,
+                'allowed_role_ids' => $allowedRoleIds,
                 'name_err' => '',
-                'email_err' => ''
+                'email_err' => '',
+                'roles' => $this->roleModel->getAllRoles()
             ];
             
             // Validate name
@@ -795,8 +965,12 @@ class Clients extends Controller {
                 'industry' => '',
                 'status' => 'Active',
                 'notes' => '',
+                'is_restricted' => 0,
+                'allowed_roles_selected' => [],
+                'allowed_role_ids' => '',
                 'name_err' => '',
-                'email_err' => ''
+                'email_err' => '',
+                'roles' => $this->roleModel->getAllRoles()
             ];
             
             // Load view
@@ -837,8 +1011,18 @@ class Clients extends Controller {
             // Sanitize POST data using modern approach
             $sanitizedPost = [];
             foreach ($_POST as $key => $value) {
-                $sanitizedPost[$key] = trim(htmlspecialchars($value, ENT_QUOTES, 'UTF-8'));
+                if (is_array($value)) {
+                    $sanitizedPost[$key] = array_map(function($v) {
+                        return trim(htmlspecialchars($v, ENT_QUOTES, 'UTF-8'));
+                    }, $value);
+                } else {
+                    $sanitizedPost[$key] = trim(htmlspecialchars($value, ENT_QUOTES, 'UTF-8'));
+                }
             }
+
+            $allowedRoles = isset($_POST['allowed_roles']) ? array_filter(array_map('intval', (array)$_POST['allowed_roles'])) : [];
+            $allowedRoleIds = !empty($allowedRoles) ? implode(',', $allowedRoles) : '';
+            $isRestricted = !empty($_POST['is_restricted']) ? 1 : 0;
             
             // Init data
             $data = [
@@ -852,8 +1036,12 @@ class Clients extends Controller {
                 'industry' => $sanitizedPost['industry'] ?? '',
                 'status' => $sanitizedPost['status'] ?? '',
                 'notes' => $sanitizedPost['notes'] ?? '',
+                'is_restricted' => $isRestricted,
+                'allowed_roles_selected' => $allowedRoles,
+                'allowed_role_ids' => $allowedRoleIds,
                 'name_err' => '',
-                'email_err' => ''
+                'email_err' => '',
+                'roles' => $this->roleModel->getAllRoles()
             ];
             
             // Validate name
@@ -871,6 +1059,15 @@ class Clients extends Controller {
                 
                 // Validated
                 if ($this->clientModel->updateClient($data)) {
+                    // Log status change if status changed
+                    if (isset($client['status']) && $client['status'] !== $data['status']) {
+                        $this->clientStatusHistoryModel->add(
+                            (int)$id,
+                            (string)$client['status'],
+                            (string)$data['status'],
+                            isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null
+                        );
+                    }
                     flash('client_success', 'Client updated successfully');
                     redirect('clients');
                 } else {
@@ -883,6 +1080,10 @@ class Clients extends Controller {
             }
         } else {
             // Init data with client details
+            $allowedRoles = [];
+            if (!empty($client['allowed_role_ids'])) {
+                $allowedRoles = array_filter(array_map('intval', explode(',', (string)$client['allowed_role_ids'])));
+            }
             $data = [
                 'id' => $client['id'],
                 'title' => 'Edit Client',
@@ -894,8 +1095,12 @@ class Clients extends Controller {
                 'industry' => $client['industry'],
                 'status' => $client['status'],
                 'notes' => $client['notes'],
+                'is_restricted' => !empty($client['is_restricted']) ? 1 : 0,
+                'allowed_roles_selected' => $allowedRoles,
+                'allowed_role_ids' => $client['allowed_role_ids'] ?? '',
                 'name_err' => '',
-                'email_err' => ''
+                'email_err' => '',
+                'roles' => $this->roleModel->getAllRoles()
             ];
             
             // Load view

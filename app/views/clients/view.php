@@ -32,38 +32,44 @@
 				</h1>
                 <p class="text-muted mb-0">Client details and site assignments</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
                 <?php
                 $levelEnabled = !empty($level_io_enabled);
                 $hasLevelGroups = !empty($level_io_groups);
                 ?>
                 <?php if ($levelEnabled && $hasLevelGroups): ?>
-                <a href="/clients/levelDevices/<?= (int)$client['id'] ?>" class="btn btn-info text-white">
-                    <i class="bi bi-pc-display-horizontal"></i> Level.io Devices
+                <a href="/clients/levelDevices/<?= (int)$client['id'] ?>" class="btn btn-info text-white d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-pc-display-horizontal"></i>
+                    <span>Level.io Devices</span>
                 </a>
                 <?php endif; ?>
                 <?php if (hasPermission('clients.update')): ?>
-                <form action="/clients/addQuickCallback/<?= (int)$client['id'] ?>" method="post">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-bell-fill"></i> Quick Follow-up
+                <form action="/clients/addQuickCallback/<?= (int)$client['id'] ?>" method="post" class="d-inline m-0">
+                    <button type="submit" class="btn btn-success d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-bell-fill"></i>
+                        <span>Quick Follow-up</span>
                     </button>
                 </form>
-                <a href="/networkaudits/create?client_id=<?= (int)$client['id'] ?>" class="btn btn-primary">
-                    <i class="bi bi-diagram-3"></i> New Discovery Form
+                <a href="/networkaudits/create?client_id=<?= (int)$client['id'] ?>" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-diagram-3"></i>
+                    <span>New Discovery Form</span>
                 </a>
                 <?php endif; ?>
                 <?php if (hasPermission('clients.assign_sites')): ?>
-                <a href="/clients/assignSites/<?= $client['id'] ?>" class="btn btn-outline-info">
-                    <i class="bi bi-geo-alt"></i> Manage Sites
+                <a href="/clients/assignSites/<?= $client['id'] ?>" class="btn btn-info text-white d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>Manage Sites</span>
                 </a>
                 <?php endif; ?>
                 <?php if (hasPermission('clients.update')): ?>
-                <a href="/clients/edit/<?= $client['id'] ?>" class="btn btn-warning">
-                    <i class="bi bi-pencil"></i> Edit Client
+                <a href="/clients/edit/<?= $client['id'] ?>" class="btn btn-warning d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-pencil"></i>
+                    <span>Edit Client</span>
                 </a>
                 <?php endif; ?>
-                <a href="/clients" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to Clients
+                <a href="/clients" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Back to Clients</span>
                 </a>
             </div>
         </div>
@@ -192,6 +198,11 @@
                                     <?php else: ?>
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Profile Age:</dt>
+                                <dd class="col-sm-8">
+                                    <?= htmlspecialchars($client_age ?? '—') ?>
                                 </dd>
                                 
                                 <dt class="col-sm-4">Last Updated:</dt>
@@ -990,6 +1001,179 @@
         
         <!-- Quick Actions -->
         <div class="col-lg-4">
+            <!-- Client Services -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-tools text-primary me-2"></i>
+                        Client Services
+                    </h6>
+                    <?php if (hasPermission('clients.update')): ?>
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addClientServiceCollapse" aria-expanded="false" aria-controls="addClientServiceCollapse">
+                        <i class="bi bi-plus-lg"></i> Add
+                    </button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($client_services)): ?>
+                        <ul class="list-group list-group-flush mb-3">
+                            <?php foreach ($client_services as $svc): ?>
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="me-2">
+                                        <div class="fw-semibold"><?= htmlspecialchars($svc['service_name']) ?></div>
+                                        <?php if (!empty($svc['service_type'])): ?>
+                                            <div class="small text-muted"><?= htmlspecialchars($svc['service_type']) ?></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($svc['quantity'])): ?>
+                                            <div><span class="badge text-bg-secondary">Qty: <?= (int)$svc['quantity'] ?></span></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($svc['start_date']) || !empty($svc['end_date'])): ?>
+                                            <div class="small text-muted">
+                                                <?php if (!empty($svc['start_date'])): ?>
+                                                    Start: <?= date('Y-m-d', strtotime($svc['start_date'])) ?>
+                                                <?php endif; ?>
+                                                <?php if (!empty($svc['end_date'])): ?>
+                                                    · End: <?= date('Y-m-d', strtotime($svc['end_date'])) ?>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($svc['notes'])): ?>
+                                            <div class="small text-muted"><?= nl2br(htmlspecialchars($svc['notes'])) ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if (hasPermission('clients.update')): ?>
+                                    <form action="/clients/deleteService/<?= (int)$svc['id'] ?>/<?= (int)$client['id'] ?>" method="post" onsubmit="return confirm('Remove this service?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php else: ?>
+                        <p class="text-muted mb-3">No services recorded for this client.</p>
+                    <?php endif; ?>
+
+                    <?php if (hasPermission('clients.update')): ?>
+                    <div class="collapse" id="addClientServiceCollapse">
+                        <form action="/clients/addService/<?= (int)$client['id'] ?>" method="post">
+                            <div class="mb-3">
+                                <label class="form-label">Service Name <span class="text-danger">*</span></label>
+                                <input type="text" name="service_name" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Service Type</label>
+                                <input type="text" name="service_type" class="form-control" placeholder="e.g., Managed IT, Security, Backup">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Quantity</label>
+                                <input type="number" name="quantity" class="form-control" min="1" value="1">
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col">
+                                    <label class="form-label">Start Date</label>
+                                    <input type="date" name="start_date" class="form-control">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">End Date</label>
+                                    <input type="date" name="end_date" class="form-control">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Notes</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Details, scope, SLAs, etc."></textarea>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg"></i> Save Service
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Visibility -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-eye text-primary me-2"></i>
+                        Visibility
+                    </h6>
+                    <?php if (hasPermission('clients.update')): ?>
+                    <a href="/clients/edit/<?= (int)$client['id'] ?>" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($is_restricted)): ?>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-danger me-2">Restricted</span>
+                            <small class="text-muted">Only allowed roles can view.</small>
+                        </div>
+                        <div class="mb-2">
+                            <div class="fw-semibold small text-uppercase text-muted">Allowed Roles</div>
+                            <?php if (!empty($allowed_role_names)): ?>
+                                <ul class="list-unstyled mb-0 small">
+                                    <?php foreach ($allowed_role_names as $roleName): ?>
+                                    <li class="d-flex align-items-center">
+                                        <i class="bi bi-shield-check text-success me-2"></i>
+                                        <?= htmlspecialchars($roleName) ?>
+                                    </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php else: ?>
+                                <div class="text-muted small">No roles selected.</div>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-success me-2">Public</span>
+                            <small class="text-muted">All users with client access can view.</small>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Status History -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-clock-history text-primary me-2"></i>
+                        Status History
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($status_history)): ?>
+                    <ul class="list-group list-group-flush">
+                        <?php foreach ($status_history as $hist): ?>
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <div class="fw-semibold">
+                                        <?= htmlspecialchars($hist['old_status'] ?? 'Unknown') ?>
+                                        <i class="bi bi-arrow-right-short mx-1"></i>
+                                        <?= htmlspecialchars($hist['new_status'] ?? 'Unknown') ?>
+                                    </div>
+                                    <div class="small text-muted">
+                                        <?= !empty($hist['username']) ? htmlspecialchars($hist['username']) : 'System' ?>
+                                    </div>
+                                </div>
+                                <div class="text-muted small">
+                                    <?= !empty($hist['changed_at']) ? date('M j, Y g:i A', strtotime($hist['changed_at'])) : '' ?>
+                                </div>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php else: ?>
+                    <p class="text-muted mb-0">No status changes recorded.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
             <!-- Contracts -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -997,16 +1181,25 @@
                         <i class="bi bi-file-earmark-text text-primary me-2"></i>
                         Contracts
                     </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <?php if (hasPermission('clients.update')): ?>
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addContractCollapse" aria-expanded="false" aria-controls="addContractCollapse">
+                            <i class="bi bi-upload"></i> Upload
+                        </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="card-body">
                     <?php if (hasPermission('clients.update')): ?>
-                    <form action="/clients/uploadContract/<?= (int)$client['id'] ?>" method="post" enctype="multipart/form-data" class="mb-3">
-                        <div class="input-group">
-                            <input type="file" name="contract" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" required>
-                            <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Upload</button>
-                        </div>
-                        <div class="form-text">Max 10MB. Allowed: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</div>
-                    </form>
+                    <div class="collapse mb-3" id="addContractCollapse">
+                        <form action="/clients/uploadContract/<?= (int)$client['id'] ?>" method="post" enctype="multipart/form-data">
+                            <div class="input-group">
+                                <input type="file" name="contract" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" required>
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
+                            </div>
+                            <div class="form-text">Max 10MB. Allowed: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</div>
+                        </form>
+                    </div>
                     <?php endif; ?>
 
                     <?php if (!empty($contracts)): ?>
@@ -1048,45 +1241,51 @@
 
             <!-- Follow-ups / Reminders -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="card-title mb-0">
                         <i class="bi bi-bell text-primary me-2"></i>
                         Follow-ups & Reminders
                     </h6>
+                    <?php if (hasPermission('clients.update')): ?>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="/clients/callbacksHistory/<?= (int)$client['id'] ?>" class="btn btn-sm btn-link text-decoration-none">
+                            <i class="bi bi-clock-history me-1"></i> History
+                        </a>
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addFollowupCollapse" aria-expanded="false" aria-controls="addFollowupCollapse">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div class="card-body">
                     <?php if (hasPermission('clients.update')): ?>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="mb-0 text-muted">Add Follow-up</h6>
-                        <a href="/clients/callbacksHistory/<?= (int)$client['id'] ?>" class="small text-decoration-none">
-                            <i class="bi bi-clock-history me-1"></i>View History
-                        </a>
+                    <div class="collapse mb-3" id="addFollowupCollapse">
+                        <form action="/clients/addCallback/<?= (int)$client['id'] ?>" method="post">
+                            <div class="mb-2">
+                                <label class="form-label">Title</label>
+                                <input type="text" name="title" class="form-control" placeholder="e.g., Call back regarding proposal" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Remind At</label>
+                                <input type="datetime-local" name="remind_at" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Notes (optional)</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Add context or talking points"></textarea>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" value="1" id="notify_all" name="notify_all">
+                                <label class="form-check-label" for="notify_all">
+                                    Show in notifications for all users
+                                </label>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-1"></i>Save Follow-up
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <form action="/clients/addCallback/<?= (int)$client['id'] ?>" method="post" class="mb-3">
-                        <div class="mb-2">
-                            <label class="form-label">Title</label>
-                            <input type="text" name="title" class="form-control" placeholder="e.g., Call back regarding proposal" required>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Remind At</label>
-                            <input type="datetime-local" name="remind_at" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Notes (optional)</label>
-                            <textarea name="notes" class="form-control" rows="2" placeholder="Add context or talking points"></textarea>
-                        </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" value="1" id="notify_all" name="notify_all">
-                            <label class="form-check-label" for="notify_all">
-                                Show in notifications for all users
-                            </label>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-plus-lg me-1"></i>Add Follow-up
-                            </button>
-                        </div>
-                    </form>
                     <?php endif; ?>
 
                     <h6 class="text-muted mb-2">Upcoming</h6>
@@ -1192,28 +1391,23 @@
                     <?php if (!empty($recent_visits)): ?>
                     <div class="list-group list-group-flush">
                         <?php foreach ($recent_visits as $rv): ?>
-                        <a href="/sitevisits/show/<?= (int)$rv['id'] ?>" class="list-group-item list-group-item-action d-flex align-items-start gap-3">
+                        <a href="/sitevisits/show/<?= (int)$rv['id'] ?>" class="list-group-item list-group-item-action d-flex align-items-start gap-3 w-100">
                             <div class="rounded bg-primary bg-opacity-10 p-2">
                                 <i class="bi bi-clipboard-check text-primary"></i>
                             </div>
                             <div class="flex-fill">
                                 <div class="d-flex justify-content-between">
-                                    <strong class="text-truncate" style="max-width: 180px;">
+                                    <strong class="text-truncate text-break" style="max-width: 240px;">
                                         <?= htmlspecialchars($rv['title'] ?: ($rv['site_name'] ?? 'Visit')) ?>
                                     </strong>
                                     <small class="text-muted"><?= date('M j, Y H:i', strtotime($rv['visit_date'])) ?></small>
                                 </div>
-                                <div class="small text-muted">
+                                <div class="small text-muted text-break">
                                     <?= htmlspecialchars($rv['site_name'] ?? 'Unknown Site') ?>
                                     <?php if (!empty($rv['site_location'])): ?>
                                         • <?= htmlspecialchars($rv['site_location']) ?>
                                     <?php endif; ?>
                                 </div>
-                                <?php if (!empty($rv['summary'])): ?>
-                                <div class="small text-truncate" style="max-width: 100%;">
-                                    <?= htmlspecialchars($rv['summary']) ?>
-                                </div>
-                                <?php endif; ?>
                                 <div class="small text-muted mt-1">By <?= htmlspecialchars($rv['full_name'] ?? $rv['username'] ?? 'Technician') ?></div>
                             </div>
                         </a>

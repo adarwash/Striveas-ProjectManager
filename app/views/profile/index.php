@@ -43,6 +43,9 @@
                         <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#changeProfilePicModal">
                             <i class="bi bi-camera"></i> Change Picture
                         </button>
+                        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                            <i class="bi bi-key"></i> Change Password
+                        </button>
                         <a href="/settings" class="btn btn-outline-primary">
                             <i class="bi bi-gear"></i> Settings
                         </a>
@@ -298,6 +301,64 @@
     </div>
 </div>
 
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changePasswordModalLabel">
+                    <i class="bi bi-key me-2"></i>Change Password
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/profile/changePassword" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="current_password" name="current_password" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="new_password" name="new_password" minlength="6" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Minimum 6 characters</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm New Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="6" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="password-match-feedback" class="text-danger d-none">
+                        <i class="bi bi-exclamation-circle"></i> Passwords do not match
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning" id="changePasswordBtn">
+                        <i class="bi bi-check-lg"></i> Change Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Script for image preview -->
 <script>
 document.getElementById('profile_picture').addEventListener('change', function(e) {
@@ -310,6 +371,44 @@ document.getElementById('profile_picture').addEventListener('change', function(e
             imgPreview.classList.remove('d-none');
         };
         reader.readAsDataURL(file);
+    }
+});
+
+// Toggle password visibility
+function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+// Password match validation
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = this.value;
+    const feedback = document.getElementById('password-match-feedback');
+    const submitBtn = document.getElementById('changePasswordBtn');
+    
+    if (confirmPassword && newPassword !== confirmPassword) {
+        feedback.classList.remove('d-none');
+        submitBtn.disabled = true;
+    } else {
+        feedback.classList.add('d-none');
+        submitBtn.disabled = false;
+    }
+});
+
+document.getElementById('new_password').addEventListener('input', function() {
+    const confirmPassword = document.getElementById('confirm_password').value;
+    if (confirmPassword) {
+        document.getElementById('confirm_password').dispatchEvent(new Event('input'));
     }
 });
 </script> 

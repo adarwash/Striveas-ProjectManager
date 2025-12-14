@@ -15,6 +15,18 @@ class App {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+
+        // Apply display timezone from settings (default America/Los_Angeles)
+        try {
+            require_once '../app/models/Setting.php';
+            $settingModel = new Setting();
+            $tz = $settingModel->get('display_timezone', 'America/Los_Angeles');
+            if (is_string($tz) && $tz !== '') {
+                @date_default_timezone_set($tz);
+            }
+        } catch (Exception $e) {
+            @date_default_timezone_set('America/Los_Angeles');
+        }
         
         $url = $this->parseUrl();
         

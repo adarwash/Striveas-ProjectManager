@@ -224,6 +224,64 @@ class Profile extends Controller {
     }
     
     /**
+     * Change user's password
+     *
+     * @return void
+     */
+    public function changePassword() {
+        $userId = $_SESSION['user_id'];
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Get POST data
+            $currentPassword = $_POST['current_password'] ?? '';
+            $newPassword = $_POST['new_password'] ?? '';
+            $confirmPassword = $_POST['confirm_password'] ?? '';
+            
+            // Validate inputs
+            if (empty($currentPassword)) {
+                $_SESSION['profile_error'] = 'Please enter your current password';
+                redirect('profile');
+                return;
+            }
+            
+            if (empty($newPassword)) {
+                $_SESSION['profile_error'] = 'Please enter a new password';
+                redirect('profile');
+                return;
+            }
+            
+            if (strlen($newPassword) < 6) {
+                $_SESSION['profile_error'] = 'New password must be at least 6 characters';
+                redirect('profile');
+                return;
+            }
+            
+            if ($newPassword !== $confirmPassword) {
+                $_SESSION['profile_error'] = 'New passwords do not match';
+                redirect('profile');
+                return;
+            }
+            
+            if ($currentPassword === $newPassword) {
+                $_SESSION['profile_error'] = 'New password must be different from current password';
+                redirect('profile');
+                return;
+            }
+            
+            // Attempt to update password (method verifies current password)
+            if ($this->userModel->updatePassword($userId, $newPassword, $currentPassword)) {
+                $_SESSION['profile_success'] = 'Password changed successfully';
+            } else {
+                $_SESSION['profile_error'] = 'Current password is incorrect';
+            }
+            
+            redirect('profile');
+        } else {
+            redirect('profile');
+        }
+    }
+    
+    /**
      * Display and update user's skills
      *
      * @return void

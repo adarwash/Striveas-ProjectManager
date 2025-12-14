@@ -32,6 +32,25 @@ class Project {
     }
 
     /**
+     * Lightweight map of project_id => client_id for visibility checks
+     *
+     * @return array<int, int|null>
+     */
+    public function getProjectClientMap(): array {
+        try {
+            $rows = $this->db->select("SELECT id, client_id FROM projects");
+            $map = [];
+            foreach ($rows as $row) {
+                $map[(int)$row['id']] = isset($row['client_id']) ? (int)$row['client_id'] : null;
+            }
+            return $map;
+        } catch (Exception $e) {
+            error_log('getProjectClientMap error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Get projects by client ID
      * Returns array of project objects with department and task counts
      *
@@ -242,15 +261,22 @@ class Project {
     }
     
     // Get project summary statistics
-    public function getProjectStats() {
+    public function getProjectStats(array $blockedClientIds = []) {
+        $params = [];
         $query = "SELECT 
                  SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active_count,
                  SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_count,
                  SUM(CASE WHEN status = 'On Hold' THEN 1 ELSE 0 END) as on_hold_count,
                  SUM(budget) as total_budget
-                 FROM projects";
+                 FROM projects p";
+
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= " WHERE (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_map('intval', $blockedClientIds);
+        }
         
-        $result = $this->db->select($query);
+        $result = $this->db->select($query, $params);
         return !empty($result) ? (object)$result[0] : (object)[
             'active_count' => 0, 
             'completed_count' => 0, 

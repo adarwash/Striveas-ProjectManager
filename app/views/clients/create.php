@@ -108,6 +108,27 @@
                             <textarea class="form-control" id="notes" name="notes" rows="4" 
                                       placeholder="Any additional notes about this client..."><?= $notes ?></textarea>
                         </div>
+
+                        <!-- Visibility Controls -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="is_restricted" name="is_restricted" value="1" <?= !empty($is_restricted) ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="is_restricted">Restrict visibility to specific roles</label>
+                            </div>
+                            <small class="text-muted d-block mb-2">When restricted, only users in the selected roles will see this client and its related projects/tasks.</small>
+                            <label for="allowed_roles" class="form-label">Allowed Roles</label>
+                            <select id="allowed_roles" name="allowed_roles[]" class="form-select" multiple size="6">
+                                <?php if (!empty($roles)): ?>
+                                    <?php foreach ($roles as $role): ?>
+                                        <option value="<?= (int)$role['id'] ?>" <?= in_array((int)$role['id'], $allowed_roles_selected ?? []) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($role['display_name'] ?? $role['name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <option value="" disabled>No roles available</option>
+                                <?php endif; ?>
+                            </select>
+                        </div>
                         
                         <!-- Form Actions -->
                         <div class="d-flex justify-content-end gap-2">

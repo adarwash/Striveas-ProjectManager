@@ -49,11 +49,31 @@ class Projects extends Controller {
         // Ensure projects table has client_id column
         $this->projectModel->ensureClientColumn();
     }
+
+    private function currentRoleId(): ?int {
+        return isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+    }
+
+    private function isAdminRole(): bool {
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+    }
+
+    private function blockedClientIds(): array {
+        return $this->clientModel->getBlockedClientIdsForRole($this->currentRoleId(), $this->isAdminRole());
+    }
     
     // List all projects
     public function index() {
         // Get all projects
         $projects = $this->projectModel->getAllProjects(); // Get real projects from database
+
+        $blockedClientIds = $this->blockedClientIds();
+        if (!empty($blockedClientIds)) {
+            $projects = array_values(array_filter($projects, function($p) use ($blockedClientIds) {
+                $clientId = isset($p->client_id) ? (int)$p->client_id : null;
+                return empty($clientId) || !in_array($clientId, $blockedClientIds, true);
+            }));
+        }
         
         // Compute missed follow-ups per project
         try {
@@ -107,7 +127,11 @@ class Projects extends Controller {
         $currency = $this->settingModel->getCurrency();
         
         // Get all clients for the dropdown
-        $clients = $this->clientModel->getAllClients();
+        $clients = $this->clientModel->filterClientsForRole(
+            $this->clientModel->getAllClients(),
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        );
         
         $this->view('projects/create', [
             'title' => 'Create Project',
@@ -271,7 +295,11 @@ class Projects extends Controller {
                     'sites' => $this->siteModel->getAllSites(),
                     // Ensure currency is always available to the view
                     'currency' => $this->settingModel->getCurrency(),
-                    'clients' => $this->clientModel->getAllClients()
+                    'clients' => $this->clientModel->filterClientsForRole(
+                        $this->clientModel->getAllClients(),
+                        $this->currentRoleId(),
+                        $this->isAdminRole()
+                    )
                 ]);
             }
         } else {
@@ -295,6 +323,16 @@ class Projects extends Controller {
         if (!$project) {
             flash('project_error', 'Project not found');
             redirect('projects');
+        }
+
+        if (!$this->clientModel->canAccessClientId(
+            isset($project->client_id) ? (int)$project->client_id : null,
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        )) {
+            flash('project_error', 'You do not have access to this project', 'alert-danger');
+            redirect('projects');
+            return;
         }
         
         // Get all tasks for this project
@@ -770,6 +808,16 @@ class Projects extends Controller {
             header('Location: /projects');
             exit;
         }
+
+        if (!$this->clientModel->canAccessClientId(
+            isset($project->client_id) ? (int)$project->client_id : null,
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        )) {
+            flash('project_error', 'You do not have access to this project', 'alert-danger');
+            redirect('projects');
+            return;
+        }
         
         // Get all departments for the dropdown
         $departments = $this->departmentModel->getAllDepartments();
@@ -778,7 +826,11 @@ class Projects extends Controller {
         $currency = $this->settingModel->getCurrency();
         
         // Get all clients for the dropdown
-        $clients = $this->clientModel->getAllClients();
+        $clients = $this->clientModel->filterClientsForRole(
+            $this->clientModel->getAllClients(),
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        );
         
         $this->view('projects/edit', [
             'title' => 'Edit Project',
@@ -798,6 +850,16 @@ class Projects extends Controller {
         $projectBeforeUpdate = $this->projectModel->getProjectById($id);
         if (!$projectBeforeUpdate) {
             flash('project_error', 'Project not found', 'alert-danger');
+            redirect('/projects');
+            return;
+        }
+
+        if (!$this->clientModel->canAccessClientId(
+            isset($projectBeforeUpdate->client_id) ? (int)$projectBeforeUpdate->client_id : null,
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        )) {
+            flash('project_error', 'You do not have access to this project', 'alert-danger');
             redirect('/projects');
             return;
         }
@@ -916,7 +978,11 @@ class Projects extends Controller {
                     'departments' => $this->departmentModel->getAllDepartments(),
                     // Ensure currency is always available to the view
                     'currency' => $this->settingModel->getCurrency(),
-                    'clients' => $this->clientModel->getAllClients()
+                    'clients' => $this->clientModel->filterClientsForRole(
+                        $this->clientModel->getAllClients(),
+                        $this->currentRoleId(),
+                        $this->isAdminRole()
+                    )
                 ]);
             }
         } else {

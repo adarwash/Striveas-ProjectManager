@@ -5,6 +5,7 @@ class Client {
 
     public function __construct() {
         $this->db = new EasySQL(DB1);
+        $this->ensureVisibilityColumns();
     }
 
     /**
@@ -28,6 +29,112 @@ class Client {
         } catch (Exception $e) {
             error_log('ensureLevelIntegrationColumns error: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Ensure visibility columns exist on Clients table for role-based restriction
+     */
+    public function ensureVisibilityColumns(): void {
+        try {
+            $columns = [
+                'is_restricted' => 'BIT NOT NULL CONSTRAINT DF_Clients_IsRestricted DEFAULT(0)',
+                'allowed_role_ids' => 'NVARCHAR(MAX) NULL'
+            ];
+
+            foreach ($columns as $column => $definition) {
+                $exists = $this->db->select(
+                    "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Clients' AND COLUMN_NAME = ?",
+                    [$column]
+                );
+                if (!$exists) {
+                    $this->db->query("ALTER TABLE Clients ADD {$column} {$definition}");
+                }
+            }
+        } catch (Exception $e) {
+            error_log('ensureVisibilityColumns error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Parse comma-delimited role IDs into an int array
+     */
+    private function parseAllowedRoles($value): array {
+        if (empty($value)) {
+            return [];
+        }
+        if (is_array($value)) {
+            return array_filter(array_map('intval', $value));
+        }
+        return array_filter(array_map('intval', explode(',', (string)$value)));
+    }
+
+    /**
+     * Get blocked client IDs for the given role (restricted and not permitted)
+     */
+    public function getBlockedClientIdsForRole(?int $roleId, bool $isAdmin = false): array {
+        if ($isAdmin) {
+            return [];
+        }
+
+        $blocked = [];
+        try {
+            $restrictedRows = $this->db->select("SELECT id, allowed_role_ids FROM Clients WHERE is_restricted = 1");
+            if (!empty($restrictedRows)) {
+                foreach ($restrictedRows as $row) {
+                    $allowed = $this->parseAllowedRoles($row['allowed_role_ids'] ?? '');
+                    // If role is missing or not in allowed list, block it
+                    if (empty($roleId) || !in_array((int)$roleId, $allowed, true)) {
+                        $blocked[] = (int)$row['id'];
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            error_log('getBlockedClientIdsForRole error: ' . $e->getMessage());
+        }
+
+        return $blocked;
+    }
+
+    /**
+     * Return only clients visible for the given role
+     *
+     * @param array $clients rows or objects from Clients table
+     */
+    public function filterClientsForRole(array $clients, ?int $roleId, bool $isAdmin = false): array {
+        if ($isAdmin) {
+            return $clients;
+        }
+
+        $blocked = $this->getBlockedClientIdsForRole($roleId, $isAdmin);
+        if (empty($blocked)) {
+            return $clients;
+        }
+
+        $filtered = [];
+        foreach ($clients as $client) {
+            $id = is_array($client) ? ($client['id'] ?? null) : ($client->id ?? null);
+            $isRestricted = is_array($client) ? ($client['is_restricted'] ?? 0) : ($client->is_restricted ?? 0);
+            if (!$isRestricted) {
+                $filtered[] = $client;
+                continue;
+            }
+            if ($id !== null && !in_array((int)$id, $blocked, true)) {
+                $filtered[] = $client;
+            }
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Check a single client ID against role visibility
+     */
+    public function canAccessClientId(?int $clientId, ?int $roleId, bool $isAdmin = false): bool {
+        if (empty($clientId) || $isAdmin) {
+            return true;
+        }
+        $blocked = $this->getBlockedClientIdsForRole($roleId, $isAdmin);
+        return !in_array((int)$clientId, $blocked, true);
     }
 
     /**
@@ -120,8 +227,8 @@ class Client {
      */
     public function addClient($data) {
         try {
-            $query = "INSERT INTO Clients (name, contact_person, email, phone, address, industry, status, notes, created_at) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
+            $query = "INSERT INTO Clients (name, contact_person, email, phone, address, industry, status, notes, is_restricted, allowed_role_ids, created_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
             
             return $this->db->insert($query, [
                 $data['name'],
@@ -131,7 +238,9 @@ class Client {
                 $data['address'] ?? null,
                 $data['industry'] ?? null,
                 $data['status'] ?? 'Active',
-                $data['notes'] ?? null
+                $data['notes'] ?? null,
+                !empty($data['is_restricted']) ? 1 : 0,
+                !empty($data['allowed_role_ids']) ? $data['allowed_role_ids'] : null
             ]);
         } catch (Exception $e) {
             error_log('Error adding client: ' . $e->getMessage());
@@ -156,6 +265,8 @@ class Client {
                          industry = ?, 
                          status = ?, 
                          notes = ?, 
+                         is_restricted = ?, 
+                         allowed_role_ids = ?, 
                          updated_at = GETDATE() 
                      WHERE id = ?";
             
@@ -168,6 +279,8 @@ class Client {
                 $data['industry'] ?? null,
                 $data['status'] ?? 'Active',
                 $data['notes'] ?? null,
+                !empty($data['is_restricted']) ? 1 : 0,
+                !empty($data['allowed_role_ids']) ? $data['allowed_role_ids'] : null,
                 $data['id']
             ]);
             

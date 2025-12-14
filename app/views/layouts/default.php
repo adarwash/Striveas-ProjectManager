@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?? 'HiveITPortal' ?></title>
     
+    <!-- Dark Mode Detection (must run before any CSS) -->
+    <script>
+        // Detect and apply theme IMMEDIATELY before CSS loads
+        (function() {
+            // Check for saved preference first, then system preference
+            const savedTheme = localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            const theme = savedTheme || systemTheme;
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -15,7 +27,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Application CSS -->
-    <link href="/css/app.css" rel="stylesheet">
+    <link href="/css/app.css?v=<?= time() ?>" rel="stylesheet">
+    
+    <!-- Listen for system theme changes (only if user hasn't set preference) -->
+    <script>
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                // Only update if user hasn't manually set a preference
+                if (!localStorage.getItem('theme')) {
+                    document.documentElement.setAttribute('data-bs-theme', e.matches ? 'dark' : 'light');
+                }
+            });
+        }
+    </script>
     
     <!-- Custom CSS for specific overrides -->
     
@@ -86,6 +110,11 @@
                 }
                 ?>
                 <div class="header-actions">
+                    <!-- Theme Toggle -->
+                    <button class="btn btn-light me-2" type="button" id="themeToggle" title="Toggle Dark/Light Mode">
+                        <i class="bi bi-sun-fill" id="themeIcon"></i>
+                    </button>
+                    
                     <div class="dropdown">
                         <button class="btn btn-light position-relative" type="button" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
                             <i class="bi bi-bell"></i>
@@ -571,6 +600,41 @@
                 }
             }
         });
+        
+        // Theme Toggle Functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        if (themeToggle && themeIcon) {
+            // Set initial icon based on current theme
+            function updateThemeIcon() {
+                const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                if (currentTheme === 'dark') {
+                    themeIcon.classList.remove('bi-sun-fill');
+                    themeIcon.classList.add('bi-moon-fill');
+                } else {
+                    themeIcon.classList.remove('bi-moon-fill');
+                    themeIcon.classList.add('bi-sun-fill');
+                }
+            }
+            
+            updateThemeIcon();
+            
+            // Toggle theme on button click
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                // Update theme
+                document.documentElement.setAttribute('data-bs-theme', newTheme);
+                
+                // Save preference
+                localStorage.setItem('theme', newTheme);
+                
+                // Update icon
+                updateThemeIcon();
+            });
+        }
     </script>
 </body>
 </html> 

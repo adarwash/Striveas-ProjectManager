@@ -165,6 +165,35 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white py-3">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-people text-primary me-2"></i>Prospect Follow-ups
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="prospect_followup_enabled" name="prospect_followup_enabled"
+                                            <?= !empty($data['systemSettings']['prospect_followup_enabled']) ? 'checked' : '' ?>>
+                                        <label class="form-check-label fw-medium" for="prospect_followup_enabled">
+                                            Enable automatic follow-ups for prospect clients
+                                        </label>
+                                        <div class="form-text">Creates reminders on a schedule until the client status changes.</div>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label for="prospect_followup_interval_days" class="form-label fw-medium">Interval</label>
+                                        <div class="input-group">
+                                            <input type="number" min="1" class="form-control" id="prospect_followup_interval_days" name="prospect_followup_interval_days"
+                                                value="<?= htmlspecialchars($data['systemSettings']['prospect_followup_interval_days'] ?? 14) ?>">
+                                            <span class="input-group-text">days</span>
+                                        </div>
+                                        <div class="form-text">Applies to clients with status = Prospect.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         
                         <div class="col-12">
                             <div class="card border-0 shadow-sm">
@@ -186,6 +215,44 @@
                                             <div class="form-text mt-2">
                                                 Preview: <span class="badge bg-light text-dark border" id="date_format_preview">January 1, 2024</span>
                                             </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="display_timezone" class="form-label fw-medium">Display Timezone</label>
+                                            <select class="form-select" id="display_timezone" name="display_timezone">
+                                                <?php
+                                                    $tzCurrent = $data['systemSettings']['display_timezone'] ?? 'America/Los_Angeles';
+                                                    $tzOptions = [
+                                                        'America/Los_Angeles',
+                                                        'America/Toronto',
+                                                        'America/New_York',
+                                                        'America/Chicago',
+                                                        'America/Denver',
+                                                        'Europe/London',
+                                                        'Europe/Paris',
+                                                        'Asia/Dubai',
+                                                        'Asia/Kolkata',
+                                                        'Australia/Sydney',
+                                                        'UTC'
+                                                    ];
+                                                    foreach ($tzOptions as $tzVal):
+                                                ?>
+                                                <option value="<?= $tzVal ?>" <?= $tzCurrent === $tzVal ? 'selected' : '' ?>><?= $tzVal ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <div class="form-text">Controls displayed times; default is America/Los_Angeles.</div>
+                                        </div>
+                                        <div class="col-md-6 mt-3">
+                                            <label for="db_timezone" class="form-label fw-medium">Database Timestamp Timezone</label>
+                                            <select class="form-select" id="db_timezone" name="db_timezone">
+                                                <?php
+                                                    $dbTzCurrent = $data['systemSettings']['db_timezone'] ?? 'America/Toronto';
+                                                    $dbTzOptions = $tzOptions;
+                                                    foreach ($dbTzOptions as $tzVal):
+                                                ?>
+                                                <option value="<?= $tzVal ?>" <?= $dbTzCurrent === $tzVal ? 'selected' : '' ?>><?= $tzVal ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <div class="form-text">Timezone that DB timestamps are stored in (default America/Toronto).</div>
                                         </div>
                                     </div>
                                 </div>
