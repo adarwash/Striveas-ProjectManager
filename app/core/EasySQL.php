@@ -53,16 +53,15 @@ class EasySQL {
                 $tablesWithTriggers = ['Tickets', 'TimeEntries'];
                 
                 if (in_array($tableName, $tablesWithTriggers)) {
-                    // Use traditional SCOPE_IDENTITY approach for tables with triggers
+                    // Use traditional SCOPE_IDENTITY approach for tables with triggers.
+                    // Important: SQL Server triggers can produce result sets; close the cursor
+                    // before issuing the identity query to avoid "active result contains no fields".
                     $insertStmt = $this->executeStatement($statement, $parameters);
-                    
                     if ($insertStmt) {
-                        // Get the last inserted ID using a separate query
-                        $scopeStmt = $this->executeStatement("SELECT SCOPE_IDENTITY() as id");
+                        try { $insertStmt->closeCursor(); } catch (Throwable $e) {}
+                        $scopeStmt = $this->executeStatement("SELECT CAST(SCOPE_IDENTITY() AS INT) as id");
                         $scopeResult = $scopeStmt->fetch();
                         $insertedId = $scopeResult['id'] ?? null;
-                        
-                        // Convert to integer if it's a valid ID
                         return $insertedId ? (int)$insertedId : null;
                     }
                     return null;

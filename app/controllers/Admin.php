@@ -557,7 +557,7 @@ class Admin extends Controller {
      */
     public function emailSettings() {
         if (!hasPermission('admin.system_settings')) {
-            flash('error', 'You do not have permission to access email settings.');
+            flash('error', 'You do not have permission to access ticket email settings.');
             redirect('admin');
         }
         
@@ -582,6 +582,15 @@ class Admin extends Controller {
         $allSettings['graph_connected_at'] = $connectedAt;
         $allSettings['graph_client_id'] = $settingModel->get('graph_client_id', '');
         $allSettings['graph_client_secret'] = $settingModel->get('graph_client_secret', '');
+        $allSettings['graph_support_email'] = $settingModel->get('graph_support_email', '');
+
+        // Cron status (Microsoft 365 mailbox polling)
+        $allSettings['graph_last_cron_started_at'] = $settingModel->get('graph_last_cron_started_at', '');
+        $allSettings['graph_last_cron_finished_at'] = $settingModel->get('graph_last_cron_finished_at', '');
+        $allSettings['graph_last_cron_status'] = $settingModel->get('graph_last_cron_status', '');
+        $allSettings['graph_last_cron_mailbox'] = $settingModel->get('graph_last_cron_mailbox', '');
+        $allSettings['graph_last_cron_processed'] = $settingModel->get('graph_last_cron_processed', '');
+        $allSettings['graph_last_cron_error'] = $settingModel->get('graph_last_cron_error', '');
         
         // Include additional processing settings not returned by getSystemSettings()
         $allSettings['email_folder'] = $settingModel->get('email_folder', 'Inbox');
@@ -591,7 +600,7 @@ class Admin extends Controller {
         $allSettings['allowed_domains'] = $settingModel->get('allowed_domains', '');
 
         $viewData = [
-            'title' => 'Email Settings',
+            'title' => 'Ticket Email Settings',
             'settings' => $allSettings,
             'isConnected' => $isConnected,
             'connectedEmail' => $connectedEmail,
@@ -772,6 +781,80 @@ class Admin extends Controller {
                 'has_client_secret' => !empty($clientSecret)
             ]);
         } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Run Microsoft Graph mailbox poll immediately (manual "Run now")
+     */
+    public function runGraphMailboxPoll() {
+        header('Content-Type: application/json');
+
+        if (!hasPermission('admin.system_settings')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Permission denied']);
+            return;
+        }
+
+        $limit = isset($_POST['limit']) ? (int)$_POST['limit'] : 25;
+        if ($limit <= 0) { $limit = 25; }
+        if ($limit > 100) { $limit = 100; }
+
+        try {
+            $settingModel = $this->model('Setting');
+            $supportEmail = $settingModel->get('graph_support_email') ?: $settingModel->get('graph_connected_email');
+
+            if (empty($supportEmail)) {
+                echo json_encode(['success' => false, 'error' => 'Support mailbox is not configured (graph_support_email)']);
+                return;
+            }
+
+            if (!class_exists('MicrosoftGraphService')) {
+                require_once APPROOT . '/app/services/MicrosoftGraphService.php';
+            }
+
+            // Track run status in settings (same fields as cron script)
+            $settingModel->set('graph_last_cron_started_at', gmdate('c'));
+            $settingModel->set('graph_last_cron_status', 'running');
+            $settingModel->set('graph_last_cron_error', '');
+
+            $graph = new MicrosoftGraphService();
+            $processed = $graph->processEmailsToTickets($supportEmail, true, $limit);
+
+            if ($processed === false) {
+                $settingModel->set('graph_last_cron_finished_at', gmdate('c'));
+                $settingModel->set('graph_last_cron_status', 'error');
+                $settingModel->set('graph_last_cron_error', 'Failed to process emails (see logs)');
+                echo json_encode(['success' => false, 'error' => 'Failed to process emails (see logs)']);
+                return;
+            }
+
+            $settingModel->set('graph_last_cron_finished_at', gmdate('c'));
+            $settingModel->set('graph_last_cron_status', 'ok');
+            $settingModel->set('graph_last_cron_mailbox', $supportEmail);
+            $settingModel->set('graph_last_cron_processed', (string)$processed);
+            $settingModel->set('graph_last_cron_error', '');
+
+            echo json_encode([
+                'success' => true,
+                'processed' => (int)$processed,
+                'mailbox' => $supportEmail,
+                'finished_at' => $settingModel->get('graph_last_cron_finished_at', gmdate('c'))
+            ]);
+        } catch (Throwable $e) {
+            try {
+                $settingModel = $this->model('Setting');
+                $msg = $e->getMessage();
+                if (is_string($msg) && strlen($msg) > 500) {
+                    $msg = substr($msg, 0, 500) . '...';
+                }
+                $settingModel->set('graph_last_cron_finished_at', gmdate('c'));
+                $settingModel->set('graph_last_cron_status', 'error');
+                $settingModel->set('graph_last_cron_error', $msg);
+            } catch (Throwable $ignored) {}
+
+            error_log('runGraphMailboxPoll error: ' . $e->getMessage());
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
     }

@@ -212,6 +212,21 @@
 </style>
 
 <div class="container-fluid px-4">
+    <?php
+        // Normalize full HTML email documents into safe fragments for embedding (customer view)
+        $normalizeEmailHtml = function(string $html): string {
+            $html = (string)$html;
+            if ($html === '') return $html;
+            $html = preg_replace('/<!doctype[^>]*>/i', '', $html);
+            $html = preg_replace('#<\s*head[^>]*>.*?<\s*/\s*head\s*>#is', '', $html);
+            $html = preg_replace('#<\s*/\s*html\s*>#is', '', $html);
+            $html = preg_replace('#<\s*html[^>]*>#is', '', $html);
+            $html = preg_replace('#<\s*/\s*body\s*>#is', '', $html);
+            $html = preg_replace('#<\s*body[^>]*>#is', '', $html);
+            $html = preg_replace('#<\s*meta[^>]*>#is', '', $html);
+            return trim($html);
+        };
+    ?>
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="fade-in-up">
         <ol class="breadcrumb breadcrumb-custom">
@@ -373,7 +388,11 @@
                         
                         <div class="message-content">
                             <?php if ($message['content_format'] === 'html'): ?>
-                                <?= $message['content'] ?>
+                                <?php
+                                    $c = $normalizeEmailHtml((string)($message['content'] ?? ''));
+                                    $looksHtml = preg_match('/<\s*\w+[^>]*>/', $c) === 1;
+                                    echo $looksHtml ? $c : nl2br(htmlspecialchars($c));
+                                ?>
                             <?php else: ?>
                                 <?= nl2br(htmlspecialchars($message['content'])) ?>
                             <?php endif; ?>

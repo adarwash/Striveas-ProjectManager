@@ -32,7 +32,7 @@
                 <i class="bi bi-arrow-left me-2"></i>Back to Admin
             </a>
             <a href="/admin/emailSettings" class="btn btn-info text-white">
-                <i class="bi bi-envelope me-2"></i>Email Settings
+                <i class="bi bi-envelope me-2"></i>Ticket Email Settings
             </a>
         </div>
     </div>
@@ -58,7 +58,7 @@
                             <i class="bi bi-sliders me-2"></i> Defaults
                         </a>
                         <a href="#email" class="list-group-item list-group-item-action" data-bs-toggle="list">
-                            <i class="bi bi-envelope me-2"></i> Email
+                            <i class="bi bi-envelope me-2"></i> Ticket Email
                         </a>
                         <a href="#currency" class="list-group-item list-group-item-action" data-bs-toggle="list">
                             <i class="bi bi-currency-exchange me-2"></i> Currency

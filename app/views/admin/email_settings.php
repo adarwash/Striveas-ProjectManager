@@ -2,8 +2,8 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0">Email Settings</h1>
-            <p class="text-muted">Configure email integration for ticket system</p>
+            <h1 class="h3 mb-0">Ticket Email Settings</h1>
+            <p class="text-muted">Configure the Microsoft 365 support mailbox and ticket email notifications</p>
         </div>
         <div>
             <a href="<?= URLROOT ?>/admin" class="btn btn-outline-secondary">

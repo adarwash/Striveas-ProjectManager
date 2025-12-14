@@ -1403,7 +1403,7 @@ function setupOutlook() {
 }
 
 function clearSettings() {
-    if (confirm('Are you sure you want to clear all email settings?')) {
+    if (confirm('Are you sure you want to clear all ticket email settings?')) {
         // Clear SMTP settings
         document.getElementById('from_email').value = '';
         document.getElementById('from_name').value = '<?= addslashes(SITENAME) ?>';
@@ -1428,7 +1428,7 @@ function clearSettings() {
         document.getElementById('max_attachment_size').value = '10';
         document.getElementById('allowed_file_types').value = 'pdf,doc,docx,txt,png,jpg,jpeg,gif';
         
-        alert('✅ Email settings cleared!');
+        alert('✅ Ticket email settings cleared!');
     }
 }
 

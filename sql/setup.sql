@@ -590,6 +590,35 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
+
+/****** Object:  Table [dbo].[TicketAttachments]    Script Date: 14/12/2025 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TicketAttachments](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[ticket_id] [int] NOT NULL,
+	[ticket_message_id] [int] NULL,
+	[ms_message_id] [nvarchar](500) NULL,
+	[ms_attachment_id] [nvarchar](255) NULL,
+	[content_id] [nvarchar](255) NULL,
+	[filename] [nvarchar](255) NOT NULL,
+	[original_filename] [nvarchar](255) NOT NULL,
+	[file_path] [nvarchar](500) NULL,
+	[file_size] [bigint] NOT NULL,
+	[mime_type] [nvarchar](100) NOT NULL,
+	[is_inline] [bit] NULL,
+	[is_downloaded] [bit] NULL,
+	[download_error] [nvarchar](500) NULL,
+	[created_at] [datetime] NULL,
+	[downloaded_at] [datetime] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
 /****** Object:  View [dbo].[TicketDashboard]    Script Date: 23/09/2025 13:45:15 ******/
 SET ANSI_NULLS ON
 GO
@@ -807,71 +836,6 @@ CREATE TABLE [dbo].[departments](
 PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[EmailAttachments]    Script Date: 23/09/2025 13:45:15 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[EmailAttachments](
-	[id] [int] IDENTITY(1,1) NOT NULL,
-	[email_inbox_id] [int] NOT NULL,
-	[ms_attachment_id] [nvarchar](255) NULL,
-	[content_id] [nvarchar](255) NULL,
-	[filename] [nvarchar](255) NOT NULL,
-	[original_filename] [nvarchar](255) NOT NULL,
-	[file_path] [nvarchar](500) NULL,
-	[file_size] [bigint] NOT NULL,
-	[mime_type] [nvarchar](100) NOT NULL,
-	[file_hash] [nvarchar](64) NULL,
-	[is_inline] [bit] NULL,
-	[is_downloaded] [bit] NULL,
-	[download_error] [nvarchar](500) NULL,
-	[created_at] [datetime] NULL,
-	[downloaded_at] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[EmailInbox]    Script Date: 23/09/2025 13:45:15 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[EmailInbox](
-	[id] [int] IDENTITY(1,1) NOT NULL,
-	[message_id] [nvarchar](500) NOT NULL,
-	[subject] [nvarchar](500) NOT NULL,
-	[from_address] [nvarchar](255) NOT NULL,
-	[to_address] [nvarchar](500) NOT NULL,
-	[cc_address] [nvarchar](500) NULL,
-	[bcc_address] [nvarchar](500) NULL,
-	[reply_to] [nvarchar](255) NULL,
-	[body_text] [nvarchar](max) NULL,
-	[body_html] [nvarchar](max) NULL,
-	[raw_headers] [nvarchar](max) NULL,
-	[processing_status] [nvarchar](50) NULL,
-	[processing_error] [nvarchar](500) NULL,
-	[ticket_id] [int] NULL,
-	[email_date] [datetime] NOT NULL,
-	[received_at] [datetime] NULL,
-	[processed_at] [datetime] NULL,
-	[uid_validity] [int] NULL,
-	[uid] [int] NULL,
-	[flags] [nvarchar](100) NULL,
-	[has_attachments] [bit] NULL,
-	[attachment_count] [int] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
-UNIQUE NONCLUSTERED 
-(
-	[message_id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
@@ -1661,20 +1625,6 @@ ALTER TABLE [dbo].[departments] ADD  DEFAULT (getdate()) FOR [created_at]
 GO
 ALTER TABLE [dbo].[departments] ADD  DEFAULT ('USD') FOR [currency]
 GO
-ALTER TABLE [dbo].[EmailAttachments] ADD  DEFAULT ((0)) FOR [is_inline]
-GO
-ALTER TABLE [dbo].[EmailAttachments] ADD  DEFAULT ((0)) FOR [is_downloaded]
-GO
-ALTER TABLE [dbo].[EmailAttachments] ADD  DEFAULT (getdate()) FOR [created_at]
-GO
-ALTER TABLE [dbo].[EmailInbox] ADD  DEFAULT ('pending') FOR [processing_status]
-GO
-ALTER TABLE [dbo].[EmailInbox] ADD  DEFAULT (getdate()) FOR [received_at]
-GO
-ALTER TABLE [dbo].[EmailInbox] ADD  DEFAULT ((0)) FOR [has_attachments]
-GO
-ALTER TABLE [dbo].[EmailInbox] ADD  DEFAULT ((0)) FOR [attachment_count]
-GO
 ALTER TABLE [dbo].[EmailQueue] ADD  DEFAULT ('pending') FOR [status]
 GO
 ALTER TABLE [dbo].[EmailQueue] ADD  DEFAULT ((5)) FOR [priority]
@@ -1851,6 +1801,12 @@ ALTER TABLE [dbo].[TicketMessages] ADD  DEFAULT ((0)) FOR [is_system_message]
 GO
 ALTER TABLE [dbo].[TicketMessages] ADD  DEFAULT (getdate()) FOR [created_at]
 GO
+ALTER TABLE [dbo].[TicketAttachments] ADD  DEFAULT ((0)) FOR [is_inline]
+GO
+ALTER TABLE [dbo].[TicketAttachments] ADD  DEFAULT ((0)) FOR [is_downloaded]
+GO
+ALTER TABLE [dbo].[TicketAttachments] ADD  DEFAULT (getdate()) FOR [created_at]
+GO
 ALTER TABLE [dbo].[TicketPriorities] ADD  DEFAULT ('#6c757d') FOR [color_code]
 GO
 ALTER TABLE [dbo].[TicketPriorities] ADD  DEFAULT ((3)) FOR [level]
@@ -1980,15 +1936,6 @@ REFERENCES [dbo].[Users] ([id])
 ON DELETE CASCADE
 GO
 ALTER TABLE [dbo].[daily_activities] CHECK CONSTRAINT [fk_daily_activities_user]
-GO
-ALTER TABLE [dbo].[EmailAttachments]  WITH CHECK ADD FOREIGN KEY([email_inbox_id])
-REFERENCES [dbo].[EmailInbox] ([id])
-ON DELETE CASCADE
-GO
-ALTER TABLE [dbo].[EmailInbox]  WITH CHECK ADD  CONSTRAINT [FK_EmailInbox_Ticket] FOREIGN KEY([ticket_id])
-REFERENCES [dbo].[Tickets] ([id])
-GO
-ALTER TABLE [dbo].[EmailInbox] CHECK CONSTRAINT [FK_EmailInbox_Ticket]
 GO
 ALTER TABLE [dbo].[employee_documents]  WITH NOCHECK ADD  CONSTRAINT [FK_employee_documents_uploader] FOREIGN KEY([uploaded_by])
 REFERENCES [dbo].[Users] ([id])
@@ -2242,6 +2189,12 @@ ON DELETE CASCADE
 GO
 ALTER TABLE [dbo].[TicketMessages]  WITH CHECK ADD FOREIGN KEY([user_id])
 REFERENCES [dbo].[Users] ([id])
+GO
+ALTER TABLE [dbo].[TicketAttachments]  WITH CHECK ADD  CONSTRAINT [FK_TicketAttachments_Tickets] FOREIGN KEY([ticket_id])
+REFERENCES [dbo].[Tickets] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[TicketAttachments] CHECK CONSTRAINT [FK_TicketAttachments_Tickets]
 GO
 ALTER TABLE [dbo].[Tickets]  WITH CHECK ADD  CONSTRAINT [FK_Tickets_AssignedTo] FOREIGN KEY([assigned_to])
 REFERENCES [dbo].[Users] ([id])

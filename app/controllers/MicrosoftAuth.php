@@ -95,7 +95,16 @@ class MicrosoftAuth extends Controller
         if (isset($_GET['error'])) {
             $error = $_GET['error'];
             $errorDesc = isset($_GET['error_description']) ? $_GET['error_description'] : 'Unknown error';
-            flash('settings_error', "Microsoft authentication failed: {$errorDesc}", 'alert alert-danger');
+            // Common: user clicked "Cancel" on the consent screen
+            if ($error === 'access_denied' && stripos($errorDesc, 'AADSTS65004') !== false) {
+                flash(
+                    'settings_error',
+                    "Microsoft authentication was cancelled (consent declined). If you're using the background mailbox polling (recommended), you do not need to connect a user account here—just grant Admin Consent in Azure and ensure the cron job is running.",
+                    'alert alert-warning'
+                );
+            } else {
+                flash('settings_error', "Microsoft authentication failed: {$errorDesc}", 'alert alert-danger');
+            }
             redirect('admin/emailSettings');
             return;
         }

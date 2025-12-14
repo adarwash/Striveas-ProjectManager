@@ -9,6 +9,7 @@ require_once APPROOT . '/app/core/EasySQL.php';
 class EmailService {
     private $db;
     private $config;
+    private $lastSendError = null;
     
     public function __construct() {
         $this->db = new EasySQL(DB1);
@@ -23,7 +24,14 @@ class EmailService {
     private function loadEmailConfig() {
         try {
             // Load from Settings table if it exists
-            $query = "SELECT setting_key, setting_value FROM Settings WHERE setting_key LIKE 'email_%' OR setting_key LIKE 'smtp_%' OR setting_key LIKE 'inbound_%' OR setting_key LIKE 'from_%' OR setting_key LIKE 'auto_%' OR setting_key LIKE 'ticket_%'";
+            $query = "SELECT setting_key, setting_value FROM Settings
+                      WHERE setting_key LIKE 'email_%'
+                         OR setting_key LIKE 'smtp_%'
+                         OR setting_key LIKE 'inbound_%'
+                         OR setting_key LIKE 'from_%'
+                         OR setting_key LIKE 'auto_%'
+                         OR setting_key LIKE 'ticket_%'
+                         OR setting_key LIKE 'graph_%'";
             $settings = $this->db->select($query);
             
             $config = [
@@ -81,20 +89,39 @@ class EmailService {
      */
     public function sendEmail($emailData) {
         try {
+            $this->lastSendError = null;
             require_once APPROOT . '/app/services/MicrosoftGraphService.php';
             
             $graphService = new MicrosoftGraphService();
             
-            // Get the connected email address for sending
-            $fromEmail = $this->config['graph_connected_email'] ?? $this->config['from_email'];
+            // Pick the best mailbox to send from:
+            // - Prefer the monitored support mailbox (app-permissions scenario)
+            // - Else fallback to a delegated connected mailbox
+            // - Else fallback to configured from_email
+            $fromEmail = $this->config['graph_support_email']
+                ?? ($this->config['graph_connected_email'] ?? ($this->config['from_email'] ?? null));
+            $replyTo = $emailData['reply_to'] ?? ($this->config['graph_support_email'] ?? null);
+            if (empty($fromEmail)) {
+                throw new Exception('No From email configured for sending (graph_support_email / graph_connected_email / from_email).');
+            }
             
             // Prepare email data for Microsoft Graph
             $to = is_array($emailData['to']) ? $emailData['to'] : [$emailData['to']];
             $cc = isset($emailData['cc']) && is_array($emailData['cc']) ? $emailData['cc'] : [];
             $bcc = isset($emailData['bcc']) && is_array($emailData['bcc']) ? $emailData['bcc'] : [];
             
-            // Use HTML body if available, otherwise use text body
-            $body = $emailData['html_body'] ?? $emailData['body'] ?? $emailData['text_body'] ?? '';
+            // Use HTML body if available, otherwise render text as HTML preserving newlines
+            $rawHtml = $emailData['html_body'] ?? null;
+            $rawText = $emailData['body'] ?? $emailData['text_body'] ?? '';
+            $body = '';
+            $contentFormat = 'text';
+            if (is_string($rawHtml) && trim($rawHtml) !== '') {
+                $body = $rawHtml;
+                $contentFormat = 'html';
+            } else {
+                $body = "<div style=\"white-space:pre-wrap; font-family: Arial, sans-serif;\">" . nl2br(htmlspecialchars((string)$rawText)) . "</div>";
+                $contentFormat = 'html';
+            }
             
             // Custom headers for ticket tracking (will be included in email body for Graph API)
             $customHeaders = '';
@@ -125,6 +152,7 @@ class EmailService {
                 $fullBody,
                 $cc,
                 $bcc
+                ,$replyTo
             );
             
             if ($result) {
@@ -132,16 +160,21 @@ class EmailService {
                 
                 // Log successful send
                 if (!empty($emailData['ticket_id'])) {
-                    $this->logOutboundEmail($emailData, 'graph-' . time());
+                    $this->logOutboundEmail($emailData, 'graph-' . time(), $fromEmail, $to, $fullBody, $contentFormat);
                 }
             }
             
             return $result;
         } catch (Exception $e) {
+            $this->lastSendError = $e->getMessage();
             error_log('EmailService Send Error (Microsoft Graph): ' . $e->getMessage());
             error_log('EmailService Send Error Stack: ' . $e->getTraceAsString());
             return false;
         }
+    }
+
+    public function getLastSendError(): ?string {
+        return $this->lastSendError ? (string)$this->lastSendError : null;
     }
 
     /**
@@ -215,7 +248,11 @@ class EmailService {
                 error_log('EmailService ProcessQueue: Failed to recover recent stuck emails: ' . $e->getMessage());
             }
 
-            $query = "SELECT TOP 10 * FROM EmailQueue 
+            $limit = (int)$limit;
+            if ($limit <= 0) { $limit = 10; }
+            if ($limit > 100) { $limit = 100; }
+
+            $query = "SELECT TOP {$limit} * FROM EmailQueue 
                      WHERE status = 'pending' 
                      AND (send_after IS NULL OR send_after <= GETDATE())
                      AND attempts < max_attempts
@@ -240,12 +277,18 @@ class EmailService {
                 $success = $this->sendEmail($emailData);
                 
                 if ($success) {
+                    // Clear any previous error_message on success
                     $this->updateEmailQueueStatus($email['id'], 'sent', null, date('Y-m-d H:i:s'));
                     $processed++;
                 } else {
                     $attempts = $email['attempts'] + 1;
                     $status = $attempts >= $email['max_attempts'] ? 'failed' : 'pending';
-                    $this->updateEmailQueueStatus($email['id'], $status, 'Failed to send email', null, $attempts);
+                    $err = $this->getLastSendError() ?: 'Failed to send email';
+                    // Keep error_message reasonably small for NVARCHAR(500)
+                    if (is_string($err) && strlen($err) > 450) {
+                        $err = substr($err, 0, 450) . '...';
+                    }
+                    $this->updateEmailQueueStatus($email['id'], $status, $err, null, $attempts);
                 }
             }
             
@@ -271,7 +314,8 @@ class EmailService {
             $setClauses = ['status = :status', 'last_attempt_at = GETDATE()'];
             $params = ['id' => $id, 'status' => $status];
             
-            if ($error !== null) {
+            // Always update error_message when provided, and clear it on successful send
+            if ($error !== null || $status === 'sent') {
                 $setClauses[] = 'error_message = :error_message';
                 $params['error_message'] = $error;
             }
@@ -279,6 +323,8 @@ class EmailService {
             if ($sentAt !== null) {
                 $setClauses[] = 'sent_at = :sent_at';
                 $params['sent_at'] = $sentAt;
+            } elseif ($status === 'sent') {
+                $setClauses[] = 'sent_at = GETDATE()';
             }
             
             if ($attempts !== null) {
@@ -302,17 +348,25 @@ class EmailService {
      */
     public function receiveEmails($limit = 50) {
         try {
-            if (empty($this->config['inbound_host'])) {
-                return 0; // Inbound email not configured
+            // Prefer Microsoft 365 via Graph when configured
+            try {
+                if (!class_exists('Setting')) {
+                    require_once APPROOT . '/app/models/Setting.php';
+                }
+                $settingModel = new Setting();
+                $supportEmail = $settingModel->get('graph_support_email') ?: $settingModel->get('graph_connected_email');
+                if (!empty($supportEmail)) {
+                    require_once APPROOT . '/app/services/MicrosoftGraphService.php';
+                    $graph = new MicrosoftGraphService();
+                    $processed = $graph->processEmailsToTickets($supportEmail, true, (int)$limit);
+                    return (int)($processed ?: 0);
+                }
+            } catch (Exception $e) {
+                error_log('EmailService receiveEmails: Graph path failed: ' . $e->getMessage());
             }
-            
-            $protocol = strtolower($this->config['inbound_protocol'] ?? 'imap');
-            
-            if ($protocol === 'pop3') {
-                return $this->receiveEmailsPOP3($limit);
-            } else {
-                return $this->receiveEmailsIMAP($limit);
-            }
+
+            // Legacy IMAP/POP3 inbox ingestion relied on EmailInbox tables, which have been removed.
+            return 0;
         } catch (Exception $e) {
             error_log('EmailService ReceiveEmails Error: ' . $e->getMessage());
             return 0;
@@ -923,122 +977,58 @@ class EmailService {
      */
     private function storeInboundEmail($emailData) {
         try {
-            // Check if email already exists
-            $existingQuery = "SELECT id FROM EmailInbox WHERE message_id = :message_id";
-            $existing = $this->db->select($existingQuery, ['message_id' => $emailData['message_id']]);
-            
-            if (!empty($existing)) {
-                return false; // Already processed
+            // EmailInbox tables are removed. We ingest directly into Tickets/TicketMessages.
+            if (empty($emailData['message_id'])) {
+                return false;
             }
-            
-            $query = "INSERT INTO EmailInbox (
-                message_id, subject, from_address, to_address, cc_address, bcc_address,
-                reply_to, body_text, body_html, raw_headers, email_date, uid_validity, uid, flags
-            ) VALUES (
-                :message_id, :subject, :from_address, :to_address, :cc_address, :bcc_address,
-                :reply_to, :body_text, :body_html, :raw_headers, :email_date, :uid_validity, :uid, :flags
-            )";
-            
-            $params = [
-                'message_id' => $emailData['message_id'],
-                'subject' => $emailData['subject'],
-                'from_address' => $emailData['from_address'],
-                'to_address' => $emailData['to_address'],
-                'cc_address' => $emailData['cc_address'],
-                'bcc_address' => $emailData['bcc_address'],
-                'reply_to' => $emailData['reply_to'],
-                'body_text' => $emailData['body_text'],
-                'body_html' => $emailData['body_html'],
-                'raw_headers' => json_encode($emailData['headers']),
-                'email_date' => $emailData['email_date'],
-                'uid_validity' => null,
-                'uid' => $emailData['uid'],
-                'flags' => $emailData['flags']
-            ];
-            
-            $emailId = $this->db->insert($query, $params);
-            
-            if ($emailId && $this->config['auto_process_emails']) {
-                $this->processInboundEmail($emailId, $emailData);
-            }
-            
-            return true;
-        } catch (Exception $e) {
-            error_log('EmailService StoreInboundEmail Error: ' . $e->getMessage());
-            return false;
-        }
-    }
 
-    /**
-     * Process inbound email - create or update ticket
-     * 
-     * @param int $emailId Email inbox ID
-     * @param array $emailData Email data
-     * @return bool Success status
-     */
-    private function processInboundEmail($emailId, $emailData) {
-        try {
+            // Dedupe by message id
+            $dup = $this->db->select(
+                "SELECT TOP 1 id FROM TicketMessages WHERE email_message_id = :mid",
+                ['mid' => $emailData['message_id']]
+            );
+            if (!empty($dup)) {
+                return false;
+            }
+
+            if (!class_exists('Ticket')) {
+                require_once APPROOT . '/app/models/Ticket.php';
+            }
             $ticket = new Ticket();
+
             $ticketId = null;
-            
-            // Check if this is a reply to existing ticket
-            if (preg_match($this->config['ticket_email_pattern'], $emailData['subject'], $matches)) {
-                // Extract ticket number and find ticket
-                $ticketNumber = $matches[0];
-                $ticketNumber = trim($ticketNumber, '[]');
+
+            // Try to match existing ticket by ticket number in subject
+            if (!empty($emailData['subject']) && preg_match($this->config['ticket_email_pattern'], $emailData['subject'], $matches)) {
+                $ticketNumber = trim($matches[0], '[]');
                 $existingTicket = $ticket->getByNumber($ticketNumber);
-                
                 if ($existingTicket) {
-                    $ticketId = $existingTicket['id'];
-                    
-                    // Add message to existing ticket
+                    $ticketId = (int)$existingTicket['id'];
                     $ticket->addMessage($ticketId, [
                         'user_id' => $this->getUserByEmail($emailData['from_address']),
                         'message_type' => 'email_inbound',
                         'subject' => $emailData['subject'],
-                        'content' => $emailData['body_text'] ?: $emailData['body_html'],
-                        'content_format' => $emailData['body_html'] ? 'html' : 'text',
+                        'content' => $emailData['body_html'] ?: $emailData['body_text'],
+                        'content_format' => !empty($emailData['body_html']) ? 'html' : 'text',
                         'email_message_id' => $emailData['message_id'],
                         'email_from' => $emailData['from_address'],
                         'email_to' => $emailData['to_address'],
                         'email_cc' => $emailData['cc_address'],
-                        'email_headers' => json_encode($emailData['headers']),
-                        'is_public' => 1
+                        'email_headers' => json_encode($emailData['headers'] ?? []),
+                        'is_public' => 1,
+                        'created_at' => $emailData['email_date'] ?? null,
+                        'suppress_ticket_touch' => true
                     ]);
                 }
             }
-            
-            // Create new ticket if no existing ticket found
+
             if (!$ticketId) {
                 $ticketId = $ticket->createFromEmail($emailData);
             }
-            
-            if ($ticketId) {
-                // Update email inbox record with ticket ID
-                $this->db->execute(
-                    "UPDATE EmailInbox SET ticket_id = :ticket_id, processing_status = 'processed', processed_at = GETDATE() WHERE id = :id",
-                    ['ticket_id' => $ticketId, 'id' => $emailId]
-                );
-                
-                return true;
-            } else {
-                // Mark as error
-                $this->db->execute(
-                    "UPDATE EmailInbox SET processing_status = 'error', processing_error = 'Failed to create ticket' WHERE id = :id",
-                    ['id' => $emailId]
-                );
-                
-                return false;
-            }
+
+            return !empty($ticketId);
         } catch (Exception $e) {
-            error_log('EmailService ProcessInboundEmail Error: ' . $e->getMessage());
-            
-            // Mark as error
-            $this->db->execute(
-                "UPDATE EmailInbox SET processing_status = 'error', processing_error = :error WHERE id = :id",
-                ['error' => $e->getMessage(), 'id' => $emailId]
-            );
-            
+            error_log('EmailService StoreInboundEmail Error: ' . $e->getMessage());
             return false;
         }
     }
@@ -1050,7 +1040,7 @@ class EmailService {
      * @param string $messageId Message ID from mail server
      * @return bool Success status
      */
-    private function logOutboundEmail($emailData, $messageId) {
+    private function logOutboundEmail($emailData, $messageId, $fromEmail, $toRecipients, $sentBodyHtml, $contentFormat = 'html') {
         try {
             if (!empty($emailData['ticket_id'])) {
                 $ticket = new Ticket();
@@ -1058,11 +1048,11 @@ class EmailService {
                     'user_id' => $_SESSION['user_id'] ?? null,
                     'message_type' => 'email_outbound',
                     'subject' => $emailData['subject'],
-                    'content' => $emailData['body'] ?? $emailData['html_body'],
-                    'content_format' => !empty($emailData['html_body']) ? 'html' : 'text',
+                    'content' => (string)$sentBodyHtml,
+                    'content_format' => ($contentFormat === 'html') ? 'html' : 'text',
                     'email_message_id' => $messageId,
-                    'email_from' => $this->config['from_email'],
-                    'email_to' => is_array($emailData['to']) ? implode(',', $emailData['to']) : $emailData['to'],
+                    'email_from' => $fromEmail,
+                    'email_to' => is_array($toRecipients) ? implode(',', $toRecipients) : (string)$toRecipients,
                     'email_cc' => !empty($emailData['cc']) ? (is_array($emailData['cc']) ? implode(',', $emailData['cc']) : $emailData['cc']) : null,
                     'is_public' => 1
                 ]);
@@ -1210,13 +1200,54 @@ class EmailService {
     }
     
     private function renderTicketUpdatedTemplate($data) {
+        $updateHtml = !empty($data['update_message_html'])
+            ? $data['update_message_html']
+            : nl2br(htmlspecialchars($data['update_message']));
+
+        $portalLink = '';
+        if (function_exists('isCustomerAuthEnabled') && isCustomerAuthEnabled()) {
+            $portalLink = "<p><strong>Customer Portal:</strong> <a href='" . URLROOT . "/customer/auth'>Sign in with Microsoft 365</a> to view and track your tickets online.</p>";
+        }
+
         return "
-        <h2>Ticket Updated</h2>
-        <p><strong>Ticket:</strong> {$data['ticket_number']}</p>
-        <p><strong>Subject:</strong> {$data['subject']}</p>
-        <p><strong>Update:</strong></p>
-        <div>" . nl2br(htmlspecialchars($data['update_message'])) . "</div>
-        <p><a href='" . URLROOT . "/tickets/view/{$data['ticket_id']}'>View Ticket</a></p>
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+            <h2 style='color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;'>
+                Ticket Update
+            </h2>
+
+            <p>Hello " . htmlspecialchars($data['recipient_name'] ?? 'Valued Customer') . ",</p>
+
+            <p>We have posted an update on your support request.</p>
+
+            <div style='background: #f8f9fa; padding: 15px; border-left: 4px solid #3498db; margin: 20px 0;'>
+                <p><strong>Ticket Number:</strong> {$data['ticket_number']}</p>
+                <p><strong>Subject:</strong> " . htmlspecialchars($data['subject']) . "</p>
+                <p><strong>Updated:</strong> " . date('F j, Y \a\t g:i A') . "</p>
+            </div>
+
+            <p><strong>Update:</strong></p>
+            <div style='background: #ffffff; border: 1px solid #eee; padding: 15px; border-radius: 6px;'>
+                {$updateHtml}
+            </div>
+
+            <p style='margin-top: 18px;'>
+                <a href='" . URLROOT . "/tickets/view/{$data['ticket_id']}' style='display:inline-block; background:#3498db; color:#fff; padding:10px 16px; border-radius:6px; text-decoration:none;'>
+                    View Ticket
+                </a>
+            </p>
+
+            <p><strong>Need to add more information?</strong><br>
+            Simply reply to this email and your message will be added to the ticket.</p>
+
+            " . $portalLink . "
+
+            <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666;'>
+                <p><strong>Important:</strong> Please do not remove the ticket number [" . htmlspecialchars($data['ticket_number']) . "] from the subject line when replying to ensure your response is properly linked to this ticket.</p>
+
+                <p>Best regards,<br>
+                " . htmlspecialchars(SITENAME ?? 'Support Team') . " Support Team</p>
+            </div>
+        </div>
         ";
     }
     

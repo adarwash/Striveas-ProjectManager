@@ -1,0 +1,884 @@
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+graph_support_email is not configured
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1960 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Request for access to Meraki Technologies IT CRM received","description":"\r\n\r\n\r\nAccess request received.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Azure Active Directory is now Microsoft Entra ID. Learn More.Meraki Technologies IT CRM access request receivedYour request has been received. Details of your request are below.Requested app:Meraki Technologies IT CRMStatus:submittedRequest date:Sunday, 14 December 2025Expiry date:Tuesday, 13 January 2026Privacy StatementMicrosoft Corporation, One Microsoft Way, Redmond, WA 98052Facilitated by","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"MSSecurity-noreply@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOMn8odP29ZCsiRzJwAjiJc=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVeAAAA","created_at":"2025-12-14 18:08:52","updated_at":"2025-12-14 18:08:52"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Get the latest Microsoft 365 apps","description":"\r\n\r\n\r\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Get Started with Microsoft 365 &nbsp;       &nbsp;Your admin has given you access to Microsoft 365, which includes apps like Word, Excel, PowerPoint, and Outlook. You'll also get 1 TB of free cloud storage on OneDrive, so you can share, collaborate, and view the latest file changes from any device.&nbsp;To get started, download the Microsoft 365 apps to your desktop. &nbsp;Download Microsoft 365 &nbsp;Microsoft respects your privacy. Review our online Privacy Statement &nbsp;Microsoft CorporationOne Microsoft WayRedmond, WA 98052 USA &nbsp;&nbsp; ","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"m365communication@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAP3dNMbC5vFBjaErkxi0Q5E=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVRAAAA","created_at":"2025-12-14 17:17:20","updated_at":"2025-12-14 17:17:20"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Request for access to Meraki Technologies IT CRM received","description":"\r\n\r\n\r\nAccess request received.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Azure Active Directory is now Microsoft Entra ID. Learn More.Meraki Technologies IT CRM access request receivedYour request has been received. Details of your request are below.Requested app:Meraki Technologies IT CRMStatus:submittedRequest date:Sunday, 14 December 2025Expiry date:Tuesday, 13 January 2026Privacy StatementMicrosoft Corporation, One Microsoft Way, Redmond, WA 98052Facilitated by","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"MSSecurity-noreply@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOMn8odP29ZCsiRzJwAjiJc=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVeAAAA","created_at":"2025-12-14 18:08:52","updated_at":"2025-12-14 18:08:52"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Get the latest Microsoft 365 apps","description":"\r\n\r\n\r\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Get Started with Microsoft 365 &nbsp;       &nbsp;Your admin has given you access to Microsoft 365, which includes apps like Word, Excel, PowerPoint, and Outlook. You'll also get 1 TB of free cloud storage on OneDrive, so you can share, collaborate, and view the latest file changes from any device.&nbsp;To get started, download the Microsoft 365 apps to your desktop. &nbsp;Download Microsoft 365 &nbsp;Microsoft respects your privacy. Review our online Privacy Statement &nbsp;Microsoft CorporationOne Microsoft WayRedmond, WA 98052 USA &nbsp;&nbsp; ","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"m365communication@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAP3dNMbC5vFBjaErkxi0Q5E=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVRAAAA","created_at":"2025-12-14 17:17:20","updated_at":"2025-12-14 17:17:20"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Request for access to Meraki Technologies IT CRM received","description":"\r\n\r\n\r\nAccess request received.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Azure Active Directory is now Microsoft Entra ID. Learn More.Meraki Technologies IT CRM access request receivedYour request has been received. Details of your request are below.Requested app:Meraki Technologies IT CRMStatus:submittedRequest date:Sunday, 14 December 2025Expiry date:Tuesday, 13 January 2026Privacy StatementMicrosoft Corporation, One Microsoft Way, Redmond, WA 98052Facilitated by","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"MSSecurity-noreply@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOMn8odP29ZCsiRzJwAjiJc=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVeAAAA","created_at":"2025-12-14 18:08:52","updated_at":"2025-12-14 18:08:52"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Get the latest Microsoft 365 apps","description":"\r\n\r\n\r\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Get Started with Microsoft 365 &nbsp;       &nbsp;Your admin has given you access to Microsoft 365, which includes apps like Word, Excel, PowerPoint, and Outlook. You'll also get 1 TB of free cloud storage on OneDrive, so you can share, collaborate, and view the latest file changes from any device.&nbsp;To get started, download the Microsoft 365 apps to your desktop. &nbsp;Download Microsoft 365 &nbsp;Microsoft respects your privacy. Review our online Privacy Statement &nbsp;Microsoft CorporationOne Microsoft WayRedmond, WA 98052 USA &nbsp;&nbsp; ","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"m365communication@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAP3dNMbC5vFBjaErkxi0Q5E=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVRAAAA","created_at":"2025-12-14 17:17:20","updated_at":"2025-12-14 17:17:20"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Request for access to Meraki Technologies IT CRM received","description":"\r\n\r\n\r\nAccess request received.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Azure Active Directory is now Microsoft Entra ID. Learn More.Meraki Technologies IT CRM access request receivedYour request has been received. Details of your request are below.Requested app:Meraki Technologies IT CRMStatus:submittedRequest date:Sunday, 14 December 2025Expiry date:Tuesday, 13 January 2026Privacy StatementMicrosoft Corporation, One Microsoft Way, Redmond, WA 98052Facilitated by","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"MSSecurity-noreply@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOMn8odP29ZCsiRzJwAjiJc=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVeAAAA","created_at":"2025-12-14 18:08:52","updated_at":"2025-12-14 18:08:52"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Get the latest Microsoft 365 apps","description":"\r\n\r\n\r\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Get Started with Microsoft 365 &nbsp;       &nbsp;Your admin has given you access to Microsoft 365, which includes apps like Word, Excel, PowerPoint, and Outlook. You'll also get 1 TB of free cloud storage on OneDrive, so you can share, collaborate, and view the latest file changes from any device.&nbsp;To get started, download the Microsoft 365 apps to your desktop. &nbsp;Download Microsoft 365 &nbsp;Microsoft respects your privacy. Review our online Privacy Statement &nbsp;Microsoft CorporationOne Microsoft WayRedmond, WA 98052 USA &nbsp;&nbsp; ","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"m365communication@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAP3dNMbC5vFBjaErkxi0Q5E=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVRAAAA","created_at":"2025-12-14 17:17:20","updated_at":"2025-12-14 17:17:20"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Request for access to Meraki Technologies IT CRM received","description":"\r\n\r\n\r\nAccess request received.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Azure Active Directory is now Microsoft Entra ID. Learn More.Meraki Technologies IT CRM access request receivedYour request has been received. Details of your request are below.Requested app:Meraki Technologies IT CRMStatus:submittedRequest date:Sunday, 14 December 2025Expiry date:Tuesday, 13 January 2026Privacy StatementMicrosoft Corporation, One Microsoft Way, Redmond, WA 98052Facilitated by","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"MSSecurity-noreply@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOMn8odP29ZCsiRzJwAjiJc=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVeAAAA","created_at":"2025-12-14 18:08:52","updated_at":"2025-12-14 18:08:52"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Get the latest Microsoft 365 apps","description":"\r\n\r\n\r\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Get Started with Microsoft 365 &nbsp;       &nbsp;Your admin has given you access to Microsoft 365, which includes apps like Word, Excel, PowerPoint, and Outlook. You'll also get 1 TB of free cloud storage on OneDrive, so you can share, collaborate, and view the latest file changes from any device.&nbsp;To get started, download the Microsoft 365 apps to your desktop. &nbsp;Download Microsoft 365 &nbsp;Microsoft respects your privacy. Review our online Privacy Statement &nbsp;Microsoft CorporationOne Microsoft WayRedmond, WA 98052 USA &nbsp;&nbsp; ","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"m365communication@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAP3dNMbC5vFBjaErkxi0Q5E=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVRAAAA","created_at":"2025-12-14 17:17:20","updated_at":"2025-12-14 17:17:20"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Request for access to Meraki Technologies IT CRM received","description":"\r\n\r\n\r\nAccess request received.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Azure Active Directory is now Microsoft Entra ID. Learn More.Meraki Technologies IT CRM access request receivedYour request has been received. Details of your request are below.Requested app:Meraki Technologies IT CRMStatus:submittedRequest date:Sunday, 14 December 2025Expiry date:Tuesday, 13 January 2026Privacy StatementMicrosoft Corporation, One Microsoft Way, Redmond, WA 98052Facilitated by","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"MSSecurity-noreply@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOMn8odP29ZCsiRzJwAjiJc=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVeAAAA","created_at":"2025-12-14 18:08:52","updated_at":"2025-12-14 18:08:52"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Get the latest Microsoft 365 apps","description":"\r\n\r\n\r\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Get Started with Microsoft 365 &nbsp;       &nbsp;Your admin has given you access to Microsoft 365, which includes apps like Word, Excel, PowerPoint, and Outlook. You'll also get 1 TB of free cloud storage on OneDrive, so you can share, collaborate, and view the latest file changes from any device.&nbsp;To get started, download the Microsoft 365 apps to your desktop. &nbsp;Download Microsoft 365 &nbsp;Microsoft respects your privacy. Review our online Privacy Statement &nbsp;Microsoft CorporationOne Microsoft WayRedmond, WA 98052 USA &nbsp;&nbsp; ","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"m365communication@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAP3dNMbC5vFBjaErkxi0Q5E=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVRAAAA","created_at":"2025-12-14 17:17:20","updated_at":"2025-12-14 17:17:20"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Request for access to Meraki Technologies IT CRM received","description":"\r\n\r\n\r\nAccess request received.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Azure Active Directory is now Microsoft Entra ID. Learn More.Meraki Technologies IT CRM access request receivedYour request has been received. Details of your request are below.Requested app:Meraki Technologies IT CRMStatus:submittedRequest date:Sunday, 14 December 2025Expiry date:Tuesday, 13 January 2026Privacy StatementMicrosoft Corporation, One Microsoft Way, Redmond, WA 98052Facilitated by","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"MSSecurity-noreply@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOMn8odP29ZCsiRzJwAjiJc=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVeAAAA","created_at":"2025-12-14 18:08:52","updated_at":"2025-12-14 18:08:52"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Get the latest Microsoft 365 apps","description":"\r\n\r\n\r\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Get Started with Microsoft 365 &nbsp;       &nbsp;Your admin has given you access to Microsoft 365, which includes apps like Word, Excel, PowerPoint, and Outlook. You'll also get 1 TB of free cloud storage on OneDrive, so you can share, collaborate, and view the latest file changes from any device.&nbsp;To get started, download the Microsoft 365 apps to your desktop. &nbsp;Download Microsoft 365 &nbsp;Microsoft respects your privacy. Review our online Privacy Statement &nbsp;Microsoft CorporationOne Microsoft WayRedmond, WA 98052 USA &nbsp;&nbsp; ","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"m365communication@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAP3dNMbC5vFBjaErkxi0Q5E=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVRAAAA","created_at":"2025-12-14 17:17:20","updated_at":"2025-12-14 17:17:20"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Request for access to Meraki Technologies IT CRM received","description":"\r\n\r\n\r\nAccess request received.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Azure Active Directory is now Microsoft Entra ID. Learn More.Meraki Technologies IT CRM access request receivedYour request has been received. Details of your request are below.Requested app:Meraki Technologies IT CRMStatus:submittedRequest date:Sunday, 14 December 2025Expiry date:Tuesday, 13 January 2026Privacy StatementMicrosoft Corporation, One Microsoft Way, Redmond, WA 98052Facilitated by","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"MSSecurity-noreply@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOMn8odP29ZCsiRzJwAjiJc=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVeAAAA","created_at":"2025-12-14 18:08:52","updated_at":"2025-12-14 18:08:52"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Get the latest Microsoft 365 apps","description":"\r\n\r\n\r\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Get Started with Microsoft 365 &nbsp;       &nbsp;Your admin has given you access to Microsoft 365, which includes apps like Word, Excel, PowerPoint, and Outlook. You'll also get 1 TB of free cloud storage on OneDrive, so you can share, collaborate, and view the latest file changes from any device.&nbsp;To get started, download the Microsoft 365 apps to your desktop. &nbsp;Download Microsoft 365 &nbsp;Microsoft respects your privacy. Review our online Privacy Statement &nbsp;Microsoft CorporationOne Microsoft WayRedmond, WA 98052 USA &nbsp;&nbsp; ","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"m365communication@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAP3dNMbC5vFBjaErkxi0Q5E=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVRAAAA","created_at":"2025-12-14 17:17:20","updated_at":"2025-12-14 17:17:20"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+ensureDefaultTicketLookups: TicketStatuses seed failed: Potentially harmful SQL detected: #
+ensureDefaultTicketLookups: TicketPriorities seed failed: Potentially harmful SQL detected: #
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Request for access to Meraki Technologies IT CRM received","description":"\r\n\r\n\r\nAccess request received.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Azure Active Directory is now Microsoft Entra ID. Learn More.Meraki Technologies IT CRM access request receivedYour request has been received. Details of your request are below.Requested app:Meraki Technologies IT CRMStatus:submittedRequest date:Sunday, 14 December 2025Expiry date:Tuesday, 13 January 2026Privacy StatementMicrosoft Corporation, One Microsoft Way, Redmond, WA 98052Facilitated by","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"MSSecurity-noreply@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOMn8odP29ZCsiRzJwAjiJc=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVeAAAA","created_at":"2025-12-14 18:08:52","updated_at":"2025-12-14 18:08:52"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000001","subject":"Get the latest Microsoft 365 apps","description":"\r\n\r\n\r\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;Get Started with Microsoft 365 &nbsp;       &nbsp;Your admin has given you access to Microsoft 365, which includes apps like Word, Excel, PowerPoint, and Outlook. You'll also get 1 TB of free cloud storage on OneDrive, so you can share, collaborate, and view the latest file changes from any device.&nbsp;To get started, download the Microsoft 365 apps to your desktop. &nbsp;Download Microsoft 365 &nbsp;Microsoft respects your privacy. Review our online Privacy Statement &nbsp;Microsoft CorporationOne Microsoft WayRedmond, WA 98052 USA &nbsp;&nbsp; ","status_id":1,"priority_id":3,"category_id":null,"created_by":1,"assigned_to":null,"client_id":null,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"m365communication@microsoft.com","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAP3dNMbC5vFBjaErkxi0Q5E=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVRAAAA","created_at":"2025-12-14 17:17:20","updated_at":"2025-12-14 17:17:20"}
+SQL Error (sqlsrv): [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Ticket Create Error: SQL Execution Failed: [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Tickets_Priority". The conflict occurred in database "ProjectTracker", table "dbo.TicketPriorities", column 'id'.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+Processed 2 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1960 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: Outlook not working 
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000003","subject":"Outlook not working ","description":"\r\nHi there,I have updated outlook and now it now opening correctly.Kind Regards,Ali DarwashAli&nbsp;Darwash\u200b\u200b\u200b\u200bHead&nbsp;of&nbsp;ITTel:&nbsp;0330&nbsp;320&nbsp;3331Email:&nbsp;ali@merakitechnologies.co.uk&nbsp;","status_id":1,"priority_id":3,"category_id":null,"created_by":"2","assigned_to":null,"client_id":1004,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"ali@merakitechnologies.co.uk","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQANkS7LPDnQNArfVg_kRNE9g=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVfAAAA","created_at":"2025-12-14 19:07:26","updated_at":"2025-12-14 19:07:26"}
+Ticket Create Error: Insert Error: SQLSTATE[IMSSP]: The active result for the query contains no fields.
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: Outlook not working 
+Processed 1 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1960 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: VPN is down
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000004","subject":"VPN is down","description":"\r\nHi there ,The vpn has been down since yesterday night.Could this please be looked into as soon as possible.Kind&nbsp;regards,Ali&nbsp;Ali&nbsp;Darwash\u200b\u200b\u200b\u200bHead&nbsp;of&nbsp;ITTel:&nbsp;0330&nbsp;320&nbsp;3331Email:&nbsp;ali@merakitechnologies.co.uk&nbsp;","status_id":1,"priority_id":3,"category_id":null,"created_by":"2","assigned_to":null,"client_id":1004,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"ali@merakitechnologies.co.uk","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAOVgjhuxsLtBmhhLciTPOME=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVhAAAA","created_at":"2025-12-14 19:25:56","updated_at":"2025-12-14 19:25:56"}
+TICKET: SQL insert returned: 28
+PHP Warning:  Undefined array key "cc_address" in /var/www/ProjectTracker/app/models/Ticket.php on line 768
+sendAutoAcknowledgmentEmail called for ticket 28, email ali@merakitechnologies.co.uk
+Auto acknowledge setting: enabled
+Auto-acknowledgment queued successfully (Queue ID: 13) for ticket TKT-2025-000004 to ali@merakitechnologies.co.uk
+EmailService: Email sent successfully via Microsoft Graph. To: ali@merakitechnologies.co.uk
+Auto-acknowledgment sent immediately for ticket TKT-2025-000004
+Processed 1 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1960 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1955 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: Server update
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000005","subject":"Server update","description":"\r\nHi IT,Can the server please be updated to least version as there seem to be a lag when using file share.&nbsp;Kind regards,Ali&nbsp;\u2002\u2002\u2002Ali&nbsp;Darwash\u200b\u200b\u200b\u200bHead&nbsp;of&nbsp;ITTel:&nbsp;0330&nbsp;320&nbsp;3331Email:&nbsp;ali@merakitechnologies.co.uk&nbsp;","status_id":1,"priority_id":3,"category_id":null,"created_by":"2","assigned_to":null,"client_id":1004,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"ali@merakitechnologies.co.uk","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAGI2kjD3jI9LgOGmeloj-n8=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVmAAAA","created_at":"2025-12-14 20:04:56","updated_at":"2025-12-14 20:04:56"}
+TICKET: SQL insert returned: 29
+PHP Warning:  Undefined array key "cc_address" in /var/www/ProjectTracker/app/models/Ticket.php on line 773
+sendAutoAcknowledgmentEmail called for ticket 29, email ali@merakitechnologies.co.uk
+Auto acknowledge setting: enabled
+Auto-acknowledgment queued successfully (Queue ID: 16) for ticket TKT-2025-000005 to ali@merakitechnologies.co.uk
+EmailService: Email sent successfully via Microsoft Graph. To: ali@merakitechnologies.co.uk
+Auto-acknowledgment sent immediately for ticket TKT-2025-000005
+Processed 1 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1955 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: Internet is slow 
+TICKET: About to execute SQL insert with params: {"ticket_number":"TKT-2025-000006","subject":"Internet is slow ","description":"\r\nHi there,The internet is slow cloud this please be looked into.Kind regards,AlAli&nbsp;Darwash\u200b\u200b\u200b\u200bHead&nbsp;of&nbsp;ITTel:&nbsp;0330&nbsp;320&nbsp;3331Email:&nbsp;ali@merakitechnologies.co.uk&nbsp;","status_id":1,"priority_id":3,"category_id":null,"created_by":"2","assigned_to":null,"client_id":1004,"source":"email","tags":null,"project_id":null,"task_id":null,"due_date":null,"inbound_email_address":"ali@merakitechnologies.co.uk","email_thread_id":"AAQkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwAQAPPLjVJsN3pPvphfyxxJ7Qk=","original_message_id":"AQMkADZlZmQ0MTU4LTA0MTYtNDc0OC1hMmRmLTNhMWY5MjkyYzIxNwBGAAADWrNVzgs21Ua5c_fjrCaIawcAfD2aNHXlykewT7O6_mUj2AAAAgEMAAAAfD2aNHXlykewT7O6_mUj2AAAAgVnAAAA","created_at":"2025-12-14 12:29:56","updated_at":"2025-12-14 12:29:56"}
+TICKET: SQL insert returned: 30
+PHP Warning:  Undefined array key "cc_address" in /var/www/ProjectTracker/app/models/Ticket.php on line 779
+sendAutoAcknowledgmentEmail called for ticket 30, email ali@merakitechnologies.co.uk
+Auto acknowledge setting: enabled
+Auto-acknowledgment queued successfully (Queue ID: 17) for ticket TKT-2025-000006 to ali@merakitechnologies.co.uk
+EmailService: Email sent successfully via Microsoft Graph. To: ali@merakitechnologies.co.uk
+Auto-acknowledgment sent immediately for ticket TKT-2025-000006
+Processed 1 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: Re: [TKT-2025-000006] Thank you - Your support request has been received
+Processed 1 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1955 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1960 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: Re: [TKT-2025-000006] Thank you - Your support request has been received
+Processed 1 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: Re: [TKT-2025-000006] Thank you - Your support request has been received
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1960 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: Re: [TKT-2025-000006] Thank you - Your support request has been received
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 1 emails
+processEmailsToTickets: Processing email: Re: [TKT-2025-000006] Thank you - Your support request has been received
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1955 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments
+processEmailsToTickets: Retrieved 21 emails
+processEmailsToTickets: Processing email: [TKT-2025-000008] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: [TKT-2025-000007] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: Re: [TKT-2025-000006] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: Re: [TKT-2025-000006] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: Re: [TKT-2025-000006] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: Re: [TKT-2025-000006] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: [TKT-2025-000006] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: Internet is slow 
+processEmailsToTickets: Processing email: [TKT-2025-000005] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: Server update
+processEmailsToTickets: Processing email: [TKT-2025-000004] Ticket Updated: VPN is down
+processEmailsToTickets: Processing email: [TKT-2025-000004] Ticket Updated: VPN is down
+processEmailsToTickets: Processing email: [TKT-2025-000004] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: VPN is down
+processEmailsToTickets: Processing email: [TKT-2025-000003] Ticket Updated: Outlook not working 
+processEmailsToTickets: Processing email: [TEST] ProjectTracker outbound test
+processEmailsToTickets: Processing email: VPN is down
+processEmailsToTickets: Processing email: VPN is down
+processEmailsToTickets: Processing email: Outlook not working 
+processEmailsToTickets: Processing email: Request for access to Meraki Technologies IT CRM received
+processEmailsToTickets: Processing email: Get the latest Microsoft 365 apps
+Processed 4 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 2 emails
+processEmailsToTickets: Processing email: [TKT-2025-000007] Thank you - Your support request has been received
+processEmailsToTickets: Processing email: [TKT-2025-000008] Thank you - Your support request has been received
+Processed 2 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk

@@ -200,6 +200,19 @@
             </div>
         </div>
         <div class="card-body p-0">
+            <?php
+                $displayTz = $data['display_timezone'] ?? date_default_timezone_get();
+                $dbTz = $data['db_timezone'] ?? $displayTz;
+                $toDisplay = function($dtStr) use ($dbTz, $displayTz) {
+                    try {
+                        $dt = new DateTime($dtStr, new DateTimeZone($dbTz));
+                        $dt->setTimezone(new DateTimeZone($displayTz));
+                        return $dt;
+                    } catch (Exception $e) {
+                        return null;
+                    }
+                };
+            ?>
             <?php if (empty($data['tickets'])): ?>
                 <div class="text-center py-5">
                     <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
@@ -265,14 +278,16 @@
                                     </td>
                                     <td>
                                         <small class="text-muted">
-                                            <?= date('M j, Y', strtotime($ticket['created_at'])) ?><br>
-                                            <span class="text-xs"><?= date('g:i A', strtotime($ticket['created_at'])) ?></span>
+                                            <?php $cdt = $toDisplay($ticket['created_at']); ?>
+                                            <?= $cdt ? $cdt->format('M j, Y') : date('M j, Y', strtotime($ticket['created_at'])) ?><br>
+                                            <span class="text-xs"><?= $cdt ? $cdt->format('g:i A') : date('g:i A', strtotime($ticket['created_at'])) ?></span>
                                         </small>
                                     </td>
                                     <td>
                                         <small class="text-muted">
-                                            <?= date('M j, Y', strtotime($ticket['updated_at'])) ?><br>
-                                            <span class="text-xs"><?= date('g:i A', strtotime($ticket['updated_at'])) ?></span>
+                                            <?php $udt = $toDisplay($ticket['updated_at']); ?>
+                                            <?= $udt ? $udt->format('M j, Y') : date('M j, Y', strtotime($ticket['updated_at'])) ?><br>
+                                            <span class="text-xs"><?= $udt ? $udt->format('g:i A') : date('g:i A', strtotime($ticket['updated_at'])) ?></span>
                                         </small>
                                     </td>
                                     <td>

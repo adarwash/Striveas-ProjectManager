@@ -1,8 +1,8 @@
 <div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h2 mb-1">Email Integration Settings</h1>
-            <p class="text-muted">Configure Microsoft 365 email integration for automatic ticket creation</p>
+            <h1 class="h2 mb-1">Ticket Email Settings</h1>
+            <p class="text-muted">Configure the Microsoft 365 support mailbox → automatic ticket creation</p>
         </div>
         <div>
             <a href="<?= URLROOT ?>/admin/settings" class="btn btn-outline-primary">
@@ -84,10 +84,10 @@
                     <div class="mb-4">
                         <i class="bi bi-envelope-plus display-1 text-muted"></i>
                     </div>
-                    <h5 class="mb-3">Connect Your Microsoft 365 Account</h5>
+                    <h5 class="mb-3">Mailbox Polling (Recommended)</h5>
                     <p class="text-muted mb-4">
-                        Click the button below to securely connect your Microsoft 365 account.<br>
-                        You'll be redirected to Microsoft to grant permissions.
+                        This system pulls email into tickets via a background job using Microsoft Graph <strong>Application permissions</strong>.<br>
+                        You do <strong>not</strong> need to sign in a user here—configure the App Registration, grant admin consent, and keep the cron job running.
                     </p>
                     
                     <!-- App Registration Check -->
@@ -97,19 +97,98 @@
                             <strong>Setup Required:</strong> Please configure your Microsoft App registration first.
                         </div>
                     <?php endif; ?>
-                    
-                    <a href="<?= URLROOT ?>/microsoftAuth/connect" 
-                       class="btn btn-primary btn-lg <?= empty($data['settings']['graph_client_id']) || empty($data['settings']['graph_client_secret']) ? 'disabled' : '' ?>">
-                        <i class="bi bi-microsoft me-2"></i>Connect with Microsoft
-                    </a>
-                    
-                    <div class="mt-4">
-                        <small class="text-muted">
-                            <i class="bi bi-shield-check me-1"></i>
-                            Secure OAuth2 authentication - we never store your password
-                        </small>
+
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type="button"
+                                class="btn btn-outline-success btn-lg <?= empty($data['settings']['graph_client_id']) || empty($data['settings']['graph_client_secret']) ? 'disabled' : '' ?>"
+                                onclick="testConnection()">
+                            <i class="bi bi-wifi me-2"></i>Test Configuration
+                        </button>
+                        <button class="btn btn-outline-secondary btn-lg" type="button" data-bs-toggle="collapse" data-bs-target="#delegatedConnect" aria-expanded="false">
+                            <i class="bi bi-person-badge me-2"></i>Advanced: Delegated Login
+                        </button>
+                    </div>
+
+                    <div class="collapse mt-4" id="delegatedConnect">
+                        <div class="alert alert-light border text-start mb-3">
+                            <strong>Delegated login is optional.</strong>
+                            Use this only if you want to connect a specific Microsoft 365 user account for delegated permissions.
+                            For background polling, keep using Application permissions + admin consent.
+                        </div>
+                        <a href="<?= URLROOT ?>/microsoftAuth/connect"
+                           class="btn btn-primary <?= empty($data['settings']['graph_client_id']) || empty($data['settings']['graph_client_secret']) ? 'disabled' : '' ?>">
+                            <i class="bi bi-microsoft me-2"></i>Connect with Microsoft (Delegated)
+                        </a>
                     </div>
                 </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Mailbox Polling (Cron) Status -->
+    <?php
+        $cronStartedAt = isset($data['settings']['graph_last_cron_started_at']) ? $data['settings']['graph_last_cron_started_at'] : '';
+        $cronFinishedAt = isset($data['settings']['graph_last_cron_finished_at']) ? $data['settings']['graph_last_cron_finished_at'] : '';
+        $cronStatus = isset($data['settings']['graph_last_cron_status']) ? $data['settings']['graph_last_cron_status'] : '';
+        $cronMailbox = isset($data['settings']['graph_last_cron_mailbox']) ? $data['settings']['graph_last_cron_mailbox'] : '';
+        $cronProcessed = isset($data['settings']['graph_last_cron_processed']) ? $data['settings']['graph_last_cron_processed'] : '';
+        $cronError = isset($data['settings']['graph_last_cron_error']) ? $data['settings']['graph_last_cron_error'] : '';
+        $when = !empty($cronFinishedAt) ? $cronFinishedAt : $cronStartedAt;
+        $whenTs = $when ? strtotime($when) : false;
+        $whenLabel = $whenTs ? date('M d, Y \a\t g:i A', $whenTs) : ($when ? htmlspecialchars($when) : 'Never');
+
+        $statusText = $cronStatus ?: 'unknown';
+        $badgeClass = 'bg-secondary';
+        if ($statusText === 'ok') { $badgeClass = 'bg-success'; }
+        elseif ($statusText === 'running') { $badgeClass = 'bg-warning text-dark'; }
+        elseif ($statusText === 'error') { $badgeClass = 'bg-danger'; }
+    ?>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex align-items-center">
+                <span class="bg-secondary bg-opacity-10 p-2 rounded-circle me-3">
+                    <i class="bi bi-clock-history fs-4 text-secondary"></i>
+                </span>
+                <div>
+                    <h5 class="mb-0">Mailbox Polling (Cron) Status</h5>
+                    <small class="text-muted">Shows when the background mailbox poller last ran</small>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-end mb-3 gap-2 flex-wrap">
+                <button type="button"
+                        id="runMailboxNowBtn"
+                        class="btn btn-outline-primary"
+                        onclick="runMailboxNow()">
+                    <i class="bi bi-play-circle me-2"></i>Run now
+                </button>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="small text-muted mb-1">Last run</div>
+                    <div class="fw-semibold"><?= $whenLabel ?></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="small text-muted mb-1">Status</div>
+                    <span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($statusText) ?></span>
+                </div>
+                <div class="col-md-4">
+                    <div class="small text-muted mb-1">Processed</div>
+                    <div class="fw-semibold"><?= $cronProcessed !== '' ? htmlspecialchars($cronProcessed) : '-' ?></div>
+                </div>
+            </div>
+            <?php if (!empty($cronMailbox) || !empty($cronError)): ?>
+                <hr>
+                <?php if (!empty($cronMailbox)): ?>
+                    <div class="small text-muted mb-1">Mailbox</div>
+                    <div class="mb-3"><?= htmlspecialchars($cronMailbox) ?></div>
+                <?php endif; ?>
+                <?php if (!empty($cronError)): ?>
+                    <div class="alert alert-danger mb-0">
+                        <strong>Last error:</strong> <?= htmlspecialchars($cronError) ?>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>
@@ -137,7 +216,7 @@
             <!-- Setup Instructions (Collapsible) -->
             <div class="collapse mb-4" id="setupInstructions">
                 <div class="alert alert-info">
-                    <h6 class="alert-heading">Quick Setup Guide:</h6>
+                    <h6 class="alert-heading">Quick Setup Guide (Microsoft 365 → Tickets):</h6>
                     <ol class="mb-0">
                         <li>Go to <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank">Azure AD App Registrations</a></li>
                         <li>Click "New registration"</li>
@@ -147,14 +226,16 @@
                         <li>After creation, copy the Application (client) ID</li>
                         <li>Go to "Certificates & secrets" → "New client secret"</li>
                         <li>Copy the secret value immediately (it won't be shown again)</li>
-                        <li>Go to "API permissions" → Add permissions for:
+                        <li>Go to "API permissions" → Add Microsoft Graph <strong>Application permissions</strong>:
                             <ul>
-                                <li>Mail.Read, Mail.Send, Mail.ReadWrite</li>
-                                <li>User.Read</li>
-                                <li>offline_access</li>
+                                <li><code>Mail.Read</code> (required)</li>
+                                <li><code>Mail.Send</code> (optional – only if you want the app to send mail via Graph)</li>
+                                <li><code>Mail.ReadWrite</code> (optional – only if you want move/delete; reading + marking read can work without it depending on policy)</li>
                             </ul>
                         </li>
-                        <li>Click "Grant admin consent" if you're an admin</li>
+                        <li>Click <strong>Grant admin consent</strong></li>
+                        <li>In ProjectTracker admin → Ticket Email Settings, set <code>graph_support_email</code> to the mailbox to monitor</li>
+                        <li>Ensure the cron job is running (default: every 2 minutes)</li>
                     </ol>
                 </div>
             </div>
@@ -182,6 +263,18 @@
                                    placeholder="common (for multi-tenant) or your tenant ID">
                             <div class="form-text">Leave as "common" for multi-tenant, or enter your tenant ID</div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="graph_support_email" class="form-label">
+                        Support Mailbox to Monitor <span class="text-danger">*</span>
+                    </label>
+                    <input type="email" class="form-control" id="graph_support_email" name="graph_support_email"
+                           value="<?= htmlspecialchars(isset($data['settings']['graph_support_email']) ? $data['settings']['graph_support_email'] : '') ?>"
+                           placeholder="support@yourdomain.com" required>
+                    <div class="form-text">
+                        This is the mailbox the cron job polls to create/update tickets (recommended: a shared mailbox like <code>support@…</code>).
                     </div>
                 </div>
 
@@ -377,6 +470,41 @@ function testConnection() {
         button.disabled = false;
         button.innerHTML = originalHTML;
         showAlert('danger', 'Test failed: ' + error.message);
+    });
+}
+
+function runMailboxNow() {
+    const btn = document.getElementById('runMailboxNowBtn');
+    if (!btn) return;
+
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Running...';
+
+    const formData = new FormData();
+    formData.append('limit', '25');
+
+    fetch('<?= URLROOT ?>/admin/runGraphMailboxPoll', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+
+        if (data.success) {
+            showAlert('success', `Mailbox poll completed. Processed ${data.processed} message(s).`);
+            // Reload the page so the status card updates
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            showAlert('danger', 'Mailbox poll failed: ' + (data.error || data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+        showAlert('danger', 'Mailbox poll failed: ' + error.message);
     });
 }
 

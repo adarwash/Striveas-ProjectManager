@@ -37,9 +37,4 @@ $router->addRoute('/tickets/addMessage/:id', 'Tickets@addMessage');
 $router->addRoute('/tickets/addMessage', 'Tickets@addMessage');
 $router->addRoute('/tickets/updateStatus', 'Tickets@updateStatus');
 
-// Email Inbox routes
-$router->addRoute('/email/inbox', 'EmailInbox@index');
-$router->addRoute('/email/view/:id', 'EmailInbox@show');
-$router->addRoute('/email/delete', 'EmailInbox@delete');
-
  

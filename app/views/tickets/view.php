@@ -1,4 +1,84 @@
 <div class="container-fluid">
+    <?php
+        $displayTz = $data['display_timezone'] ?? date_default_timezone_get();
+        $dbTz = $data['db_timezone'] ?? $displayTz;
+        $toDisplay = function($dtStr) use ($dbTz, $displayTz) {
+            try {
+                $dt = new DateTime($dtStr, new DateTimeZone($dbTz));
+                $dt->setTimezone(new DateTimeZone($displayTz));
+                return $dt;
+            } catch (Exception $e) {
+                return null;
+            }
+        };
+
+        // Rewrite cid: inline images in stored email HTML to local attachment URLs
+        $rewriteCidImages = function(string $html, ?string $messageId) use ($data) {
+            $html = (string)$html;
+            if ($html === '' || empty($messageId) || empty($data['attachments']) || !is_array($data['attachments'])) {
+                return $html;
+            }
+
+            $cidMap = [];
+            foreach ($data['attachments'] as $att) {
+                if (empty($att['is_inline']) || (int)$att['is_inline'] !== 1) { continue; }
+                if (empty($att['ms_message_id']) || (string)$att['ms_message_id'] !== (string)$messageId) { continue; }
+                if (empty($att['content_id']) || empty($att['file_path'])) { continue; }
+
+                $cid = strtolower(trim((string)$att['content_id'], "<> \t\r\n"));
+                if ($cid === '') { continue; }
+
+                $url = URLROOT . '/' . ltrim((string)$att['file_path'], '/');
+                $cidMap[$cid] = $url;
+            }
+            if (empty($cidMap)) {
+                return $html;
+            }
+
+            // Replace src="cid:..." / src='cid:...' / src=cid:...
+            $html = preg_replace_callback(
+                '/src\\s*=\\s*(?:([\"\\\'])cid:([^\"\\\']+)\\1|cid:([^\\s>]+))/i',
+                function($m) use ($cidMap) {
+                    $cid = $m[2] ?? ($m[3] ?? '');
+                    $cid = strtolower(trim((string)$cid, "<> \t\r\n"));
+                    if ($cid !== '' && isset($cidMap[$cid])) {
+                        $url = htmlspecialchars($cidMap[$cid], ENT_QUOTES);
+                        // Preserve quotes if present
+                        if (!empty($m[1])) {
+                            $q = $m[1];
+                            return 'src=' . $q . $url . $q;
+                        }
+                        return 'src="' . $url . '"';
+                    }
+                    return $m[0];
+                },
+                $html
+            );
+
+            return $html;
+        };
+
+        // Normalize full HTML email documents into safe fragments for embedding
+        $normalizeEmailHtml = function(string $html): string {
+            $html = (string)$html;
+            if ($html === '') return $html;
+
+            // Drop doctype
+            $html = preg_replace('/<!doctype[^>]*>/i', '', $html);
+            // Remove <head> completely (contains meta/style/title)
+            $html = preg_replace('#<\s*head[^>]*>.*?<\s*/\s*head\s*>#is', '', $html);
+            // Remove outer html/body wrappers
+            $html = preg_replace('#<\s*/\s*html\s*>#is', '', $html);
+            $html = preg_replace('#<\s*html[^>]*>#is', '', $html);
+            $html = preg_replace('#<\s*/\s*body\s*>#is', '', $html);
+            $html = preg_replace('#<\s*body[^>]*>#is', '', $html);
+
+            // Remove stray meta tags (sometimes outside head)
+            $html = preg_replace('#<\s*meta[^>]*>#is', '', $html);
+
+            return trim($html);
+        };
+    ?>
     <!-- Modern Page Header -->
     <div class="page-header">
         <div>
@@ -71,17 +151,6 @@
                                 </a></li>
                                 <?php endif; ?>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="<?= URLROOT ?>/tickets/refresh/<?= $data['ticket']['id'] ?>">
-                                    <i class="bi bi-arrow-clockwise me-2"></i>Reload from System
-                                </a></li>
-                                <li><a class="dropdown-item" href="<?= URLROOT ?>/tickets/refresh/<?= $data['ticket']['id'] ?>?force=1">
-                                    <i class="bi bi-arrow-repeat me-2"></i>Force Reload (Fix Images)
-                                </a></li>
-                                <li><a class="dropdown-item" href="<?= URLROOT ?>/tickets/refresh/<?= $data['ticket']['id'] ?>?download=1" 
-                                       onclick="return confirm('Download all pending attachments for this ticket?')">
-                                    <i class="bi bi-download me-2"></i>Download All Attachments
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="#" onclick="window.print()">
                                     <i class="bi bi-printer me-2"></i>Print
                                 </a></li>
@@ -146,12 +215,16 @@
                             <dl class="row">
                                 <dt class="col-sm-4">Created:</dt>
                                 <dd class="col-sm-8">
-                                    <?= date('M j, Y g:i A', strtotime($data['ticket']['created_at'])) ?>
+                                    <?php $cdt = $toDisplay($data['ticket']['created_at']); ?>
+                                    <?= $cdt ? $cdt->format('M j, Y g:i A') : date('M j, Y g:i A', strtotime($data['ticket']['created_at'])) ?>
                                     <small class="text-muted">(<?= $data['ticket']['age_hours'] ?> hours ago)</small>
                                 </dd>
                                 
                                 <dt class="col-sm-4">Last updated:</dt>
-                                <dd class="col-sm-8"><?= date('M j, Y g:i A', strtotime($data['ticket']['updated_at'])) ?></dd>
+                                <dd class="col-sm-8">
+                                    <?php $udt = $toDisplay($data['ticket']['updated_at']); ?>
+                                    <?= $udt ? $udt->format('M j, Y g:i A') : date('M j, Y g:i A', strtotime($data['ticket']['updated_at'])) ?>
+                                </dd>
                                 
                                 <dt class="col-sm-4">Due date:</dt>
                                 <dd class="col-sm-8">
@@ -227,7 +300,8 @@
                                                         <?php endif; ?>
                                                     </h6>
                                                     <small class="text-muted">
-                                                        <?= date('M j, Y g:i A', strtotime($message['created_at'])) ?>
+                                                        <?php $mdt = $toDisplay($message['created_at']); ?>
+                                                        <?= $mdt ? $mdt->format('M j, Y g:i A') : date('M j, Y g:i A', strtotime($message['created_at'])) ?>
                                                         
                                                         <?php if (($message['message_type'] ?? 'comment') !== 'comment'): ?>
                                                             <span class="badge bg-info ms-2">
@@ -252,26 +326,49 @@
                                                 <?php if (($message['content_format'] ?? 'text') === 'html'): ?>
                                                     <div class="html-content">
                                                         <?php
-                                                            // Replace cid inline images with a route that serves them by CID via EmailInbox controller
-                                                            $contentHtml = $message['content'];
-                                                            $contentHtml = preg_replace_callback('/src\s*=\s*(\"|\')cid:([^\"\']+)(\1)/i', function($m) use ($data, $message) {
-                                                                $q = $m[1];
-                                                                $cid = trim($m[2], '<>');
-                                                                $emailId = $message['email_inbox_id'] ?? ($data['ticket']['email_inbox_id'] ?? null);
-                                                                // If not directly linked, fall back to generic route without email id (will 1x1 pixel)
-                                                                if ($emailId) {
-                                                                    $url = URLROOT . '/emailinbox/inline/' . $emailId . '/' . rawurlencode($cid);
-                                                                    return 'src=' . $q . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . $q;
-                                                                }
-                                                                return $m[0];
-                                                            }, $contentHtml);
-                                                            echo $contentHtml;
+                                                            // Render stored HTML for email content, but fallback if it's actually plain text
+                                                            $c = (string)($message['content'] ?? '');
+                                                            if (in_array($message['message_type'] ?? '', ['email_inbound', 'email_outbound'], true)) {
+                                                                $c = $normalizeEmailHtml($c);
+                                                                $c = $rewriteCidImages($c, $message['email_message_id'] ?? null);
+                                                            }
+                                                            $looksHtml = preg_match('/<\s*\w+[^>]*>/', $c) === 1;
+                                                            echo $looksHtml ? $c : nl2br(htmlspecialchars($c));
                                                         ?>
                                                     </div>
                                                 <?php else: ?>
                                                     <?= nl2br(htmlspecialchars($message['content'])) ?>
                                                 <?php endif; ?>
                                             </div>
+
+                                            <?php
+                                                $hasFull = !empty($message['content_full']) && is_string($message['content_full']) && trim($message['content_full']) !== '';
+                                                $isEmailMsg = in_array($message['message_type'] ?? '', ['email_inbound', 'email_outbound'], true);
+                                            ?>
+                                            <?php if ($isEmailMsg && $hasFull): ?>
+                                                <?php $collapseId = 'fullEmail_' . (int)$message['id']; ?>
+                                                <div class="mt-2">
+                                                    <button class="btn btn-sm btn-outline-secondary"
+                                                            type="button"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#<?= $collapseId ?>"
+                                                            aria-expanded="false"
+                                                            aria-controls="<?= $collapseId ?>">
+                                                        Show full email thread
+                                                    </button>
+                                                </div>
+                                                <div class="collapse mt-2" id="<?= $collapseId ?>">
+                                                    <div class="card card-body bg-light">
+                                                        <?php
+                                                            $full = (string)$message['content_full'];
+                                                            $full = $normalizeEmailHtml($full);
+                                                            $full = $rewriteCidImages($full, $message['email_message_id'] ?? null);
+                                                            $looksHtmlFull = preg_match('/<\s*\w+[^>]*>/', $full) === 1;
+                                                            echo $looksHtmlFull ? $full : nl2br(htmlspecialchars($full));
+                                                        ?>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
                                             
                                             <?php if (in_array($message['message_type'], ['email_inbound', 'email_outbound'])): ?>
                                                 <div class="mt-2">
@@ -305,8 +402,10 @@
                     <form method="POST" action="<?= URLROOT ?>/tickets/addMessage/<?= $data['ticket']['id'] ?>">
                         <div class="mb-3">
                             <label for="message" class="form-label">Add Reply</label>
-                            <textarea class="form-control" id="message" name="message" rows="4" 
-                                      placeholder="Type your message here..." required></textarea>
+                            <!-- Rich text editor (Quill) -->
+                            <div id="replyEditor" style="height: 180px;"></div>
+                            <textarea class="d-none" id="message" name="message"></textarea>
+                            <input type="hidden" name="content_format" value="html">
                         </div>
                         <div class="row">
                             <div class="col-md-6">
@@ -343,19 +442,24 @@
 
         <!-- Sidebar -->
         <div class="col-lg-4">
-            <!-- Attachments -->
-            <?php if (!empty($data['attachments'])): ?>
+            <!-- Attachments (non-inline / downloadable) -->
+            <?php
+                $downloadableAttachments = array_filter($data['attachments'] ?? [], function($a) {
+                    return empty($a['is_inline']) || (int)$a['is_inline'] !== 1;
+                });
+            ?>
+            <?php if (!empty($downloadableAttachments)): ?>
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white">
                     <h6 class="card-title mb-0">
                         <i class="bi bi-paperclip me-2"></i>Attachments
-                        <span class="badge bg-secondary ms-2"><?= count($data['attachments']) ?></span>
+                        <span class="badge bg-secondary ms-2"><?= count($downloadableAttachments) ?></span>
                     </h6>
                 </div>
 
                 <div class="card-body">
                     <ul class="list-group list-group-flush">
-                        <?php foreach ($data['attachments'] as $att): ?>
+                        <?php foreach ($downloadableAttachments as $att): ?>
                             <li class="list-group-item d-flex align-items-center justify-content-between px-0">
                                 <div class="me-2 d-flex align-items-center">
                                     <?php
@@ -374,7 +478,7 @@
                                             <?= htmlspecialchars($name) ?>
                                         </div>
                                         <small class="text-muted">
-                                            <?= !empty($att['file_size']) ? number_format($att['file_size']/1024, 1) . ' KB' : '' ?>
+                                            <?= !empty($att['file_size']) ? number_format(((int)$att['file_size'])/1024, 1) . ' KB' : '' ?>
                                         </small>
                                     </div>
                                 </div>
@@ -391,6 +495,7 @@
                 </div>
             </div>
             <?php endif; ?>
+
             <!-- Quick Actions -->
             <?php if ($data['can_edit']): ?>
             <div class="card border-0 shadow-sm mb-4">
@@ -617,6 +722,48 @@
         </div>
     </div>
 </div>
+
+<!-- Quill (basic rich text editor) -->
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<script>
+(() => {
+    const editorEl = document.getElementById('replyEditor');
+    const textarea = document.getElementById('message');
+    if (!editorEl || !textarea) return;
+
+    const quill = new Quill('#replyEditor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                [{'header': [1, 2, 3, false]}],
+                [{'list': 'ordered'}, {'list': 'bullet'}],
+                ['blockquote', 'code-block'],
+                ['link'],
+                ['clean']
+            ]
+        }
+    });
+
+    const form = textarea.closest('form');
+    if (!form) return;
+
+    form.addEventListener('submit', (e) => {
+        const html = quill.root.innerHTML || '';
+        const text = (quill.getText() || '').trim();
+
+        // If editor is visually empty, block submit with a clear message
+        if (!text) {
+            e.preventDefault();
+            alert('Message content is required.');
+            return;
+        }
+
+        textarea.value = html;
+    });
+})();
+</script>
 
 <!-- Assignment Modal -->
 <?php if ($data['can_assign']): ?>

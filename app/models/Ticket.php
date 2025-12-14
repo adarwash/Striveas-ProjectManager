@@ -6,9 +6,139 @@
  */
 class Ticket {
     private $db;
+    private static $lookupsEnsured = false;
     
     public function __construct() {
         $this->db = new EasySQL(DB1);
+    }
+
+    /**
+     * Ensure default TicketStatuses/TicketPriorities exist (idempotent).
+     * Some installs run schema without seeding lookup tables, which breaks ticket creation via FK constraints.
+     */
+    private function ensureDefaultTicketLookups(): void {
+        if (self::$lookupsEnsured) {
+            return;
+        }
+        self::$lookupsEnsured = true;
+
+        // TicketStatuses
+        try {
+            $r = $this->db->select("SELECT COUNT(*) AS c FROM TicketStatuses");
+            $count = isset($r[0]['c']) ? (int)$r[0]['c'] : 0;
+            if ($count <= 0) {
+                $this->db->insert(
+                    "INSERT INTO TicketStatuses (name, display_name, color_code, is_closed, sort_order, is_active, created_at)
+                     VALUES
+                        ('new', 'New', CHAR(35) + '007bff', 0, 1, 1, GETDATE()),
+                        ('open', 'Open', CHAR(35) + '28a745', 0, 2, 1, GETDATE()),
+                        ('in_progress', 'In Progress', CHAR(35) + 'ffc107', 0, 3, 1, GETDATE()),
+                        ('pending', 'Pending', CHAR(35) + '6f42c1', 0, 4, 1, GETDATE()),
+                        ('resolved', 'Resolved', CHAR(35) + '17a2b8', 1, 5, 1, GETDATE()),
+                        ('closed', 'Closed', CHAR(35) + '6c757d', 1, 6, 1, GETDATE())"
+                );
+            }
+        } catch (Exception $e) {
+            // non-fatal
+            error_log('ensureDefaultTicketLookups: TicketStatuses seed failed: ' . $e->getMessage());
+        }
+
+        // TicketPriorities
+        try {
+            $r = $this->db->select("SELECT COUNT(*) AS c FROM TicketPriorities");
+            $count = isset($r[0]['c']) ? (int)$r[0]['c'] : 0;
+            if ($count <= 0) {
+                $this->db->insert(
+                    "INSERT INTO TicketPriorities (name, display_name, color_code, level, sort_order, is_active, created_at, response_time_hours, resolution_time_hours)
+                     VALUES
+                        ('low', 'Low Priority', CHAR(35) + '6c757d', 1, 1, 1, GETDATE(), 48, 168),
+                        ('normal', 'Normal Priority', CHAR(35) + '007bff', 2, 2, 1, GETDATE(), 24, 72),
+                        ('medium', 'Medium Priority', CHAR(35) + 'ffc107', 3, 3, 1, GETDATE(), 12, 48),
+                        ('high', 'High Priority', CHAR(35) + 'fd7e14', 4, 4, 1, GETDATE(), 4, 24),
+                        ('critical', 'Critical Priority', CHAR(35) + 'dc3545', 5, 5, 1, GETDATE(), 1, 8)"
+                );
+            }
+        } catch (Exception $e) {
+            // non-fatal
+            error_log('ensureDefaultTicketLookups: TicketPriorities seed failed: ' . $e->getMessage());
+        }
+    }
+
+    private function getDefaultStatusId(): int {
+        $this->ensureDefaultTicketLookups();
+        try {
+            $r = $this->db->select(
+                "SELECT TOP 1 id FROM TicketStatuses WHERE name = :n OR display_name = :d ORDER BY sort_order ASC, id ASC",
+                ['n' => 'new', 'd' => 'New']
+            );
+            if (!empty($r[0]['id'])) {
+                return (int)$r[0]['id'];
+            }
+        } catch (Exception $e) {
+            // ignore
+        }
+        return 1;
+    }
+
+    private function normalizePriorityName(string $priority): string {
+        $p = strtolower(trim($priority));
+        $p = str_replace([' ', '-'], '_', $p);
+        // Map common UI values
+        $map = [
+            'low' => 'low',
+            'low_priority' => 'low',
+            'normal' => 'normal',
+            'normal_priority' => 'normal',
+            'medium' => 'medium',
+            'medium_priority' => 'medium',
+            'high' => 'high',
+            'high_priority' => 'high',
+            'critical' => 'critical',
+            'critical_priority' => 'critical',
+        ];
+        return $map[$p] ?? $p;
+    }
+
+    private function getDefaultPriorityId(): int {
+        $this->ensureDefaultTicketLookups();
+
+        $desired = 'medium';
+        try {
+            if (!class_exists('Setting')) {
+                require_once APPROOT . '/app/models/Setting.php';
+            }
+            $settingModel = new Setting();
+            $ui = (string)$settingModel->get('default_priority', 'Medium');
+            $desired = $this->normalizePriorityName($ui);
+        } catch (Exception $e) {
+            $desired = 'medium';
+        }
+
+        try {
+            $r = $this->db->select(
+                "SELECT TOP 1 id FROM TicketPriorities WHERE name = :n ORDER BY sort_order ASC, id ASC",
+                ['n' => $desired]
+            );
+            if (!empty($r[0]['id'])) {
+                return (int)$r[0]['id'];
+            }
+        } catch (Exception $e) {
+            // ignore
+        }
+
+        // Fallback to first active priority
+        try {
+            $r = $this->db->select(
+                "SELECT TOP 1 id FROM TicketPriorities WHERE is_active = 1 ORDER BY sort_order ASC, id ASC"
+            );
+            if (!empty($r[0]['id'])) {
+                return (int)$r[0]['id'];
+            }
+        } catch (Exception $e) {
+            // ignore
+        }
+
+        return 3;
     }
 
     /**
@@ -19,6 +149,8 @@ class Ticket {
      */
     public function create($data) {
         try {
+            $this->ensureDefaultTicketLookups();
+
             // Generate ticket number
             $ticketNumber = $this->generateTicketNumber();
             
@@ -40,8 +172,8 @@ class Ticket {
                 'ticket_number' => $ticketNumber,
                 'subject' => $data['subject'],
                 'description' => $data['description'] ?? null,
-                'status_id' => $data['status_id'] ?? 1, // Default to 'new'
-                'priority_id' => $data['priority_id'] ?? 3, // Default to 'normal'
+                'status_id' => $data['status_id'] ?? $this->getDefaultStatusId(), // Default to 'new'
+                'priority_id' => $data['priority_id'] ?? $this->getDefaultPriorityId(), // Default from settings
                 'category_id' => $data['category_id'] ?? null,
                 'created_by' => $data['created_by'],
                 'assigned_to' => $data['assigned_to'] ?? null,
@@ -72,10 +204,28 @@ class Ticket {
             
             error_log("TICKET: About to execute SQL insert with params: " . json_encode($params));
             $ticketId = $this->db->insert($query, $params);
+            // Fallback: some SQL Server trigger setups (e.g. INSTEAD OF triggers) can prevent reliable identity retrieval.
+            // In that case, look up the ticket id by the unique ticket number we just generated.
+            if (empty($ticketId) && !empty($ticketNumber)) {
+                try {
+                    $row = $this->db->select(
+                        "SELECT TOP 1 id FROM Tickets WHERE ticket_number = :tn ORDER BY id DESC",
+                        ['tn' => $ticketNumber]
+                    );
+                    if (!empty($row[0]['id'])) {
+                        $ticketId = (int)$row[0]['id'];
+                    }
+                } catch (Exception $e) {
+                    // ignore; handled below
+                }
+            }
             error_log("TICKET: SQL insert returned: " . ($ticketId ?: 'false'));
             
             // Add initial message if description provided
-            if ($ticketId && !empty($data['description'])) {
+            $source = strtolower((string)($data['source'] ?? 'web'));
+            $suppressInitial = !empty($data['suppress_initial_message']);
+            // For email-created tickets we add a dedicated email_inbound message elsewhere
+            if ($ticketId && !empty($data['description']) && !$suppressInitial && $source !== 'email') {
                 $this->addMessage($ticketId, [
                     'user_id' => $data['created_by'],
                     'content' => $data['description'],
@@ -147,15 +297,12 @@ class Ticket {
 
     /**
      * Permanently delete a ticket and related records
-     * Note: EmailInbox rows keep the email history; we null their ticket link first
      *
      * @param int $id Ticket ID
      * @return bool Success
      */
     public function delete($id) {
         try {
-            // Unlink emails from this ticket to satisfy FK without cascade
-            $this->db->update("UPDATE EmailInbox SET ticket_id = NULL WHERE ticket_id = :id", ['id' => $id]);
             // Remove queued outbound emails tied to this ticket (no cascade)
             $this->db->remove("DELETE FROM EmailQueue WHERE ticket_id = :id", ['id' => $id]);
             // TicketMessages, TicketAttachments, TicketAssignments are set with ON DELETE CASCADE
@@ -233,7 +380,11 @@ class Ticket {
             }
             
             if (!empty($filters['assigned_to'])) {
-                $whereClause .= " AND assigned_to = :assigned_to";
+                if (!empty($filters['include_unassigned'])) {
+                    $whereClause .= " AND (assigned_to = :assigned_to OR assigned_to IS NULL)";
+                } else {
+                    $whereClause .= " AND assigned_to = :assigned_to";
+                }
                 $params['assigned_to'] = $filters['assigned_to'];
             } elseif (!empty($filters['assigned_is_null'])) {
                 $whereClause .= " AND assigned_to IS NULL";
@@ -361,6 +512,18 @@ class Ticket {
                 'is_public' => $data['is_public'] ?? 1,
                 'is_system_message' => $data['is_system_message'] ?? 0
             ];
+
+            // Optional: store full email chain separately (for toggle in UI)
+            if (array_key_exists('content_full', $data)) {
+                $columns[] = 'content_full';
+                $placeholders[] = ':content_full';
+                $params['content_full'] = $data['content_full'];
+            }
+            if (array_key_exists('content_full_format', $data)) {
+                $columns[] = 'content_full_format';
+                $placeholders[] = ':content_full_format';
+                $params['content_full_format'] = $data['content_full_format'];
+            }
             if (!empty($data['created_at'])) {
                 $columns[] = 'created_at';
                 $placeholders[] = ':created_at';
@@ -421,7 +584,7 @@ class Ticket {
                       FROM TicketMessages tm
                       LEFT JOIN Users u ON tm.user_id = u.id
                       $whereClause
-                      ORDER BY tm.created_at ASC";
+                      ORDER BY tm.created_at DESC, tm.id DESC";
             
             return $this->db->select($query, $params);
         } catch (Exception $e) {
@@ -563,19 +726,29 @@ class Ticket {
      */
     public function createFromEmail($emailData) {
         try {
+            $this->ensureDefaultTicketLookups();
+
             // Extract or find user by email
             $userId = $this->getUserByEmail($emailData['from_address']);
             $emailDate = $emailData['email_date'] ?? null;
+            
+            // Prefer Graph conversation/thread id when available
+            $threadId = $emailData['conversation_id'] ?? ($emailData['conversationId'] ?? null);
+            if (empty($threadId)) {
+                $threadId = $emailData['message_id'];
+            }
             
             $ticketData = [
                 'subject' => $emailData['subject'],
                 'description' => $emailData['body_text'] ?: $emailData['body_html'],
                 'created_by' => $userId ?: 1, // Default to system user if not found
                 'source' => 'email',
-                'status_id' => 1, // New ticket
-                'priority_id' => 3, // Normal priority
+                // Prevent Ticket::create() from adding a duplicate "comment" message
+                'suppress_initial_message' => true,
+                'status_id' => $this->getDefaultStatusId(),
+                'priority_id' => $this->getDefaultPriorityId(),
                 'inbound_email_address' => $emailData['from_address'],
-                'email_thread_id' => $emailData['message_id'],
+                'email_thread_id' => $threadId,
                 'original_message_id' => $emailData['message_id']
             ];
             // Auto-link client by sender email domain when mapping exists
@@ -599,13 +772,19 @@ class Ticket {
             $ticketId = $this->create($ticketData);
             
             if ($ticketId) {
+                $contentHtml = $emailData['body_html'] ?? '';
+                $contentText = $emailData['body_text'] ?? '';
+                $useHtml = is_string($contentHtml) && trim($contentHtml) !== '';
+                $msgContent = $useHtml ? $contentHtml : $contentText;
+                $msgFormat = $useHtml ? 'html' : 'text';
+
                 // Add email message to ticket
                 $this->addMessage($ticketId, [
                     'user_id' => $userId,
                     'message_type' => 'email_inbound',
                     'subject' => $emailData['subject'],
-                    'content' => $emailData['body_text'] ?: $emailData['body_html'],
-                    'content_format' => $emailData['body_html'] ? 'html' : 'text',
+                    'content' => $msgContent,
+                    'content_format' => $msgFormat,
                     'email_message_id' => $emailData['message_id'],
                     'email_from' => $emailData['from_address'],
                     'email_to' => $emailData['to_address'],
@@ -683,7 +862,7 @@ class Ticket {
                       FROM TicketMessages tm
                       LEFT JOIN Users u ON tm.user_id = u.id
                       WHERE tm.ticket_id = ?
-                      ORDER BY tm.created_at ASC";
+                      ORDER BY tm.created_at DESC, tm.id DESC";
             
             $result = $this->db->select($query, [$ticketId]);
             
