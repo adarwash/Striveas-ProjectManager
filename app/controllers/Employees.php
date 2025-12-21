@@ -986,7 +986,10 @@ class Employees extends Controller {
                 'task_updates' => 0,
                 'task_completions' => 0,
                 'ticket_replies' => 0,
-                'login_count' => 0
+                'login_count' => 0,
+                'note_updates' => 0,
+                'client_updates' => 0,
+                'site_updates' => 0
             ];
             foreach ($employees as &$employee) {
                 $stats = $employee['activity_stats'] ?? [];
@@ -995,6 +998,9 @@ class Employees extends Controller {
                 $activitySummary['task_completions'] += $stats['task_completions'] ?? 0;
                 $activitySummary['ticket_replies'] += $stats['ticket_replies'] ?? 0;
                 $activitySummary['login_count'] += $stats['login_count'] ?? 0;
+                $activitySummary['note_updates'] += $stats['note_updates'] ?? 0;
+                $activitySummary['client_updates'] += $stats['client_updates'] ?? 0;
+                $activitySummary['site_updates'] += $stats['site_updates'] ?? 0;
 
                 // Build daily tracker map
                 $trendMap = [];

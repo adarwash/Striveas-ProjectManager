@@ -86,6 +86,15 @@ class Auth extends Controller {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['profile_picture'] = $user['profile_picture'] ?? null;
                 $_SESSION['is_logged_in'] = true;
+
+                // Mirror successful logins into activity_logs for a unified audit log
+                if (function_exists('log_activity')) {
+                    log_activity('login', 0, 'login', 'Successful login', [
+                        'username' => $username,
+                        'ip_address' => $ip,
+                        'user_agent' => $agent
+                    ], (int)$user['id']);
+                }
                 
                 // If remember me is checked, set a cookie
                 if ($rememberMe) {
@@ -132,6 +141,16 @@ class Auth extends Controller {
         // Start a session if not already started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
+        }
+
+        // Log logout event before clearing session
+        if (function_exists('log_activity') && !empty($_SESSION['user_id'])) {
+            $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+            $agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            log_activity('login', 0, 'logout', 'User logged out', [
+                'ip_address' => $ip,
+                'user_agent' => $agent
+            ], (int)$_SESSION['user_id']);
         }
         
         // Clear session data

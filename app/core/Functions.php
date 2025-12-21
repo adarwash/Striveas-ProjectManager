@@ -105,6 +105,145 @@ function redirect($url) {
     exit;
 }
 
+/**
+ * Sanitize rich-text HTML for safe display.
+ *
+ * This is a small allowlist-based sanitizer intended for WYSIWYG editor output.
+ * It strips disallowed tags, removes unsafe attributes, and blocks javascript: URLs.
+ *
+ * @param string $html
+ * @return string
+ */
+function sanitize_rich_text_html(string $html): string {
+    $html = trim($html);
+    if ($html === '') {
+        return '';
+    }
+
+    $allowedTags = [
+        'p', 'br', 'div', 'span',
+        'strong', 'b', 'em', 'i', 'u', 's',
+        'ul', 'ol', 'li',
+        'blockquote',
+        'pre', 'code',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'hr',
+        'a',
+    ];
+
+    $dom = new DOMDocument();
+    $prevUseErrors = libxml_use_internal_errors(true);
+
+    // Wrap in a body so we can reliably extract inner HTML later.
+    $wrapped = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>' . $html . '</body></html>';
+    $dom->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+
+    $xpath = new DOMXPath($dom);
+
+    // Remove comments
+    foreach ($xpath->query('//comment()') as $commentNode) {
+        $commentNode->parentNode?->removeChild($commentNode);
+    }
+
+    // Walk all elements; DOMXPath returns a live-ish collection, so iterate a snapshot.
+    $elements = [];
+    foreach ($dom->getElementsByTagName('*') as $el) {
+        $elements[] = $el;
+    }
+
+    foreach ($elements as $el) {
+        $tag = strtolower($el->nodeName);
+
+        // Remove wrapper html/head/body that loadHTML may create
+        if (in_array($tag, ['html', 'head', 'meta', 'body'], true)) {
+            continue;
+        }
+
+        if (!in_array($tag, $allowedTags, true)) {
+            // Unwrap disallowed element but keep its children.
+            $parent = $el->parentNode;
+            if ($parent) {
+                while ($el->firstChild) {
+                    $parent->insertBefore($el->firstChild, $el);
+                }
+                $parent->removeChild($el);
+            }
+            continue;
+        }
+
+        // Strip attributes except a[href|target|rel]
+        if ($el->hasAttributes()) {
+            $attrsToRemove = [];
+            foreach ($el->attributes as $attr) {
+                $attrsToRemove[] = $attr->nodeName;
+            }
+
+            foreach ($attrsToRemove as $attrName) {
+                $attrNameLower = strtolower($attrName);
+                $keep = false;
+
+                if ($tag === 'a' && in_array($attrNameLower, ['href', 'target', 'rel'], true)) {
+                    $keep = true;
+                }
+
+                if (!$keep) {
+                    $el->removeAttribute($attrName);
+                }
+            }
+        }
+
+        if ($tag === 'a') {
+            $href = $el->getAttribute('href');
+            $hrefTrim = trim($href);
+            if ($hrefTrim === '') {
+                $el->removeAttribute('href');
+            } else {
+                // Block javascript: and other dangerous schemes
+                $lower = strtolower($hrefTrim);
+                $isSafe =
+                    str_starts_with($lower, 'http://') ||
+                    str_starts_with($lower, 'https://') ||
+                    str_starts_with($lower, 'mailto:') ||
+                    str_starts_with($lower, '/') ||
+                    str_starts_with($lower, '#');
+                if (!$isSafe) {
+                    $el->removeAttribute('href');
+                }
+            }
+
+            // If target is _blank, ensure rel contains noopener/noreferrer
+            $target = strtolower(trim($el->getAttribute('target')));
+            if ($target === '_blank') {
+                $rel = trim($el->getAttribute('rel'));
+                $rels = array_values(array_filter(preg_split('/\s+/', strtolower($rel)) ?: []));
+                foreach (['noopener', 'noreferrer'] as $need) {
+                    if (!in_array($need, $rels, true)) {
+                        $rels[] = $need;
+                    }
+                }
+                $el->setAttribute('rel', implode(' ', $rels));
+            } else if ($target !== '' && $target !== '_self') {
+                // Normalize unknown targets away
+                $el->removeAttribute('target');
+            }
+        }
+    }
+
+    // Extract body inner HTML
+    $body = $dom->getElementsByTagName('body')->item(0);
+    $out = '';
+    if ($body) {
+        foreach ($body->childNodes as $child) {
+            $out .= $dom->saveHTML($child);
+        }
+    }
+
+    libxml_clear_errors();
+    libxml_use_internal_errors($prevUseErrors);
+
+    return trim($out);
+}
+
 class Helper
 {
     /**

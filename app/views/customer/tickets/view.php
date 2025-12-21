@@ -140,6 +140,7 @@
 .message-content {
     line-height: 1.6;
     color: #495057;
+    overflow-x: auto;
 }
 
 .message-content p {

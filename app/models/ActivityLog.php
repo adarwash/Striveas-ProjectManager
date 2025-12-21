@@ -32,7 +32,25 @@ class ActivityLog {
             $sqlFile = file_get_contents(APPROOT . '/../sql/create_activity_logs_table.sql');
             if ($sqlFile === false) {
                 error_log('Error: Unable to read create_activity_logs_table.sql file');
-                return false;
+                // Fallback: create a minimal table inline (SQL Server)
+                $fallback = "
+                    IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[activity_logs]') AND type in (N'U'))
+                    BEGIN
+                        CREATE TABLE [dbo].[activity_logs](
+                            [id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                            [user_id] INT NOT NULL,
+                            [entity_type] NVARCHAR(50) NOT NULL,
+                            [entity_id] INT NOT NULL,
+                            [action] NVARCHAR(50) NOT NULL,
+                            [description] NVARCHAR(MAX) NULL,
+                            [metadata] NVARCHAR(MAX) NULL,
+                            [created_at] DATETIME NOT NULL CONSTRAINT DF_activity_logs_created_at DEFAULT (GETDATE()),
+                            [ip_address] NVARCHAR(45) NULL
+                        );
+                    END
+                ";
+                $this->db->query($fallback);
+                return true;
             }
 
             // Execute the SQL script

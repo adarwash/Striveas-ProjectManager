@@ -47,14 +47,14 @@ $title = 'Edit Note - HiveITPortal';
 
                     <div class="mb-4">
                         <label for="content" class="form-label">Content</label>
-                        <textarea class="form-control <?= isset($content_err) && !empty($content_err) ? 'is-invalid' : '' ?>" 
-                                  id="content" name="content" rows="8" 
-                                  placeholder="Enter note details here..."><?= htmlspecialchars($note['content'] ?? '') ?></textarea>
+                        <div id="noteContentEditor" class="<?= isset($content_err) && !empty($content_err) ? 'is-invalid' : '' ?>" style="height: 260px;"></div>
+                        <input type="hidden" id="content_html" name="content_html" value="">
+                        <textarea class="form-control d-none" id="content" name="content" rows="8"><?= htmlspecialchars($note['content'] ?? '') ?></textarea>
                         <?php if (isset($content_err) && !empty($content_err)): ?>
                             <div class="invalid-feedback"><?= $content_err ?></div>
                         <?php endif; ?>
                         <div class="form-text">
-                            <span id="content-counter">0</span>/1000 characters
+                            <span id="content-counter">0</span>/1000 characters (plain text count)
                         </div>
                     </div>
 
@@ -123,14 +123,46 @@ $title = 'Edit Note - HiveITPortal';
     </div>
 </div>
 
+<!-- Quill (rich text editor) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Character counter for content
-    const contentField = document.getElementById('content');
+    // Rich text editor
+    const editorEl = document.getElementById('noteContentEditor');
+    const contentHtmlInput = document.getElementById('content_html');
+    const contentField = document.getElementById('content'); // hidden/plain fallback
     const counterSpan = document.getElementById('content-counter');
+    const initialHtml = <?= json_encode($note['content_html'] ?? '') ?>;
+    const initialPlain = <?= json_encode(html_entity_decode((string)($note['content'] ?? ''), ENT_QUOTES, 'UTF-8')) ?>;
+
+    let quill = null;
+    if (editorEl && window.Quill) {
+        quill = new Quill(editorEl, {
+            theme: 'snow',
+            placeholder: 'Enter note details here...',
+            modules: {
+                toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['blockquote', 'code-block'],
+                    ['link'],
+                    ['clean']
+                ]
+            }
+        });
+
+        if (initialHtml && initialHtml.trim()) {
+            quill.root.innerHTML = initialHtml;
+        } else if (initialPlain && initialPlain.trim()) {
+            quill.setText(initialPlain);
+        }
+    }
     
     function updateCounter() {
-        const count = contentField.value.length;
+        const count = quill ? Math.max(0, (quill.getLength() || 0) - 1) : (contentField.value.length);
         counterSpan.textContent = count;
         
         if (count > 900) {
@@ -150,7 +182,11 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCounter();
     
     // Update on input
-    contentField.addEventListener('input', updateCounter);
+    if (quill) {
+        quill.on('text-change', updateCounter);
+    } else {
+        contentField.addEventListener('input', updateCounter);
+    }
     
     // Form validation
     const form = document.querySelector('form');
@@ -167,13 +203,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Validate content
-        if (!contentField.value.trim()) {
-            contentField.classList.add('is-invalid');
+        const plain = quill ? (quill.getText() || '').trim() : contentField.value.trim();
+        if (!plain) {
+            if (editorEl) editorEl.classList.add('is-invalid');
             valid = false;
         } else {
-            contentField.classList.remove('is-invalid');
+            if (editorEl) editorEl.classList.remove('is-invalid');
         }
         
+        // Populate hidden inputs for POST
+        if (quill && contentHtmlInput && contentField) {
+            contentHtmlInput.value = quill.root.innerHTML || '';
+            contentField.value = plain;
+        }
+
         if (!valid) {
             e.preventDefault();
         }

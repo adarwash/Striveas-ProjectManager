@@ -5,6 +5,7 @@ class Sites extends Controller {
     private $userModel;
     private $clientModel;
     private $siteServiceModel;
+    private $activityLogModel;
     
     /**
      * Initialize controller and load models
@@ -20,6 +21,7 @@ class Sites extends Controller {
         $this->userModel = $this->model('User');
         $this->clientModel = $this->model('Client');
         $this->siteServiceModel = $this->model('SiteService');
+        $this->activityLogModel = $this->model('ActivityLog');
         
         // Set the page for sidebar highlighting
         $_SESSION['page'] = 'sites';
@@ -136,6 +138,10 @@ class Sites extends Controller {
                 return;
             }
             if ($this->siteServiceModel->add((int)$siteId, $payload)) {
+                log_activity('site', (int)$siteId, 'updated', 'Added service "' . ($payload['service_name'] ?? '') . '"', [
+                    'service_name' => $payload['service_name'] ?? null,
+                    'service_type' => $payload['service_type'] ?? null
+                ]);
                 flash('site_success', 'Service added');
             } else {
                 flash('site_error', 'Failed to add service', 'alert-danger');
@@ -159,6 +165,11 @@ class Sites extends Controller {
         // Optional: find site by service to redirect back properly
         $siteId = isset($_GET['site_id']) ? (int)$_GET['site_id'] : null;
         if ($this->siteServiceModel->delete((int)$serviceId)) {
+            if ($siteId) {
+                log_activity('site', (int)$siteId, 'updated', 'Deleted a site service', [
+                    'service_id' => (int)$serviceId
+                ]);
+            }
             flash('site_success', 'Service deleted');
         } else {
             flash('site_error', 'Failed to delete service', 'alert-danger');
@@ -215,7 +226,14 @@ class Sites extends Controller {
                 empty($data['type_err']) && empty($data['status_err'])) {
                 
                 // Validated
-                if ($this->siteModel->addSite($data)) {
+                $newSiteId = $this->siteModel->addSite($data);
+                if ($newSiteId) {
+                    $siteId = is_int($newSiteId) ? (int)$newSiteId : 0;
+                    log_activity('site', $siteId, 'created', 'Created site "' . ($data['name'] ?? '') . '"', [
+                        'site_name' => $data['name'] ?? null,
+                        'location' => $data['location'] ?? null,
+                        'status' => $data['status'] ?? null
+                    ]);
                     flash('site_success', 'Site added successfully');
                     redirect('sites');
                 } else {
@@ -311,6 +329,18 @@ class Sites extends Controller {
                 
                 // Validated
                 if ($this->siteModel->updateSite($data)) {
+                    $changes = [];
+                    foreach (['name','location','address','site_code','type','status'] as $field) {
+                        $old = $site[$field] ?? null;
+                        $new = $data[$field] ?? null;
+                        if ((string)$old !== (string)$new) {
+                            $changes[$field] = ['old' => $old, 'new' => $new];
+                        }
+                    }
+                    log_activity('site', (int)$id, 'updated', 'Updated site "' . ($data['name'] ?? ($site['name'] ?? '')) . '"', [
+                        'site_name' => $data['name'] ?? ($site['name'] ?? null),
+                        'changes' => $changes
+                    ]);
                     flash('site_success', 'Site updated successfully');
                     redirect('sites');
                 } else {
@@ -382,6 +412,9 @@ class Sites extends Controller {
         
         // Delete the site
         if ($this->siteModel->deleteSite($id)) {
+            log_activity('site', (int)$id, 'deleted', 'Deleted site "' . ($site['name'] ?? '') . '"', [
+                'site_name' => $site['name'] ?? null
+            ]);
             flash('site_success', 'Site deleted successfully');
         } else {
             flash('site_error', 'Failed to delete site', 'alert-danger');

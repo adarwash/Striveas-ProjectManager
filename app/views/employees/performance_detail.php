@@ -337,6 +337,33 @@
                                         $icon = 'bi bi-ticket-detailed';
                                         $label .= ' ticket';
                                         $link = URLROOT . '/tickets/show/' . (int)$activity['entity_id'];
+                                    } elseif ($activity['entity_type'] === 'note' && !empty($activity['entity_id'])) {
+                                        $icon = 'bi bi-journal-text';
+                                        $noteTitle = $activity['metadata']['note_title'] ?? null;
+                                        $label = ucfirst(str_replace('_', ' ', $activity['action'])) . ' note';
+                                        if ($noteTitle) {
+                                            $label .= ' "' . $noteTitle . '"';
+                                        }
+                                        $link = URLROOT . '/notes/show/' . (int)$activity['entity_id'];
+                                    } elseif ($activity['entity_type'] === 'client' && !empty($activity['entity_id'])) {
+                                        $icon = 'bi bi-people';
+                                        $clientName = $activity['metadata']['client_name'] ?? null;
+                                        $label = ucfirst(str_replace('_', ' ', $activity['action'])) . ' client';
+                                        if ($clientName) {
+                                            $label .= ' "' . $clientName . '"';
+                                        }
+                                        $link = URLROOT . '/clients/viewClient/' . (int)$activity['entity_id'];
+                                    } elseif ($activity['entity_type'] === 'site' && !empty($activity['entity_id'])) {
+                                        $icon = 'bi bi-geo-alt';
+                                        $siteName = $activity['metadata']['site_name'] ?? null;
+                                        $label = ucfirst(str_replace('_', ' ', $activity['action'])) . ' site';
+                                        if ($siteName) {
+                                            $label .= ' "' . $siteName . '"';
+                                        }
+                                        $link = URLROOT . '/sites/viewSite/' . (int)$activity['entity_id'];
+                                    } elseif ($activity['entity_type'] === 'request') {
+                                        $icon = 'bi bi-activity';
+                                        $label = ($activity['action'] === 'viewed') ? 'Viewed page' : 'Request';
                                     } elseif ($activity['entity_type'] === 'login') {
                                         $icon = 'bi bi-box-arrow-in-right';
                                         $label = 'Logged in';

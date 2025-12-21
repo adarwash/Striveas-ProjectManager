@@ -24,6 +24,13 @@ flash('note_message');
 
 <?php 
 $noteTagList = array_values(array_filter(array_map('trim', explode(',', $note['tags'] ?? ''))));
+
+$noteContentHtml = $note['content_html'] ?? '';
+$noteContentText = $note['content'] ?? '';
+$noteContentTextDecoded = html_entity_decode((string)$noteContentText, ENT_QUOTES, 'UTF-8');
+$notePlainForStats = !empty($noteContentHtml)
+    ? trim(html_entity_decode(strip_tags((string)$noteContentHtml), ENT_QUOTES, 'UTF-8'))
+    : (string)$noteContentTextDecoded;
 ?>
 
 <div class="container-fluid px-4 py-4">
@@ -101,8 +108,10 @@ $noteTagList = array_values(array_filter(array_map('trim', explode(',', $note['t
                 <div class="card border-0 shadow-sm">
                     <div class="card-body p-4">
                         <div class="note-content">
-                            <?php if (!empty($note['content'])): ?>
-                                <?= nl2br(htmlspecialchars($note['content'])) ?>
+                            <?php if (!empty($noteContentHtml)): ?>
+                                <?= $noteContentHtml ?>
+                            <?php elseif (!empty($noteContentTextDecoded)): ?>
+                                <?= nl2br(htmlspecialchars($noteContentTextDecoded, ENT_QUOTES, 'UTF-8')) ?>
                             <?php else: ?>
                                 <div class="text-muted text-center py-4">
                                     <i class="bi bi-journal-x display-4 mb-3"></i>
@@ -206,12 +215,12 @@ $noteTagList = array_values(array_filter(array_map('trim', explode(',', $note['t
                         
                         <div class="detail-item mb-3">
                             <label class="detail-label">Word Count:</label>
-                            <span class="detail-value" id="wordCount"><?= str_word_count($note['content'] ?? '') ?> words</span>
+                            <span class="detail-value" id="wordCount"><?= str_word_count($notePlainForStats) ?> words</span>
                         </div>
                         
                         <div class="detail-item">
                             <label class="detail-label">Character Count:</label>
-                            <span class="detail-value"><?= strlen($note['content'] ?? '') ?> characters</span>
+                            <span class="detail-value"><?= strlen($notePlainForStats) ?> characters</span>
                         </div>
                         
                         <?php if (!empty($noteTagList)): ?>
@@ -545,7 +554,7 @@ function printNote() {
 
 function exportNote() {
     const noteTitle = <?= json_encode($note['title'] ?? 'Untitled Note') ?>;
-    const noteContent = <?= json_encode(($note['title'] ?? 'Untitled Note') . "\n\n" . ($note['content'] ?? '') . "\n\nCreated: " . date('F j, Y \a\t g:i A', strtotime($note['created_at'] ?? 'now'))) ?>;
+    const noteContent = <?= json_encode(($note['title'] ?? 'Untitled Note') . "\n\n" . ($notePlainForStats ?? '') . "\n\nCreated: " . date('F j, Y \a\t g:i A', strtotime($note['created_at'] ?? 'now'))) ?>;
     
     const blob = new Blob([noteContent], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);

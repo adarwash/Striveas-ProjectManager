@@ -92,7 +92,10 @@
             'task_updates' => 0,
             'task_completions' => 0,
             'ticket_replies' => 0,
-            'login_count' => 0
+            'login_count' => 0,
+            'note_updates' => 0,
+            'client_updates' => 0,
+            'site_updates' => 0
         ];
     ?>
     <div class="row g-3 mb-4">
@@ -157,6 +160,45 @@
                     </div>
                     <span class="badge bg-secondary rounded-circle p-3">
                         <i class="fas fa-right-to-bracket"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Note Updates</h6>
+                        <h2 class="mb-0"><?= number_format($activity_summary['note_updates']) ?></h2>
+                    </div>
+                    <span class="badge bg-dark rounded-circle p-3">
+                        <i class="bi bi-journal-text"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Client Updates</h6>
+                        <h2 class="mb-0"><?= number_format($activity_summary['client_updates']) ?></h2>
+                    </div>
+                    <span class="badge bg-primary rounded-circle p-3">
+                        <i class="bi bi-people"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Site Updates</h6>
+                        <h2 class="mb-0"><?= number_format($activity_summary['site_updates']) ?></h2>
+                    </div>
+                    <span class="badge bg-success rounded-circle p-3">
+                        <i class="bi bi-geo-alt"></i>
                     </span>
                 </div>
             </div>
@@ -280,6 +322,9 @@
                                     <th>Project Touches</th>
                                     <th>Ticket Replies</th>
                                     <th>Logins</th>
+                                    <th>Notes</th>
+                                    <th>Clients</th>
+                                    <th>Sites</th>
                                     <th>Last Activity</th>
                                     <th>Current Status</th>
                                     <th>Actions</th>
@@ -376,6 +421,21 @@
                                             <td>
                                                 <span class="badge bg-light text-secondary border fw-semibold px-3">
                                                     <?= $activityStats['login_count'] ?? 0 ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border fw-semibold px-3">
+                                                    <?= $activityStats['note_updates'] ?? 0 ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-primary border fw-semibold px-3">
+                                                    <?= $activityStats['client_updates'] ?? 0 ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-success border fw-semibold px-3">
+                                                    <?= $activityStats['site_updates'] ?? 0 ?>
                                                 </span>
                                             </td>
                                             <td>

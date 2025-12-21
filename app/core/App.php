@@ -151,6 +151,12 @@ class App {
                 exit;
             }
             
+            // Optional request-level audit logging (employees/customers)
+            if (function_exists('log_request_activity')) {
+                $controllerName = is_object($this->controller) ? get_class($this->controller) : (string)$this->controller;
+                log_request_activity($controllerName, (string)$this->method, is_array($this->params) ? $this->params : []);
+            }
+
             // Call the method
             if (method_exists($this->controller, $this->method)) {
                 call_user_func_array([$this->controller, $this->method], $this->params);
@@ -199,6 +205,12 @@ class App {
 
         // Get parameters
         $this->params = $url ? array_values($url) : [];
+
+        // Optional request-level audit logging (employees)
+        if (function_exists('log_request_activity')) {
+            $controllerName = is_object($this->controller) ? get_class($this->controller) : (string)$this->controller;
+            log_request_activity($controllerName, (string)$this->method, is_array($this->params) ? $this->params : []);
+        }
 
         // Call the controller method with parameters
         call_user_func_array([$this->controller, $this->method], $this->params);

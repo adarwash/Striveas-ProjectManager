@@ -218,6 +218,38 @@ class Client {
             return [];
         }
     }
+
+    /**
+     * Get aggregate site visit stats for a client across all linked sites.
+     *
+     * @return array{total_visits:int, unique_engineers:int}
+     */
+    public function getSiteVisitStats(int $clientId): array {
+        try {
+            // Ensure SiteVisits and SiteClients exist
+            $check1 = $this->db->select("SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SiteVisits'");
+            $check2 = $this->db->select("SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SiteClients'");
+            if (!$check1 || (int)($check1[0]['table_count'] ?? 0) === 0 || !$check2 || (int)($check2[0]['table_count'] ?? 0) === 0) {
+                return ['total_visits' => 0, 'unique_engineers' => 0];
+            }
+
+            $query = "SELECT
+                        COUNT(*) AS total_visits,
+                        COUNT(DISTINCT v.technician_id) AS unique_engineers
+                      FROM SiteVisits v
+                      INNER JOIN SiteClients sc ON sc.site_id = v.site_id AND sc.client_id = ?";
+            $rows = $this->db->select($query, [$clientId]);
+            $row = $rows[0] ?? [];
+
+            return [
+                'total_visits' => (int)($row['total_visits'] ?? 0),
+                'unique_engineers' => (int)($row['unique_engineers'] ?? 0),
+            ];
+        } catch (Exception $e) {
+            error_log('Error fetching site visit stats for client: ' . $e->getMessage());
+            return ['total_visits' => 0, 'unique_engineers' => 0];
+        }
+    }
     
     /**
      * Add a new client

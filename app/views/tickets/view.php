@@ -285,7 +285,7 @@
                                                 <?php endif; ?>
                                             </div>
                                         </div>
-                                        <div class="flex-grow-1 ms-3">
+                                        <div class="flex-grow-1 ms-3 col-8">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
                                                 <div>
                                                     <h6 class="mb-0">

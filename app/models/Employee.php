@@ -965,6 +965,10 @@ class Employee {
             'login_count' => 0,
             'task_updates' => 0,
             'task_completions' => 0,
+            'note_updates' => 0,
+            'client_updates' => 0,
+            'site_updates' => 0,
+            'request_actions' => 0,
             'recent_activity' => [],
             'task_activity' => []
         ];
@@ -977,7 +981,7 @@ class Employee {
             $activityRows = $this->db->select(
                 "SELECT entity_type, action, COUNT(*) as total
                  FROM activity_logs
-                 WHERE user_id = ? AND created_at BETWEEN ? AND ?
+                 WHERE user_id = ? AND created_at BETWEEN ? AND ? AND entity_type <> 'login'
                  GROUP BY entity_type, action",
                 [$userId, $startDateTime, $endDateTime]
             ) ?: [];
@@ -1001,13 +1005,25 @@ class Employee {
                         $stats['task_completions'] += $count;
                     }
                 }
+                if ($entity === 'note' && in_array($action, ['created','updated','deleted'], true)) {
+                    $stats['note_updates'] += $count;
+                }
+                if ($entity === 'client' && in_array($action, ['created','updated','deleted'], true)) {
+                    $stats['client_updates'] += $count;
+                }
+                if ($entity === 'site' && in_array($action, ['created','updated','deleted'], true)) {
+                    $stats['site_updates'] += $count;
+                }
+                if ($entity === 'request' && in_array($action, ['called','viewed'], true)) {
+                    $stats['request_actions'] += $count;
+                }
             }
 
             // Recent activity from activity log
             $recentActivityRows = $this->db->select(
                 "SELECT TOP 15 entity_type, entity_id, action, description, metadata, created_at
                  FROM activity_logs
-                 WHERE user_id = ? AND created_at BETWEEN ? AND ?
+                 WHERE user_id = ? AND created_at BETWEEN ? AND ? AND entity_type <> 'login'
                  ORDER BY created_at DESC",
                 [$userId, $startDateTime, $endDateTime]
             ) ?: [];
@@ -1035,21 +1051,50 @@ class Employee {
             }
 
             // Login counts and recent logins
-            $loginCountRow = $this->db->select(
-                "SELECT COUNT(*) as total
-                 FROM UserLoginAudit
-                 WHERE user_id = ? AND success = 1 AND created_at BETWEEN ? AND ?",
-                [$userId, $startDateTime, $endDateTime]
-            );
-            $stats['login_count'] = (int)($loginCountRow[0]['total'] ?? 0);
+            $loginTableExists = false;
+            try {
+                $loginTableCheck = $this->db->select(
+                    "SELECT COUNT(*) AS table_exists FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserLoginAudit'"
+                );
+                $loginTableExists = !empty($loginTableCheck) && (int)($loginTableCheck[0]['table_exists'] ?? 0) > 0;
+            } catch (Exception $e) {
+                $loginTableExists = false;
+            }
 
-            $recentLogins = $this->db->select(
-                "SELECT TOP 10 created_at
-                 FROM UserLoginAudit
-                 WHERE user_id = ? AND success = 1 AND created_at BETWEEN ? AND ?
-                 ORDER BY created_at DESC",
-                [$userId, $startDateTime, $endDateTime]
-            ) ?: [];
+            if ($loginTableExists) {
+                $loginCountRow = $this->db->select(
+                    "SELECT COUNT(*) as total
+                     FROM UserLoginAudit
+                     WHERE user_id = ? AND success = 1 AND created_at BETWEEN ? AND ?",
+                    [$userId, $startDateTime, $endDateTime]
+                );
+                $stats['login_count'] = (int)($loginCountRow[0]['total'] ?? 0);
+
+                $recentLogins = $this->db->select(
+                    "SELECT TOP 10 created_at
+                     FROM UserLoginAudit
+                     WHERE user_id = ? AND success = 1 AND created_at BETWEEN ? AND ?
+                     ORDER BY created_at DESC",
+                    [$userId, $startDateTime, $endDateTime]
+                ) ?: [];
+            } else {
+                // Fallback: use activity_logs login events (added in Auth controller)
+                $loginCountRow = $this->db->select(
+                    "SELECT COUNT(*) as total
+                     FROM activity_logs
+                     WHERE user_id = ? AND entity_type = 'login' AND action = 'login' AND created_at BETWEEN ? AND ?",
+                    [$userId, $startDateTime, $endDateTime]
+                );
+                $stats['login_count'] = (int)($loginCountRow[0]['total'] ?? 0);
+
+                $recentLogins = $this->db->select(
+                    "SELECT TOP 10 created_at
+                     FROM activity_logs
+                     WHERE user_id = ? AND entity_type = 'login' AND action = 'login' AND created_at BETWEEN ? AND ?
+                     ORDER BY created_at DESC",
+                    [$userId, $startDateTime, $endDateTime]
+                ) ?: [];
+            }
 
             foreach ($recentLogins as $loginRow) {
                 $entry = [

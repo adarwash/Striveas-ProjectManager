@@ -68,9 +68,17 @@
                             <?php endif; ?>
                             <div class="note-content mb-2 note-text" style="max-height: 100px; overflow: hidden; position: relative;">
                                 <div class="note-text-inner">
-                                    <?= nl2br(htmlspecialchars($note['content'])) ?>
+                                    <?php
+                                        $cHtml = $note['content_html'] ?? '';
+                                        $cTextDecoded = html_entity_decode((string)($note['content'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                    ?>
+                                    <?php if (!empty($cHtml)): ?>
+                                        <?= $cHtml ?>
+                                    <?php else: ?>
+                                        <?= nl2br(htmlspecialchars($cTextDecoded, ENT_QUOTES, 'UTF-8')) ?>
+                                    <?php endif; ?>
                                 </div>
-                                <?php if (str_word_count($note['content']) > 30): ?>
+                                <?php if (str_word_count($cTextDecoded) > 30): ?>
                                     <div class="note-fade-overlay"></div>
                                     <button class="btn btn-sm btn-link note-expand-btn p-0">Show more</button>
                                 <?php endif; ?>
@@ -105,14 +113,16 @@
             <form id="addNoteForm">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="title" class="form-label">Title</label>
-                        <input type="text" class="form-control" id="title" name="title" required>
+                        <label for="note-modal-title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="note-modal-title" name="title" required>
                     </div>
                     <div class="mb-3">
-                        <label for="content" class="form-label">Content</label>
-                        <textarea class="form-control" id="content" name="content" rows="4" required></textarea>
+                        <label class="form-label">Content</label>
+                        <div id="note-modal-content-editor" style="height: 180px;"></div>
+                        <input type="hidden" id="note-modal-content-html" name="content_html" value="">
+                        <textarea class="form-control d-none" id="note-modal-content" name="content" rows="4" required></textarea>
                         <div class="form-text">
-                            <span id="content-count">0</span> characters
+                            <span id="content-count">0</span> characters (plain text count)
                         </div>
                     </div>
                     <div class="mb-3">
@@ -135,22 +145,61 @@
     </div>
 </div>
 
+<!-- Quill (rich text editor) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Setup character counter
-    const contentField = document.getElementById('content');
+    const modalTitleField = document.getElementById('note-modal-title');
+    const contentField = document.getElementById('note-modal-content'); // hidden/plain fallback
+    const contentHtmlField = document.getElementById('note-modal-content-html');
+    const editorEl = document.getElementById('note-modal-content-editor');
     const contentCount = document.getElementById('content-count');
-    if (contentField && contentCount) {
-        contentField.addEventListener('input', function() {
-            contentCount.textContent = this.value.length;
+
+    let quill = null;
+    if (editorEl && window.Quill) {
+        quill = new Quill(editorEl, {
+            theme: 'snow',
+            placeholder: 'Write your note...',
+            modules: {
+                toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['blockquote', 'code-block'],
+                    ['link'],
+                    ['clean']
+                ]
+            }
         });
     }
+
+    function updateContentCount() {
+        if (!contentCount) return;
+        const count = quill ? Math.max(0, (quill.getLength() || 0) - 1) : (contentField?.value.length || 0);
+        contentCount.textContent = String(count);
+    }
+
+    if (quill) {
+        quill.on('text-change', updateContentCount);
+    } else if (contentField) {
+        contentField.addEventListener('input', updateContentCount);
+    }
+    updateContentCount();
 
     // Add note form submission
     const addNoteForm = document.getElementById('addNoteForm');
     if (addNoteForm) {
         addNoteForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            // Populate hidden fields before serializing
+            if (quill && contentHtmlField && contentField) {
+                contentHtmlField.value = quill.root.innerHTML || '';
+                contentField.value = (quill.getText() || '').trim();
+            }
             
             // Show spinner
             const spinner = document.getElementById('note-spinner');
@@ -219,6 +268,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Clear form and close modal
                     this.reset();
+                    if (quill) {
+                        quill.setText('');
+                        quill.blur();
+                    }
+                    updateContentCount();
                     bootstrap.Modal.getInstance(document.getElementById('addNoteModal')).hide();
                     
                     // Show success message
@@ -258,12 +312,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Log form values
                     const formData = {
-                        title: document.getElementById('title')?.value || 'Not found',
-                        content: document.getElementById('content')?.value || 'Not found',
-                        type: document.querySelector('input[name="type"]')?.value || 'Not found',
-                        reference_id: document.querySelector('input[name="reference_id"]')?.value || 'Not found',
-                        tags: document.getElementById('modal-tags')?.value || 'Not found'
-                    };
+                        title: document.getElementById('note-modal-title')?.value || 'Not found',
+                content: document.getElementById('note-modal-content')?.value || 'Not found',
+                type: document.querySelector('input[name="type"]')?.value || 'Not found',
+                reference_id: document.querySelector('input[name="reference_id"]')?.value || 'Not found',
+                tags: document.getElementById('modal-tags')?.value || 'Not found'
+            };
                     
                     console.log('Form data:', formData);
                     console.log('Form data serialized:', new URLSearchParams(new FormData(addNoteForm)).toString());
@@ -283,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <summary>Technical Details (for support)</summary>
                         <div class="text-start">
                             <strong>Form data:</strong><br>
-                            - Title: ${escapeHtml(document.getElementById('title')?.value || 'Not found')}<br>
+                            - Title: ${escapeHtml(document.getElementById('note-modal-title')?.value || 'Not found')}<br>
                             - Type: ${escapeHtml(document.querySelector('input[name="type"]')?.value || 'Not found')}<br>
                             - Reference ID: ${escapeHtml(document.querySelector('input[name="reference_id"]')?.value || 'Not found')}
                         </div>
@@ -406,6 +460,9 @@ function refreshNotesList() {
                     const isLongContent = (note.content && note.content.split(' ').length > 30);
                     const tagList = note.tags ? note.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
                     const tagsAttr = tagList.map(tag => tag.toLowerCase()).join(' ');
+                    const safeHtml = (note.content_html && String(note.content_html).trim())
+                        ? String(note.content_html)
+                        : escapeHtml(note.content || '').replace(/\\n/g, '<br>');
                     
                     notesHtml += `
                     <div class="mb-3 p-3 border rounded bg-white shadow-sm" data-note-id="${note.id}" data-tags="${tagsAttr}">
@@ -432,7 +489,7 @@ function refreshNotesList() {
                         <div class="note-content mb-2 note-text" style="max-height: 100px; overflow: hidden; position: relative;">
                             ${tagList.length ? `<div class="note-tag-list mb-2">${tagList.map(tag => `<span class="badge note-tag-badge">${escapeHtml(tag)}</span>`).join(' ')}</div>` : ''}
                             <div class="note-text-inner">
-                                ${escapeHtml(note.content).replace(/\n/g, '<br>')}
+                                ${safeHtml}
                             </div>
                             ${isLongContent ? 
                                 `<div class="note-fade-overlay"></div>

@@ -11,4 +11,5 @@
     require_once 'helpers/format_helper.php';
     require_once 'helpers/permissions_helper.php';
     require_once 'helpers/customer_auth_helper.php';
+    require_once 'helpers/activity_log_helper.php';
 ?>

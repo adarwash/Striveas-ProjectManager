@@ -396,8 +396,9 @@ flash('note_error');
                                     </td>
                                     <td class="note-preview-cell">
                                         <span class="note-preview-text">
-                                            <?= htmlspecialchars(substr($note['content'], 0, 100)) ?>
-                                            <?= strlen($note['content']) > 100 ? '...' : '' ?>
+                                            <?php $previewText = html_entity_decode((string)($note['content'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                                            <?= htmlspecialchars(substr($previewText, 0, 100), ENT_QUOTES, 'UTF-8') ?>
+                                            <?= strlen($previewText) > 100 ? '...' : '' ?>
                                         </span>
                                     </td>
                                     <td><?= date('M j, Y', strtotime($note['created_at'])) ?></td>

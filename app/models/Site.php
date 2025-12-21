@@ -129,7 +129,7 @@ class Site {
      * Add a new site
      * 
      * @param array $data Site data
-     * @return bool Success status
+     * @return int|bool Inserted ID or false
      */
     public function addSite($data) {
         try {
@@ -146,10 +146,9 @@ class Site {
                 $data['status']
             ];
             
-            // The insert method returns the last inserted ID
+            // The insert method returns the last inserted ID (or null)
             $result = $this->db->insert($query, $params);
-            
-            return $result !== false;
+            return $result !== false ? $result : false;
         } catch (Exception $e) {
             error_log('Error adding site: ' . $e->getMessage());
             return false;

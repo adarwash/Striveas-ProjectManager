@@ -9,7 +9,8 @@ class Note {
 	
 	private function ensureNoteColumns() {
 		$columns = [
-			'tags' => "NVARCHAR(255) NULL"
+			'tags' => "NVARCHAR(255) NULL",
+			'content_html' => "NVARCHAR(MAX) NULL"
 		];
 		
 		foreach ($columns as $column => $definition) {
@@ -61,13 +62,15 @@ class Note {
             ]));
             
             // Prepare the query with proper parameter handling
-			$query = "INSERT INTO Notes (title, content, type, reference_id, created_by, tags) 
-			         VALUES (?, ?, ?, ?, ?, ?)";
+            $contentHtml = $data['content_html'] ?? null;
+			$query = "INSERT INTO Notes (title, content, content_html, type, reference_id, created_by, tags) 
+			         VALUES (?, ?, ?, ?, ?, ?, ?)";
             
             // Fix the error logging to properly show all parameters
 			error_log("Note::create - Executing query with parameters: " . json_encode([
 				'title' => $data['title'], 
 				'content' => (strlen($data['content']) > 30) ? substr($data['content'], 0, 30) . '...' : $data['content'],
+				'content_html' => is_string($contentHtml) ? ((strlen($contentHtml) > 30) ? substr($contentHtml, 0, 30) . '...' : $contentHtml) : null,
 				'type' => $data['type'], 
 				'reference_id' => $data['reference_id'], 
 				'created_by' => $data['created_by'],
@@ -89,20 +92,25 @@ class Note {
                 // Bind parameters individually to handle NULL values correctly in SQL Server
                 $stmt->bindParam(1, $data['title'], PDO::PARAM_STR);
                 $stmt->bindParam(2, $data['content'], PDO::PARAM_STR);
-                $stmt->bindParam(3, $data['type'], PDO::PARAM_STR);
+                if ($contentHtml === null || $contentHtml === '') {
+                    $stmt->bindValue(3, null, PDO::PARAM_NULL);
+                } else {
+                    $stmt->bindValue(3, $contentHtml, PDO::PARAM_STR);
+                }
+                $stmt->bindParam(4, $data['type'], PDO::PARAM_STR);
                 
                 // Handle reference_id properly for NULL values
                 if ($data['reference_id'] === null) {
-                    $stmt->bindValue(4, null, PDO::PARAM_NULL);
+                    $stmt->bindValue(5, null, PDO::PARAM_NULL);
                 } else {
-                    $stmt->bindParam(4, $data['reference_id'], PDO::PARAM_INT);
+                    $stmt->bindParam(5, $data['reference_id'], PDO::PARAM_INT);
                 }
                 
-				$stmt->bindParam(5, $data['created_by'], PDO::PARAM_INT);
+				$stmt->bindParam(6, $data['created_by'], PDO::PARAM_INT);
 				if ($data['tags'] === null || $data['tags'] === '') {
-					$stmt->bindValue(6, null, PDO::PARAM_NULL);
+					$stmt->bindValue(7, null, PDO::PARAM_NULL);
 				} else {
-					$stmt->bindParam(6, $data['tags'], PDO::PARAM_STR);
+					$stmt->bindParam(7, $data['tags'], PDO::PARAM_STR);
 				}
                 
                 // Execute the statement
@@ -182,6 +190,7 @@ class Note {
 					$result = $this->db->insert($query, [
 						$data['title'],
 						$data['content'],
+						$contentHtml,
 						$data['type'],
 						$data['reference_id'],  // Will be null for personal notes
 						$data['created_by'],
@@ -343,6 +352,7 @@ class Note {
 			$query = "UPDATE Notes SET 
 			         title = ?, 
 			         content = ?,
+			         content_html = ?,
 			         tags = ?,
 			         updated_at = GETDATE()
 			         WHERE id = ? AND created_by = ?";
@@ -350,6 +360,7 @@ class Note {
 			$this->db->update($query, [
 				$data['title'],
 				$data['content'],
+				$data['content_html'] ?? null,
 			    $data['tags'] ?? null,
 				$data['id'],
 				$data['created_by']

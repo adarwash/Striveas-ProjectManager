@@ -40,12 +40,13 @@
 
                         <div class="mb-4">
                             <label for="content" class="form-label">Content</label>
-                            <textarea class="form-control <?= isset($content_err) && !empty($content_err) ? 'is-invalid' : '' ?>" 
-                                      id="content" name="content" rows="8" placeholder="Write your note details here..."><?= htmlspecialchars($content ?? '') ?></textarea>
+                            <div id="noteContentEditor" class="<?= isset($content_err) && !empty($content_err) ? 'is-invalid' : '' ?>" style="height: 260px;"></div>
+                            <input type="hidden" id="content_html" name="content_html" value="">
+                            <textarea class="form-control d-none" id="content" name="content" rows="8"><?= htmlspecialchars($content ?? '') ?></textarea>
                             <?php if (isset($content_err) && !empty($content_err)): ?>
                                 <div class="invalid-feedback"><?= $content_err ?></div>
                             <?php endif; ?>
-                            <div class="form-text">You can use plain text - line breaks will be preserved</div>
+                            <div class="form-text">Rich text supported (bold, lists, links). Content is sanitized on save.</div>
                         </div>
 
                     <div class="mb-4">
@@ -112,6 +113,10 @@
         </div>
     </div>
 </div>
+
+<!-- Quill (rich text editor) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 
 <script>
 // Store projects and tasks data
@@ -202,17 +207,50 @@ function updateReferenceOptions() {
 
 // Initialize reference options if type is pre-selected
 document.addEventListener('DOMContentLoaded', function() {
+    // Rich text editor
+    const editorEl = document.getElementById('noteContentEditor');
+    const contentHtmlInput = document.getElementById('content_html');
+    const contentPlainTextarea = document.getElementById('content');
+
+    let quill = null;
+    if (editorEl && window.Quill) {
+        quill = new Quill(editorEl, {
+            theme: 'snow',
+            placeholder: 'Write your note details here...',
+            modules: {
+                toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['blockquote', 'code-block'],
+                    ['link'],
+                    ['clean']
+                ]
+            }
+        });
+
+        // Initialize from any existing plain content (fallback)
+        const initialPlain = (contentPlainTextarea?.value || '').trim();
+        if (initialPlain) {
+            quill.setText(initialPlain);
+        }
+    }
+
     if (document.getElementById('type').value) {
         updateReferenceOptions();
     } else {
         document.getElementById('reference-none').classList.remove('d-none');
     }
     
-    // Add character counter for note content
-    const contentField = document.getElementById('content');
-    contentField.addEventListener('input', function() {
-        const length = this.value.length;
-        // You can add a character counter here if needed
-    });
+    // Ensure rich editor values are posted
+    const form = document.querySelector('form[action=\"/notes/add\"]');
+    if (form && quill && contentHtmlInput && contentPlainTextarea) {
+        form.addEventListener('submit', function() {
+            const html = quill.root.innerHTML || '';
+            const plain = (quill.getText() || '').trim();
+            contentHtmlInput.value = html;
+            contentPlainTextarea.value = plain;
+        });
+    }
 });
 </script> 

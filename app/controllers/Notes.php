@@ -5,6 +5,7 @@ class Notes extends Controller {
     private $projectModel;
     private $taskModel;
     private $clientModel;
+    private $activityLogModel;
     
     public function __construct() {
         // Check if user is logged in
@@ -16,6 +17,7 @@ class Notes extends Controller {
         $this->projectModel = $this->model('Project');
         $this->taskModel = $this->model('Task');
         $this->clientModel = $this->model('Client');
+        $this->activityLogModel = $this->model('ActivityLog');
         
         // Create Notes table if it doesn't exist
         $this->noteModel->createNotesTable();
@@ -129,16 +131,22 @@ class Notes extends Controller {
             }
             
             // Process regular form submission
-            // Sanitize POST data - using a modern approach instead of deprecated FILTER_SANITIZE_STRING
-            $title = isset($_POST['title']) ? htmlspecialchars(trim($_POST['title']), ENT_QUOTES, 'UTF-8') : '';
-            $content = isset($_POST['content']) ? htmlspecialchars(trim($_POST['content']), ENT_QUOTES, 'UTF-8') : '';
-            $type = isset($_POST['type']) ? htmlspecialchars(trim($_POST['type']), ENT_QUOTES, 'UTF-8') : '';
+            $title = isset($_POST['title']) ? trim((string)$_POST['title']) : '';
+
+            $rawHtml = isset($_POST['content_html']) ? (string)$_POST['content_html'] : '';
+            $contentHtml = $rawHtml !== '' ? sanitize_rich_text_html($rawHtml) : '';
+            $contentPlain = $contentHtml !== ''
+                ? trim(html_entity_decode(strip_tags($contentHtml), ENT_QUOTES, 'UTF-8'))
+                : (isset($_POST['content']) ? trim((string)$_POST['content']) : '');
+
+            $type = isset($_POST['type']) ? trim((string)$_POST['type']) : '';
             $reference_id = isset($_POST['reference_id']) ? (int)$_POST['reference_id'] : null;
 			$tags = isset($_POST['tags']) ? trim($_POST['tags']) : '';
             
             $data = [
                 'title' => $title,
-                'content' => $content,
+                'content' => $contentPlain,
+                'content_html' => ($contentHtml !== '' ? $contentHtml : null),
                 'type' => $type,
                 'reference_id' => $reference_id,
 				'tags' => $tags,
@@ -196,7 +204,15 @@ class Notes extends Controller {
 				empty($data['type_err']) && empty($data['reference_id_err']) && empty($data['tags_err'])) {
                 
                 // Create note
-                if ($this->noteModel->create($data)) {
+                $createdId = $this->noteModel->create($data);
+                if ($createdId) {
+                    $noteId = is_int($createdId) ? (int)$createdId : 0;
+                    log_activity('note', $noteId, 'created', 'Created note "' . ($data['title'] ?? '') . '"', [
+                        'note_title' => $data['title'] ?? null,
+                        'type' => $data['type'] ?? null,
+                        'reference_id' => $data['reference_id'] ?? null,
+                        'tags' => $data['tags'] ?? null
+                    ]);
                     flash('note_success', 'Note added successfully');
                     redirect('notes');
                 } else {
@@ -250,16 +266,22 @@ class Notes extends Controller {
             // Set header for JSON response
             header('Content-Type: application/json');
             
-            // Sanitize POST data - using modern alternatives to deprecated FILTER_SANITIZE_STRING
-            $title = isset($_POST['title']) ? htmlspecialchars(trim($_POST['title']), ENT_QUOTES, 'UTF-8') : '';
-            $content = isset($_POST['content']) ? htmlspecialchars(trim($_POST['content']), ENT_QUOTES, 'UTF-8') : '';
-			$type = isset($_POST['type']) ? htmlspecialchars(trim($_POST['type']), ENT_QUOTES, 'UTF-8') : '';
+            $title = isset($_POST['title']) ? trim((string)$_POST['title']) : '';
+
+            $rawHtml = isset($_POST['content_html']) ? (string)$_POST['content_html'] : '';
+            $contentHtml = $rawHtml !== '' ? sanitize_rich_text_html($rawHtml) : '';
+            $contentPlain = $contentHtml !== ''
+                ? trim(html_entity_decode(strip_tags($contentHtml), ENT_QUOTES, 'UTF-8'))
+                : (isset($_POST['content']) ? trim((string)$_POST['content']) : '');
+
+			$type = isset($_POST['type']) ? trim((string)$_POST['type']) : '';
             $reference_id = isset($_POST['reference_id']) ? (int)$_POST['reference_id'] : null;
 			$tags = isset($_POST['tags']) ? trim($_POST['tags']) : '';
             
             $data = [
                 'title' => $title,
-                'content' => $content,
+                'content' => $contentPlain,
+                'content_html' => ($contentHtml !== '' ? $contentHtml : null),
                 'type' => $type,
                 'reference_id' => $reference_id,
 				'tags' => $tags,
@@ -269,7 +291,7 @@ class Notes extends Controller {
             error_log('AJAX Note Add - Data: ' . json_encode($data));
             
             // Check for missing required data
-			if (empty($title) || empty($content) || empty($type)) {
+			if (empty($title) || empty($contentPlain) || empty($type)) {
                 error_log('AJAX Note Add - Missing form fields: ' . json_encode($_POST));
                 echo json_encode([
                     'success' => false,
@@ -364,6 +386,14 @@ class Notes extends Controller {
             $noteId = $this->noteModel->create($data);
             
             if ($noteId) {
+                $loggedNoteId = is_int($noteId) ? (int)$noteId : 0;
+                log_activity('note', $loggedNoteId, 'created', 'Created note "' . ($data['title'] ?? '') . '"', [
+                    'note_title' => $data['title'] ?? null,
+                    'type' => $data['type'] ?? null,
+                    'reference_id' => $data['reference_id'] ?? null,
+                    'tags' => $data['tags'] ?? null,
+                    'via' => 'ajax'
+                ]);
                 error_log('AJAX Note Add - Note created successfully with ID/result: ' . (is_int($noteId) ? $noteId : 'true'));
                 
                 // Try to get the note details if we have an ID
@@ -434,16 +464,22 @@ class Notes extends Controller {
         }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize POST data using modern approach instead of deprecated FILTER_SANITIZE_STRING
-            $title = isset($_POST['title']) ? htmlspecialchars(trim($_POST['title']), ENT_QUOTES, 'UTF-8') : '';
-            $content = isset($_POST['content']) ? htmlspecialchars(trim($_POST['content']), ENT_QUOTES, 'UTF-8') : '';
+            $before = $note;
+            $title = isset($_POST['title']) ? trim((string)$_POST['title']) : '';
+
+            $rawHtml = isset($_POST['content_html']) ? (string)$_POST['content_html'] : '';
+            $contentHtml = $rawHtml !== '' ? sanitize_rich_text_html($rawHtml) : '';
+            $contentPlain = $contentHtml !== ''
+                ? trim(html_entity_decode(strip_tags($contentHtml), ENT_QUOTES, 'UTF-8'))
+                : (isset($_POST['content']) ? trim((string)$_POST['content']) : '');
             
 			$tags = isset($_POST['tags']) ? trim($_POST['tags']) : '';
 			
 			$data = [
 				'id' => $id,
 				'title' => $title,
-				'content' => $content,
+				'content' => $contentPlain,
+				'content_html' => ($contentHtml !== '' ? $contentHtml : null),
 				'tags' => $tags,
 				'created_by' => $_SESSION['user_id'],
 				'title_err' => '',
@@ -469,6 +505,20 @@ class Notes extends Controller {
 			if (empty($data['title_err']) && empty($data['content_err']) && empty($data['tags_err'])) {
                 // Update note
                 if ($this->noteModel->update($data)) {
+                    $changes = [];
+                    foreach (['title', 'content', 'tags'] as $field) {
+                        $old = $before[$field] ?? null;
+                        $new = $data[$field] ?? null;
+                        if ((string)$old !== (string)$new) {
+                            $changes[$field] = ['old' => $old, 'new' => $new];
+                        }
+                    }
+                    log_activity('note', (int)$id, 'updated', 'Updated note "' . ($data['title'] ?? '') . '"', [
+                        'note_title' => $data['title'] ?? null,
+                        'type' => $before['type'] ?? null,
+                        'reference_id' => $before['reference_id'] ?? null,
+                        'changes' => $changes
+                    ]);
                     flash('note_success', 'Note updated successfully');
                     redirect('notes');
                 } else {
@@ -478,6 +528,7 @@ class Notes extends Controller {
             
 			$note['title'] = $data['title'];
 			$note['content'] = $data['content'];
+			$note['content_html'] = $data['content_html'];
 			$note['tags'] = $data['tags'];
 			
 			$projects = [];
@@ -586,6 +637,11 @@ class Notes extends Controller {
             
             // Delete note
             if ($this->noteModel->delete($id, $_SESSION['user_id'])) {
+                log_activity('note', (int)$id, 'deleted', 'Deleted note "' . ($note['title'] ?? '') . '"', [
+                    'note_title' => $note['title'] ?? null,
+                    'type' => $note['type'] ?? null,
+                    'reference_id' => $note['reference_id'] ?? null
+                ]);
                 if ($isAjax) {
                     echo json_encode(['success' => true, 'message' => 'Note deleted successfully']);
                     return;

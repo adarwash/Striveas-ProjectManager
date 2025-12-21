@@ -14,6 +14,7 @@ class Clients extends Controller {
     private $roleModel;
     private $clientServiceModel;
     private $clientStatusHistoryModel;
+    private $activityLogModel;
     
     /**
      * Initialize controller and load models
@@ -38,6 +39,7 @@ class Clients extends Controller {
         $this->roleModel = $this->model('Role');
         $this->clientServiceModel = $this->model('ClientService');
         $this->clientStatusHistoryModel = $this->model('ClientStatusHistory');
+        $this->activityLogModel = $this->model('ActivityLog');
         
         // Set the page for sidebar highlighting
         $_SESSION['page'] = 'clients';
@@ -231,6 +233,16 @@ class Clients extends Controller {
             $clientNotes = [];
         }
 
+        // Site visit stats (across all linked sites)
+        $siteVisitStats = ['total_visits' => 0, 'unique_engineers' => 0];
+        try {
+            if (method_exists($this->clientModel, 'getSiteVisitStats')) {
+                $siteVisitStats = $this->clientModel->getSiteVisitStats((int)$id);
+            }
+        } catch (Exception $e) {
+            $siteVisitStats = ['total_visits' => 0, 'unique_engineers' => 0];
+        }
+
         // Get contracts
         try {
             $contracts = $this->contractModel->getContractsByClient($id);
@@ -284,8 +296,9 @@ class Clients extends Controller {
             'contracts' => $contracts,
 			'projects' => $projects,
 			'callbacks' => $callbacks,
-			'audits' => $audits,
+            'audits' => $audits,
             'client_notes' => $clientNotes,
+            'site_visit_stats' => $siteVisitStats,
 			'meetings' => $this->clientMeetingModel->listByClient((int)$id),
             'currency' => $this->settingModel->getCurrency(),
             'documents' => $documents,
@@ -942,7 +955,15 @@ class Clients extends Controller {
             if (empty($data['name_err']) && empty($data['email_err'])) {
                 
                 // Validated
-                if ($this->clientModel->addClient($data)) {
+                $newClientId = $this->clientModel->addClient($data);
+                if ($newClientId) {
+                    $clientId = is_int($newClientId) ? (int)$newClientId : 0;
+                    log_activity('client', $clientId, 'created', 'Created client "' . ($data['name'] ?? '') . '"', [
+                        'client_name' => $data['name'] ?? null,
+                        'status' => $data['status'] ?? null,
+                        'is_restricted' => !empty($data['is_restricted']) ? 1 : 0,
+                        'allowed_role_ids' => $data['allowed_role_ids'] ?? null
+                    ]);
                     flash('client_success', 'Client added successfully');
                     redirect('clients');
                 } else {
@@ -1059,6 +1080,22 @@ class Clients extends Controller {
                 
                 // Validated
                 if ($this->clientModel->updateClient($data)) {
+                    $changes = [];
+                    foreach (['name','contact_person','email','phone','address','industry','status','notes','is_restricted','allowed_role_ids'] as $field) {
+                        $old = $client[$field] ?? null;
+                        $new = $data[$field] ?? null;
+                        if ($field === 'is_restricted') {
+                            $old = !empty($old) ? 1 : 0;
+                            $new = !empty($new) ? 1 : 0;
+                        }
+                        if ((string)$old !== (string)$new) {
+                            $changes[$field] = ['old' => $old, 'new' => $new];
+                        }
+                    }
+                    log_activity('client', (int)$id, 'updated', 'Updated client "' . ($data['name'] ?? ($client['name'] ?? '')) . '"', [
+                        'client_name' => $data['name'] ?? ($client['name'] ?? null),
+                        'changes' => $changes
+                    ]);
                     // Log status change if status changed
                     if (isset($client['status']) && $client['status'] !== $data['status']) {
                         $this->clientStatusHistoryModel->add(
@@ -1138,6 +1175,9 @@ class Clients extends Controller {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Delete the client
             if ($this->clientModel->deleteClient($id)) {
+                log_activity('client', (int)$id, 'deleted', 'Deleted client "' . ($client['name'] ?? '') . '"', [
+                    'client_name' => $client['name'] ?? null
+                ]);
                 flash('client_success', 'Client deleted successfully');
                 redirect('clients');
             } else {

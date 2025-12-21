@@ -354,36 +354,7 @@
                     };
                     ?>
                     <div class="row">
-                        <div class="col-12 col-xl-6 mb-4">
-                            <h6 class="text-muted mb-2"><i class="bi bi-clock-history me-1"></i>Past</h6>
-                            <?php if (!empty($past)): ?>
-                            <div class="table-responsive">
-                                <table class="table table-sm align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>When</th>
-                                            <th>Title</th>
-                                            <th>People</th>
-                                            <th>Site</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($past as $m): [$when,$site,$who] = $fmt($m); ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($when) ?></td>
-                                            <td><?= htmlspecialchars($m['title'] ?? '') ?></td>
-                                            <td><?= htmlspecialchars($who) ?></td>
-                                            <td><?= htmlspecialchars($site) ?></td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <?php else: ?>
-                            <div class="text-muted small">No past meetings.</div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="col-12 col-xl-6 mb-4">
+                        <div class="col-12 mb-4">
                             <h6 class="text-muted mb-2"><i class="bi bi-calendar-check me-1"></i>Today</h6>
                             <?php if (!empty($today)): ?>
                             <ul class="list-group list-group-flush">
@@ -434,6 +405,35 @@
                             </div>
                             <?php else: ?>
                             <div class="text-muted small">No upcoming meetings scheduled.</div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-12 mt-4">
+                            <h6 class="text-muted mb-2"><i class="bi bi-clock-history me-1"></i>Past</h6>
+                            <?php if (!empty($past)): ?>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>When</th>
+                                            <th>Title</th>
+                                            <th>People</th>
+                                            <th>Site</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($past as $m): [$when,$site,$who] = $fmt($m); ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($when) ?></td>
+                                            <td><?= htmlspecialchars($m['title'] ?? '') ?></td>
+                                            <td><?= htmlspecialchars($who) ?></td>
+                                            <td><?= htmlspecialchars($site) ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <?php else: ?>
+                            <div class="text-muted small">No past meetings.</div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -1462,15 +1462,22 @@
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
-                        <div class="col-6">
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
                             <div class="border-end">
                                 <h4 class="mb-0 text-primary"><?= count($sites) ?></h4>
                                 <small class="text-muted">Sites</small>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <h4 class="mb-0 text-info"><?= isset($projects) ? count($projects) : 0 ?></h4>
-                            <small class="text-muted">Projects</small>
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                            <div class="border-end">
+                                <h4 class="mb-0 text-info"><?= isset($projects) ? count($projects) : 0 ?></h4>
+                                <small class="text-muted">Projects</small>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <?php $totalEngineerVisits = (int)($site_visit_stats['total_visits'] ?? 0); ?>
+                            <h4 class="mb-0 text-success"><?= $totalEngineerVisits ?></h4>
+                            <small class="text-muted">Engineer Site Visits</small>
                         </div>
                     </div>
                 </div>
