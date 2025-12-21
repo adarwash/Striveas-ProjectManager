@@ -1708,6 +1708,73 @@ body {
     border-bottom: none !important;
 }
 
+/* Email reply separator in ticket conversation */
+.reply-separator {
+    border-top: 1px dashed #d1d5db;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    padding-top: 8px;
+    margin: 0 0 12px 0;
+}
+
+.quoted-toggle {
+    border-color: #d1d5db;
+    color: #4b5563;
+}
+
+.quoted-toggle:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.quoted-collapsed .quoted-section {
+    display: none;
+}
+
+.collapsible-message {
+    position: relative;
+    max-height: 260px;
+    overflow: hidden;
+}
+
+.collapsible-message.collapsible-expanded {
+    max-height: none;
+}
+
+.collapsible-message.collapsible-collapsed::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 48px;
+    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 100%);
+    pointer-events: none;
+}
+
+.collapsible-message {
+    position: relative;
+    max-height: 260px;
+    overflow: hidden;
+}
+
+.collapsible-message.collapsible-expanded {
+    max-height: none;
+}
+
+.collapsible-message.collapsible-collapsed::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 48px;
+    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 100%);
+    pointer-events: none;
+}
+
 /* ================================
    Activity Lists
    ================================ */
@@ -3492,6 +3559,25 @@ body {
 
     .results-count {
         color: #c9d1d9 !important;
+    }
+
+    .reply-separator {
+        border-top-color: #30363d;
+        color: #8b949e;
+    }
+
+    .quoted-toggle {
+        border-color: #30363d;
+        color: #c9d1d9;
+    }
+
+    .quoted-toggle:hover {
+        background: #21262d;
+        color: #58a6ff;
+    }
+
+    .collapsible-message.collapsible-collapsed::after {
+        background: linear-gradient(180deg, rgba(13,17,23,0) 0%, rgba(13,17,23,0.9) 100%);
     }
     
     /* Page Header */

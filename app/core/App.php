@@ -6,6 +6,22 @@ class App {
     protected $params = [];        // URL parameters
 
     public function __construct() {
+        // Session lifetime (seconds) - 2 hours of inactivity
+        $sessionLifetime = 7200;
+
+        // Configure session cookie and GC before session start
+        ini_set('session.gc_maxlifetime', (string)$sessionLifetime);
+        if (function_exists('session_set_cookie_params')) {
+            $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+            session_set_cookie_params([
+                'lifetime' => $sessionLifetime,
+                'path' => '/',
+                'secure' => $isSecure,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+        }
+
         // Enable error reporting for debugging
         ini_set('display_errors', 1);
         ini_set('display_startup_errors', 1);
@@ -14,6 +30,23 @@ class App {
         // Start session if not already started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
+        }
+
+        // Enforce inactivity timeout for logged-in users
+        if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true) {
+            $lastActivity = isset($_SESSION['last_activity']) ? (int)$_SESSION['last_activity'] : time();
+            if ((time() - $lastActivity) > $sessionLifetime) {
+                // Session expired due to inactivity
+                $_SESSION = [];
+                session_destroy();
+                if (isset($_COOKIE[session_name()])) {
+                    setcookie(session_name(), '', time() - 3600, '/');
+                }
+                header('Location: /auth');
+                exit;
+            }
+            // Refresh last activity timestamp
+            $_SESSION['last_activity'] = time();
         }
 
         // Apply display timezone from settings (default America/Los_Angeles)

@@ -573,13 +573,15 @@ class MicrosoftGraphService {
     }
     
     /**
-     * Send email
+     * Send email and return message ID
+     * Uses createMessage + send to capture the sent message ID for deduplication
+     * 
+     * @return string|bool Message ID on success, false on failure
      */
     public function sendEmail($from, $to, $subject, $body, $cc = [], $bcc = [], $replyTo = null) {
         $token = $this->getAccessToken();
         
         $encodedFrom = urlencode($from);
-        $url = "https://graph.microsoft.com/v1.0/users/{$encodedFrom}/sendMail";
         
         // Build recipients arrays
         $toRecipients = [];
@@ -597,39 +599,66 @@ class MicrosoftGraphService {
             $bccRecipients[] = ['emailAddress' => ['address' => $email]];
         }
         
-        $message = [
-            'message' => [
-                'subject' => $subject,
-                'body' => [
-                    'contentType' => 'HTML',
-                    'content' => $body
-                ],
-                'toRecipients' => $toRecipients
+        $messageData = [
+            'subject' => $subject,
+            'body' => [
+                'contentType' => 'HTML',
+                'content' => $body
             ],
-            'saveToSentItems' => true
+            'toRecipients' => $toRecipients
         ];
         
         if (!empty($ccRecipients)) {
-            $message['message']['ccRecipients'] = $ccRecipients;
+            $messageData['ccRecipients'] = $ccRecipients;
         }
         
         if (!empty($bccRecipients)) {
-            $message['message']['bccRecipients'] = $bccRecipients;
+            $messageData['bccRecipients'] = $bccRecipients;
         }
         
         if ($replyTo) {
-            $message['message']['replyTo'] = [
+            $messageData['replyTo'] = [
                 ['emailAddress' => ['address' => $replyTo]]
             ];
         }
         
-        $ch = curl_init($url);
+        // Step 1: Create draft message (returns message ID)
+        $createUrl = "https://graph.microsoft.com/v1.0/users/{$encodedFrom}/messages";
+        $ch = curl_init($createUrl);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $token,
             'Content-Type: application/json'
         ]);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($message));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($messageData));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode !== 201) {
+            error_log('Graph API create message failed (HTTP ' . $httpCode . '): ' . $response);
+            throw new Exception('Failed to create email message: ' . $response);
+        }
+        
+        $messageResult = json_decode($response, true);
+        $messageId = $messageResult['id'] ?? null;
+        
+        if (!$messageId) {
+            throw new Exception('No message ID returned from Graph API');
+        }
+        
+        // Step 2: Send the created message
+        $encodedMessageId = rawurlencode($messageId);
+        $sendUrl = "https://graph.microsoft.com/v1.0/users/{$encodedFrom}/messages/{$encodedMessageId}/send";
+        
+        $ch = curl_init($sendUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $token,
+            'Content-Length: 0'
+        ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         
         $response = curl_exec($ch);
@@ -637,10 +666,11 @@ class MicrosoftGraphService {
         curl_close($ch);
         
         if ($httpCode !== 202) {
+            error_log('Graph API send message failed (HTTP ' . $httpCode . '): ' . $response);
             throw new Exception('Failed to send email: ' . $response);
         }
         
-        return true;
+        return $messageId;
     }
 
     /**
@@ -809,6 +839,14 @@ class MicrosoftGraphService {
                 error_log('processEmailsToTickets: Processing email: ' . $email['subject']);
                 $messageId = $email['id'] ?? '';
                 if (empty($messageId)) {
+                    continue;
+                }
+                
+                // Skip emails FROM the support address (these are our own sent emails bouncing back)
+                $fromAddress = $email['from']['emailAddress']['address'] ?? '';
+                if (strtolower($fromAddress) === strtolower($supportEmail)) {
+                    error_log('processEmailsToTickets: Skipping outbound email from ' . $fromAddress . ' (same as support email)');
+                    $this->markAsRead($supportEmail, $messageId);
                     continue;
                 }
 
@@ -1034,6 +1072,12 @@ class MicrosoftGraphService {
                         if (empty($email['isRead'])) { continue; }
                         $messageId = $email['id'] ?? '';
                         if (empty($messageId)) { continue; }
+                        
+                        // Skip emails FROM the support address (our own sent emails)
+                        $fromAddress = $email['from']['emailAddress']['address'] ?? '';
+                        if (strtolower($fromAddress) === strtolower($supportEmail)) {
+                            continue;
+                        }
 
                         // Case-sensitive dedupe (Graph IDs are case-sensitive)
                         $dup = $this->db->select(
@@ -1043,7 +1087,6 @@ class MicrosoftGraphService {
                         if (!empty($dup)) { continue; }
 
                         $subjectOriginal = $email['subject'] ?? '';
-                        $fromAddress = $email['from']['emailAddress']['address'] ?? '';
                         $emailDate = $this->formatGraphDateForDb($email['receivedDateTime'] ?? null);
                         $conversationId = $email['conversationId'] ?? null;
 

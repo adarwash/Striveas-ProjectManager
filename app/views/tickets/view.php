@@ -255,12 +255,31 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="timeline">
+                        <?php
+                            // Track duplicate acknowledgement-style emails (same subject + body)
+                            $renderedEmailHashes = [];
+                        ?>
                         <?php if (empty($data['messages'])): ?>
                             <div class="p-4 text-muted">
                                 No conversation messages yet.
                             </div>
                         <?php else: ?>
                             <?php foreach ($data['messages'] as $index => $message): ?>
+                                <?php
+                                    // Lightweight dedupe: if two email messages have identical subject and body, skip the duplicate
+                                    $isEmailMsg = in_array($message['message_type'] ?? '', ['email_inbound', 'email_outbound'], true);
+                                    if ($isEmailMsg) {
+                                        $subjectNorm = trim(preg_replace('/\s+/', ' ', (string)($message['subject'] ?? '')));
+                                        $bodyRaw = (string)($message['content'] ?? '');
+                                        $bodyNorm = trim(preg_replace('/\s+/', ' ', strip_tags($bodyRaw)));
+                                        $hash = sha1($subjectNorm . '|' . $bodyNorm);
+                                        if (isset($renderedEmailHashes[$hash])) {
+                                            // Skip rendering exact-duplicate email
+                                            continue;
+                                        }
+                                        $renderedEmailHashes[$hash] = true;
+                                    }
+                                ?>
                                 <div class="timeline-item border-bottom p-4 <?= ($message['is_system_message'] ?? 0) ? 'bg-light' : '' ?>">
                                     <div class="d-flex">
                                         <div class="flex-shrink-0">
@@ -323,8 +342,13 @@
                                             <?php endif; ?>
                                             
                                             <div class="message-content">
+                                                <?php if (in_array($message['message_type'], ['email_inbound', 'email_outbound'])): ?>
+                                                    <div class="reply-separator" aria-hidden="true">
+                                                        Reply above this line
+                                                    </div>
+                                                <?php endif; ?>
                                                 <?php if (($message['content_format'] ?? 'text') === 'html'): ?>
-                                                    <div class="html-content">
+                                                    <div class="html-content collapsible-message">
                                                         <?php
                                                             // Render stored HTML for email content, but fallback if it's actually plain text
                                                             $c = (string)($message['content'] ?? '');
@@ -337,7 +361,9 @@
                                                         ?>
                                                     </div>
                                                 <?php else: ?>
-                                                    <?= nl2br(htmlspecialchars($message['content'])) ?>
+                                                    <div class="plain-content collapsible-message">
+                                                        <?= nl2br(htmlspecialchars($message['content'])) ?>
+                                                    </div>
                                                 <?php endif; ?>
                                             </div>
 
@@ -722,6 +748,143 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Collapse quoted email blocks (common email clients wrap in <blockquote> or gmail_quote)
+    const EMAIL_MSG_SELECTOR = '.message-content .html-content';
+
+    document.querySelectorAll(EMAIL_MSG_SELECTOR).forEach(function(container) {
+        const quotedBlocks = [];
+
+        // Detect common quoted elements
+        container.querySelectorAll('blockquote, .gmail_quote, .yahoo_quoted').forEach(function(el) {
+            quotedBlocks.push(el);
+        });
+
+        // Gmail sometimes nests in div with border-left styling; heuristic
+        container.querySelectorAll('div[style*="border-left"]').forEach(function(el) {
+            quotedBlocks.push(el);
+        });
+
+        if (!quotedBlocks.length) {
+            return;
+        }
+
+        // Deduplicate elements
+        const unique = Array.from(new Set(quotedBlocks));
+        unique.forEach(function(el) {
+            el.classList.add('quoted-section');
+        });
+
+        // Add toggle only once per container
+        if (container.querySelector('.quoted-toggle')) {
+            return;
+        }
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'btn btn-sm btn-outline-secondary quoted-toggle mb-2';
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.textContent = 'Show quoted text';
+
+        toggle.addEventListener('click', function() {
+            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+            toggle.setAttribute('aria-expanded', String(!isExpanded));
+            toggle.textContent = isExpanded ? 'Show quoted text' : 'Hide quoted text';
+            container.classList.toggle('quoted-collapsed', isExpanded);
+        });
+
+        // Insert toggle at top of container
+        container.prepend(toggle);
+        // Default collapsed
+        container.classList.add('quoted-collapsed');
+    });
+
+    // Collapse quoted/plain history in non-HTML messages (common markers)
+    const PLAIN_MSG_SELECTOR = '.message-content .plain-content';
+    const QUOTE_MARKERS = [
+        /-----\s*Original Message\s*-----/i,
+        /^On .*wrote:$/im,
+        /^From:\s.*$/im,
+        /Thank you for contacting us/i
+    ];
+
+    document.querySelectorAll(PLAIN_MSG_SELECTOR).forEach(function(container) {
+        // Skip if already processed
+        if (container.dataset.quoteProcessed === '1') return;
+
+        const text = container.innerText || '';
+        let cutIndex = -1;
+        QUOTE_MARKERS.some(marker => {
+            const m = text.search(marker);
+            if (m >= 0) { cutIndex = m; return true; }
+            return false;
+        });
+
+        if (cutIndex === -1) return;
+
+        const visibleText = text.slice(0, cutIndex).trimEnd();
+        const quotedText = text.slice(cutIndex);
+        if (!quotedText.trim()) return;
+
+        // Build new nodes
+        container.innerHTML = '';
+        const spanMain = document.createElement('span');
+        spanMain.textContent = visibleText;
+        const spanQuote = document.createElement('span');
+        spanQuote.textContent = quotedText;
+        spanQuote.classList.add('quoted-section');
+        container.append(spanMain, document.createElement('br'), spanQuote);
+
+        container.dataset.quoteProcessed = '1';
+
+        // Add toggle similar to html path
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'btn btn-sm btn-outline-secondary quoted-toggle mt-2';
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.textContent = 'Show quoted text';
+
+        toggle.addEventListener('click', function() {
+            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+            toggle.setAttribute('aria-expanded', String(!isExpanded));
+            toggle.textContent = isExpanded ? 'Show quoted text' : 'Hide quoted text';
+            container.classList.toggle('quoted-collapsed', isExpanded);
+        });
+
+        // Default collapsed
+        container.classList.add('quoted-collapsed');
+        container.parentNode.insertBefore(toggle, container.nextSibling);
+    });
+
+    // Collapsible large messages (HTML or plain)
+    const COLLAPSIBLE_SELECTOR = '.collapsible-message';
+    const MAX_HEIGHT = 260; // px before we collapse
+
+    document.querySelectorAll(COLLAPSIBLE_SELECTOR).forEach(function(block) {
+        // If content is short, skip
+        if (block.scrollHeight <= MAX_HEIGHT + 40) return;
+
+        block.classList.add('collapsible-collapsed');
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'btn btn-sm btn-outline-secondary quoted-toggle mt-2';
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.textContent = 'Show full message';
+
+        toggle.addEventListener('click', function() {
+            const expanded = block.classList.toggle('collapsible-expanded');
+            toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            toggle.textContent = expanded ? 'Hide full message' : 'Show full message';
+        });
+
+        // Insert toggle after the block
+        block.parentNode.insertBefore(toggle, block.nextSibling);
+    });
+});
+</script>
 
 <!-- Quill (basic rich text editor) -->
 <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
