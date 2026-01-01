@@ -270,7 +270,7 @@
             </div>
 
             <!-- Conversation Thread -->
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm" id="conversationCard">
                 <div class="card-header bg-white">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-chat-dots me-2"></i>Conversation
@@ -288,7 +288,7 @@
                                 <?php if ($index > 0): ?>
                                     <div class="message-divider my-3"></div>
                                 <?php endif; ?>
-                                <div class="timeline-item p-4 <?= ($message['is_system_message'] ?? 0) ? 'bg-light' : '' ?>">
+                                <div class="timeline-item p-4 overflow-auto <?= ($message['is_system_message'] ?? 0) ? 'bg-light' : '' ?>">
                                     <div class="d-flex">
                                         <div class="flex-shrink-0">
                                             <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
@@ -510,6 +510,7 @@
 
         <!-- Sidebar -->
         <div class="col-lg-4">
+            <div id="pendingCardWrapper">
             <?php if (!empty($data['pending_attachments'])): ?>
                 <div class="card border-0 shadow-sm mb-4" id="pendingAttachmentsCard"
                      data-ticket-id="<?= (int)$data['ticket']['id'] ?>"
@@ -520,19 +521,17 @@
                                 <i class="bi bi-cloud-download me-2"></i>Attachments pending
                                 <span class="badge bg-secondary ms-2"><?= (int)$data['pending_attachments'] ?></span>
                             </span>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="fetchAttachmentsBtn">
-                                Fetch now
-                            </button>
                         </h6>
                     </div>
                     <div class="card-body">
                         <div class="text-muted small mb-2">
-                            Attachments are queued for download and will appear shortly.
+                            Attachments are being downloaded automatically in the background. This will refresh to show inline images as soon as they’re ready.
                         </div>
                         <div class="small" id="fetchAttachmentsStatus" aria-live="polite"></div>
                     </div>
                 </div>
             <?php endif; ?>
+            </div>
 
             <!-- Attachments (non-inline / downloadable) -->
             <?php
@@ -540,6 +539,7 @@
                     return empty($a['is_inline']) || (int)$a['is_inline'] !== 1;
                 });
             ?>
+            <div id="attachmentsCardWrapper">
             <?php if (!empty($downloadableAttachments)): ?>
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white">
@@ -587,6 +587,7 @@
                 </div>
             </div>
             <?php endif; ?>
+            </div>
 
             <!-- Quick Actions -->
             <?php if ($data['can_edit']): ?>
@@ -858,24 +859,104 @@
 </script>
 
 <script>
-// Manual attachment fetch button
+// AJAX fragment refresh + auto attachment fetch (no full page reload)
 (() => {
-    const card = document.getElementById('pendingAttachmentsCard');
-    const btn = document.getElementById('fetchAttachmentsBtn');
+    const pendingCard = document.getElementById('pendingAttachmentsCard');
     const status = document.getElementById('fetchAttachmentsStatus');
-    if (!card || !btn) return;
+    const ticketId = pendingCard ? pendingCard.getAttribute('data-ticket-id') : null;
 
-    const ticketId = card.getAttribute('data-ticket-id');
     const setStatus = (msg, cls) => {
         if (!status) return;
         status.className = 'small ' + (cls || '');
         status.textContent = msg || '';
     };
 
-    btn.addEventListener('click', async () => {
+    const reinitThreadSplitter = () => {
+        const emailMessages = document.querySelectorAll('.timeline-item .html-content, .timeline-item .plain-content');
+        emailMessages.forEach((container, containerIdx) => {
+            const html = container.innerHTML;
+            const headerPattern = /<div[^>]*>\s*<b>\s*(From|Sent|Date):\s*<\/b>.*?<b>\s*(To|Date|Sent):\s*<\/b>.*?<b>\s*Subject:\s*<\/b>.*?<\/div>/i;
+            const match = headerPattern.exec(html);
+            if (!match) return;
+            const splitIndex = match.index;
+            const newContent = html.slice(0, splitIndex);
+            const oldContent = html.slice(splitIndex);
+            const collapseId = 'emailHistory_' + containerIdx + '_' + Math.floor(Math.random() * 10000);
+            const toggleHtml = `
+                <div class="email-history-toggle mt-3">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false">
+                        <i class="bi bi-clock-history me-1"></i> Show previous message history
+                    </button>
+                </div>
+                <div class="collapse mt-3" id="${collapseId}">
+                    <div class="email-history-content p-3 border rounded bg-light text-muted small">
+                        <div class="email-reply-divider mb-3" style="border-top: 2px solid #cbd5e1; padding-top: 0.5rem; color: #64748b;">
+                            <i class="bi bi-reply me-2"></i>Previous message in thread:
+                        </div>
+                        ${oldContent}
+                    </div>
+                </div>
+            `;
+            container.innerHTML = newContent + toggleHtml;
+        });
+    };
+
+    const refreshFragments = async () => {
         if (!ticketId) return;
-        btn.disabled = true;
-        setStatus('Starting download…', 'text-muted');
+        try {
+            const res = await fetch(`<?= URLROOT ?>/tickets/fragment/${ticketId}`, { headers: { 'Accept': 'application/json' }});
+            const data = await res.json();
+            if (!data.ok) return;
+            if (data.conversation) {
+                const conv = document.getElementById('conversationCard');
+                if (conv) {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = data.conversation;
+                    const newConv = tmp.firstElementChild;
+                    if (newConv) conv.replaceWith(newConv);
+                }
+            }
+            if (data.sidebar) {
+                const pendingWrap = document.getElementById('pendingCardWrapper');
+                const attachWrap = document.getElementById('attachmentsCardWrapper');
+                const tmp = document.createElement('div');
+                tmp.innerHTML = data.sidebar;
+                const newPending = tmp.querySelector('#pendingCardWrapper');
+                const newAttach = tmp.querySelector('#attachmentsCardWrapper');
+                if (pendingWrap && newPending) pendingWrap.replaceWith(newPending);
+                if (attachWrap && newAttach) attachWrap.replaceWith(newAttach);
+            }
+            reinitThreadSplitter();
+        } catch (e) {
+            console.warn('Fragment refresh failed', e);
+        }
+    };
+
+    const pollPending = async (attempt = 0) => {
+        if (!ticketId) return;
+        try {
+            const res = await fetch(`<?= URLROOT ?>/tickets/fragment/${ticketId}?mode=status`, { headers: { 'Accept': 'application/json' }});
+            const data = await res.json();
+            if (!data.ok) return;
+            const pending = parseInt(data.pending || 0);
+            if (pending <= 0) {
+                await refreshFragments();
+                setStatus('', '');
+                return;
+            }
+            if (attempt < 8) { // up to ~16s
+                setTimeout(() => pollPending(attempt + 1), 2000);
+            } else {
+                setStatus('Still downloading attachments in background…', 'text-muted');
+            }
+        } catch (e) {
+            console.warn('Poll failed', e);
+        }
+    };
+
+    const triggerDownload = async (isAuto = false) => {
+        if (!ticketId) return;
+        if (status) setStatus('Downloading attachments in background…', 'text-muted');
         try {
             const res = await fetch(`<?= URLROOT ?>/tickets/kickoffAttachments/${ticketId}`, {
                 method: 'GET',
@@ -887,16 +968,22 @@
                 return;
             }
             if (data.started) {
-                setStatus('Downloading in background. Refresh in a moment.', 'text-success');
+                pollPending(0);
             } else {
                 setStatus('No pending attachments.', 'text-muted');
             }
         } catch (e) {
             setStatus('Could not start attachment download.', 'text-danger');
-        } finally {
-            btn.disabled = false;
         }
-    });
+    };
+
+    // Auto-trigger on load if there are pending attachments
+    if (pendingCard) {
+        const pendingCount = parseInt(pendingCard.getAttribute('data-pending-count') || '0');
+        if (pendingCount > 0) {
+            setTimeout(() => triggerDownload(true), 300);
+        }
+    }
 })();
 </script>
 
@@ -1001,36 +1088,45 @@ document.getElementById('message').addEventListener('input', function() {
 </script>
 
 <script>
-// Email thread splitter: insert visual dividers at email header boundaries within messages
+// Email thread splitter: insert visual dividers at email header boundaries and collapse history
 (() => {
     const emailMessages = document.querySelectorAll('.timeline-item .html-content, .timeline-item .plain-content');
     
-    emailMessages.forEach(container => {
+    emailMessages.forEach((container, containerIdx) => {
         const html = container.innerHTML;
         
         // Detect Outlook/Gmail style header blocks (From:, Sent:/Date:, To:, Subject:)
         // Pattern: <b>From:</b> ... <b>Sent:</b> ... <b>To:</b> ... <b>Subject:</b>
-        const headerPattern = /<div[^>]*>\s*<b>\s*(From|Sent|Date):\s*<\/b>.*?<b>\s*(To|Date|Sent):\s*<\/b>.*?<b>\s*Subject:\s*<\/b>.*?<\/div>/gi;
+        const headerPattern = /<div[^>]*>\s*<b>\s*(From|Sent|Date):\s*<\/b>.*?<b>\s*(To|Date|Sent):\s*<\/b>.*?<b>\s*Subject:\s*<\/b>.*?<\/div>/i;
         
-        const matches = [];
-        let match;
-        while ((match = headerPattern.exec(html)) !== null) {
-            matches.push({
-                text: match[0],
-                index: match.index
-            });
-        }
+        const match = headerPattern.exec(html);
         
-        if (matches.length === 0) return; // No thread detected
+        if (!match) return; // No thread detected
         
-        // Insert dividers at each header block position
-        let offset = 0;
-        matches.forEach((m, i) => {
-            const divider = '<div class="email-reply-divider my-4" style="border-top: 2px solid #cbd5e1; margin: 2rem 0; padding-top: 1rem; color: #64748b; font-size: 0.85rem;"><i class="bi bi-reply me-2"></i>Previous message in thread:</div>';
-            const insertPos = m.index + offset;
-            container.innerHTML = container.innerHTML.slice(0, insertPos) + divider + container.innerHTML.slice(insertPos);
-            offset += divider.length;
-        });
+        // Split content at the first header block
+        const splitIndex = match.index;
+        const newContent = html.slice(0, splitIndex);
+        const oldContent = html.slice(splitIndex);
+        
+        const collapseId = 'emailHistory_' + containerIdx + '_' + Math.floor(Math.random() * 10000);
+        
+        const toggleHtml = `
+            <div class="email-history-toggle mt-3">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false">
+                    <i class="bi bi-clock-history me-1"></i> Show previous message history
+                </button>
+            </div>
+            <div class="collapse mt-3" id="${collapseId}">
+                <div class="email-history-content p-3 border rounded bg-light text-muted small">
+                    <div class="email-reply-divider mb-3" style="border-top: 2px solid #cbd5e1; padding-top: 0.5rem; color: #64748b;">
+                        <i class="bi bi-reply me-2"></i>Previous message in thread:
+                    </div>
+                    ${oldContent}
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = newContent + toggleHtml;
     });
 })();
 </script>

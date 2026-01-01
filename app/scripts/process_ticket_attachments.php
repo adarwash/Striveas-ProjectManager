@@ -43,11 +43,12 @@ if (!empty($ticketId)) {
         $lockPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $resource = 'ticket_attachments_' . (int)$ticketId;
-        $sql = "DECLARE @res INT;
+        $sql = "SET NOCOUNT ON;
+                DECLARE @res INT;
                 EXEC @res = sp_getapplock
                     @Resource = :res,
                     @LockMode = 'Exclusive',
-                    @LockTimeout = 0,
+                    @LockTimeout = 1000, -- 1s wait
                     @DbPrincipal = 'public';
                 SELECT @res AS res;";
         $stmt = $lockPdo->prepare($sql);
@@ -56,8 +57,8 @@ if (!empty($ticketId)) {
         $res = (int)($row['res'] ?? -999);
         // sp_getapplock returns >= 0 on success, < 0 on failure
         if ($res < 0) {
-            echo "Attachment download already running for ticket {$ticketId}\n";
-            exit(0);
+            // Don't hard-stop; continue so we don't get stuck if a previous run hung.
+            fwrite(STDERR, "Attachment lock not acquired (res={$res}) for ticket {$ticketId}, continuing anyway.\n");
         }
     } catch (Throwable $e) {
         // If lock fails, we still proceed (worst case: duplicate download).

@@ -244,6 +244,103 @@ class Tickets extends Controller {
     }
 
     /**
+     * Return conversation + attachments fragments (HTML) or status for AJAX refresh.
+     */
+    public function fragment($id) {
+        header('Content-Type: application/json');
+
+        $ticket = $this->ticketModel->getById($id);
+        
+        if (!$ticket) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'error' => 'Ticket not found']);
+            return;
+        }
+        
+        if (!hasPermission('tickets.read') && 
+            !$this->canAccessTicket($ticket, $_SESSION['user_id'])) {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'error' => 'Forbidden']);
+            return;
+        }
+
+        // Timezone context
+        $displayTz = date_default_timezone_get();
+        $dbTz = $displayTz;
+        try {
+            $settingModel = $this->model('Setting');
+            $displayTz = $settingModel->get('display_timezone', $displayTz) ?: $displayTz;
+            $dbTz = $settingModel->get('db_timezone', $dbTz) ?: $dbTz;
+        } catch (Exception $e) {
+            // ignore
+        }
+
+        $messages = $this->ticketModel->getMessages($id, hasPermission('tickets.view_private'));
+
+        // Attachments + pending count
+        $attachments = [];
+        $pendingAttachmentCount = 0;
+        try {
+            if (!class_exists('TicketAttachment')) {
+                require_once APPROOT . '/app/models/TicketAttachment.php';
+            }
+            $attachmentModel = new TicketAttachment();
+            $attachments = $attachmentModel->getByTicketId((int)$id);
+            if (method_exists($attachmentModel, 'countPendingByTicketId')) {
+                $pendingAttachmentCount = (int)$attachmentModel->countPendingByTicketId((int)$id);
+            }
+        } catch (Exception $e) {
+            $attachments = [];
+            $pendingAttachmentCount = 0;
+        }
+
+        // Status-only mode
+        if (isset($_GET['mode']) && $_GET['mode'] === 'status') {
+            echo json_encode([
+                'ok' => true,
+                'pending' => $pendingAttachmentCount
+            ]);
+            return;
+        }
+
+        // Lookup data (for badges, names)
+        $lookupData = $this->ticketModel->getLookupData();
+
+        $viewData = [
+            'ticket' => $ticket,
+            'messages' => $messages,
+            'attachments' => $attachments,
+            'pending_attachments' => $pendingAttachmentCount,
+            'statuses' => $lookupData['statuses'],
+            'priorities' => $lookupData['priorities'],
+            'categories' => $lookupData['categories'],
+            'display_timezone' => $displayTz,
+            'db_timezone' => $dbTz
+        ];
+
+        // Render partials
+        $conversationHtml = $this->renderPartial(APPROOT . '/app/views/tickets/partials/conversation_fragment.php', $viewData);
+        $sidebarHtml = $this->renderPartial(APPROOT . '/app/views/tickets/partials/sidebar_fragment.php', $viewData);
+
+        echo json_encode([
+            'ok' => true,
+            'conversation' => $conversationHtml,
+            'sidebar' => $sidebarHtml,
+            'pending' => $pendingAttachmentCount
+        ]);
+    }
+
+    /**
+     * Helper to render a partial and return its HTML.
+     */
+    private function renderPartial(string $path, array $data): string {
+        extract(['data' => $data]);
+        ob_start();
+        include $path;
+        return ob_get_clean();
+    }
+
+    /**
      * Kick off async attachment downloads for a ticket (non-blocking).
      * Called by the UI (manual button / optional on-load).
      */

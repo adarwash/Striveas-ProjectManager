@@ -4013,3 +4013,7 @@ body {
     font-weight: 600;
     text-transform: uppercase;
 }
+
+.overflow-auto {
+    overflow: auto !important;
+}
