@@ -190,6 +190,37 @@ for ($i = 0; $i < $total; $i++) {
                                 </div>
 
                                 <?php
+                                    // Show non-inline attachments linked to this message (by ticket_message_id or ms_message_id)
+                                    $messageAttachments = array_filter($data['attachments'] ?? [], function($att) use ($message) {
+                                        if (!empty($att['is_inline']) && (int)$att['is_inline'] === 1) return false;
+                                        $msgId = (int)($message['id'] ?? 0);
+                                        $tmMatch = isset($att['ticket_message_id']) && (int)$att['ticket_message_id'] === $msgId;
+                                        $msMatch = !empty($att['ms_message_id']) && !empty($message['email_message_id']) && (string)$att['ms_message_id'] === (string)$message['email_message_id'];
+                                        return $tmMatch || $msMatch;
+                                    });
+                                ?>
+                                <?php if (!empty($messageAttachments)): ?>
+                                    <div class="mt-2">
+                                        <small class="text-muted d-block mb-1"><i class="bi bi-paperclip me-1"></i>Attachments</small>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <?php foreach ($messageAttachments as $att): ?>
+                                                <?php $name = $att['original_filename'] ?: $att['filename']; ?>
+                                                <?php if (!empty($att['file_path'])): ?>
+                                                    <a class="badge bg-light text-dark border text-decoration-none" target="_blank"
+                                                       href="<?= URLROOT . '/' . ltrim($att['file_path'], '/') ?>">
+                                                        <i class="bi bi-link-45deg me-1"></i><?= htmlspecialchars($name) ?>
+                                                    </a>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="bi bi-exclamation-triangle me-1"></i><?= htmlspecialchars($name) ?> (pending)
+                                                    </span>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php
                                     $hasFull = !empty($message['content_full']) && is_string($message['content_full']) && trim($message['content_full']) !== '';
                                     $isEmailMsg = in_array($message['message_type'] ?? '', ['email_inbound', 'email_outbound'], true);
                                 ?>
