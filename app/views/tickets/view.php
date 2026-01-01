@@ -183,6 +183,14 @@
                                     <hr class="dropdown-divider">
                                 </li>
                                 <li>
+                                    <form method="POST" action="<?= URLROOT ?>/tickets/archive/<?= $data['ticket']['id'] ?>" onsubmit="return confirm('Archive this ticket?')">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? ( $_SESSION['csrf_token']=bin2hex(random_bytes(16)) )) ?>">
+                                        <button type="submit" class="dropdown-item text-warning">
+                                            <i class="bi bi-archive me-2"></i>Archive Ticket
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
                                     <form method="POST" action="<?= URLROOT ?>/tickets/delete" onsubmit="return confirm('Delete this ticket permanently? This cannot be undone.');">
                                         <input type="hidden" name="ticket_id" value="<?= $data['ticket']['id'] ?>">
                                         <?php 

@@ -797,7 +797,7 @@ class Tickets extends Controller {
         if ($_SERVER['REQUEST_METHOD'] != 'POST') {
             redirect('tickets');
         }
-        
+
         if (!hasPermission('tickets.delete')) {
             flash('error', 'You do not have permission to delete tickets.');
             redirect('tickets');
@@ -832,6 +832,38 @@ class Tickets extends Controller {
             flash('error', 'Failed to delete ticket.');
             redirect('tickets/show/' . $ticketId);
         }
+    }
+
+    /**
+     * Archive a ticket (POST only)
+     */
+    public function archive($id) {
+        if ($_SERVER['REQUEST_METHOD'] != 'POST') {
+            redirect('tickets/show/' . $id);
+        }
+
+        if (!hasPermission('tickets.delete')) { // reuse delete perm for archive
+            flash('error', 'You do not have permission to archive tickets.');
+            redirect('tickets/show/' . $id);
+        }
+
+        $ticket = $this->ticketModel->getById($id);
+        if (!$ticket) {
+            flash('error', 'Ticket not found.');
+            redirect('tickets');
+        }
+
+        $success = $this->ticketModel->update($id, [
+            'is_archived' => 1,
+            'archived_at' => date('Y-m-d H:i:s')
+        ]);
+
+        if ($success) {
+            flash('success', 'Ticket archived.');
+        } else {
+            flash('error', 'Failed to archive ticket.');
+        }
+        redirect('tickets');
     }
     
     /**

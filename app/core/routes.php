@@ -37,6 +37,7 @@ $router->addRoute('/tickets/addMessage/:id', 'Tickets@addMessage');
 $router->addRoute('/tickets/addMessage', 'Tickets@addMessage');
 $router->addRoute('/tickets/updateStatus', 'Tickets@updateStatus');
 $router->addRoute('/tickets/fragment/:id', 'Tickets@fragment');
+$router->addRoute('/tickets/archive/:id', 'Tickets@archive');
 $router->addRoute('/tickets/kickoffAttachments/:id', 'Tickets@kickoffAttachments');
 
  

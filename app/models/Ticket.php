@@ -454,7 +454,8 @@ class Ticket {
             
             $allowedFields = [
                 'subject', 'description', 'status_id', 'priority_id', 'category_id',
-                'assigned_to', 'due_date', 'tags', 'resolved_at', 'closed_at'
+                'assigned_to', 'due_date', 'tags', 'resolved_at', 'closed_at',
+                'is_archived', 'archived_at'
             ];
             
             foreach ($allowedFields as $field) {
