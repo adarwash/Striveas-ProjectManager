@@ -82,7 +82,7 @@
                                             <?= htmlspecialchars(
                                                 trim($user['full_name'] ?? '') 
                                                 ?: trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))
-                                                ?: ($user['name'] ?? 'Unknown User')
+                                                ?: ($user['name'] ?? $user['username'] ?? 'Unknown User')
                                             ) ?>
                                         </option>
                                     <?php endforeach; ?>

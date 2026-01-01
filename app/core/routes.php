@@ -40,4 +40,14 @@ $router->addRoute('/tickets/fragment/:id', 'Tickets@fragment');
 $router->addRoute('/tickets/archive/:id', 'Tickets@archive');
 $router->addRoute('/tickets/kickoffAttachments/:id', 'Tickets@kickoffAttachments');
 
+// Ticket categories (admin)
+$router->addRoute('/admin/categories', 'Admin@categories');
+$router->addRoute('/admin/categories/add', 'Admin@addCategory');
+$router->addRoute('/admin/categories/toggle/:id', 'Admin@toggleCategory');
+$router->addRoute('/admin/categories/delete/:id', 'Admin@deleteCategory');
+
+// Ticket settings (admin)
+$router->addRoute('/admin/tickets/settings', 'Admin@ticketSettings');
+$router->addRoute('/admin/ticketSettings', 'Admin@ticketSettings');
+
  

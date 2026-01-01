@@ -71,11 +71,11 @@
                         <div class="col-md-6 col-lg-4 mb-4">
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
-                                    <i class="bi bi-envelope text-info" style="font-size: 2rem;"></i>
-                                    <h5 class="card-title mt-3">Ticket Email Settings</h5>
-                                    <p class="card-text text-muted">Configure the Microsoft 365 support mailbox and ticket email notifications.</p>
-                                    <a href="<?= URLROOT ?>/admin/emailSettings" class="btn btn-info">
-                                        <i class="bi bi-gear me-2"></i>Ticket Email Settings
+                                    <i class="bi bi-tools text-info" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-3">Ticket Management</h5>
+                                    <p class="card-text text-muted">Categories, email setup, and admin-only ticket settings.</p>
+                                    <a href="<?= URLROOT ?>/admin/ticketSettings" class="btn btn-info">
+                                        <i class="bi bi-gear me-2"></i>Manage Tickets
                                     </a>
                                 </div>
                             </div>

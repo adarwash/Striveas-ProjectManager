@@ -246,6 +246,19 @@
             </div>
             
             <div class="content-wrapper">
+                <?php if (isset($_SESSION['original_user'])): ?>
+                    <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                You are currently impersonating <strong><?= htmlspecialchars($_SESSION['user_name']) ?></strong>.
+                            </div>
+                            <a href="<?= URLROOT ?>/admin/stopImpersonating" class="btn btn-sm btn-warning fw-bold">
+                                <i class="bi bi-arrow-return-left me-1"></i> Return to Admin
+                            </a>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <!-- Flash Messages (supports both legacy and new helper) -->
                 <?php if (isset($_SESSION['flash_message'])) : ?>
                     <div class="alert flash-message alert-<?= $_SESSION['flash_type'] ?? 'primary' ?> alert-dismissible fade show" role="alert">

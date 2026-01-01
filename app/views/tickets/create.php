@@ -96,12 +96,20 @@
                                     <option value="">No Client</option>
                                     <?php foreach ($data['clients'] as $client): ?>
                                         <option value="<?= $client['id'] ?>"
+                                            data-email="<?= htmlspecialchars($client['email'] ?? '') ?>"
                                             <?= ($data['formData']['client_id'] ?? '') == $client['id'] ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($client['name']) ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                                 <div class="form-text">Associate ticket with a customer (MSP)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="contact_email" class="form-label">Contact Email (Optional)</label>
+                                <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                                       placeholder="client@example.com"
+                                       value="<?= htmlspecialchars($data['formData']['contact_email'] ?? '') ?>">
+                                <div class="form-text">If set, notifications will be sent to this email</div>
                             </div>
                             <?php if (hasPermission('tickets.assign')): ?>
                             <div class="col-md-6">
@@ -111,7 +119,11 @@
                                     <?php foreach ($data['users'] as $user): ?>
                                         <option value="<?= $user['id'] ?>" 
                                                 <?= ($data['formData']['assigned_to'] ?? '') == $user['id'] ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '') ?: $user['username'] ?? $user['full_name'] ?? 'Unknown User') ?>
+                                            <?= htmlspecialchars(
+                                                trim($user['full_name'] ?? '') 
+                                                ?: trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))
+                                                ?: ($user['name'] ?? $user['username'] ?? 'Unknown User')
+                                            ) ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -314,6 +326,31 @@ document.getElementById('tags').addEventListener('input', function() {
     if (value.includes(',')) {
         const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
         this.value = tags.join(', ');
+    }
+});
+
+// Auto-fill contact email from selected client
+document.getElementById('client_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const email = selectedOption.getAttribute('data-email');
+    const emailInput = document.getElementById('contact_email');
+    
+    // Always update if the selected client has an email
+    if (email) {
+        emailInput.value = email;
+    } else {
+        // Optional: clear if no email found for this client? 
+        // For now, let's keep the value if manually entered, or clear if desired.
+        // Based on user request "update the contact email", implies syncing.
+        // If I switch to a client with NO email, it's safer to leave whatever is there 
+        // (could be manually entered) or clear it. 
+        // Let's clear it if the user switches to "No Client" or a client without email, 
+        // to avoid confusion that the email belongs to the new client.
+        // However, standard behavior for "No Client" might be to leave it blank.
+        
+        // Revised approach: If switching clients, update the email.
+        // If new client has no email, clear the field (so it doesn't look like Client B has Client A's email).
+        emailInput.value = '';
     }
 });
 </script>

@@ -11,6 +11,18 @@ class Admin extends Controller {
             redirect('users/login');
         }
         
+        // If stopping impersonation, we can bypass the admin check
+        // because the user might be impersonating a non-admin user
+        if (isset($_GET['url']) && strpos($_GET['url'], 'admin/stopImpersonating') !== false) {
+            return;
+        }
+        
+        // Also check if current route matches stopImpersonating (parsed differently by App)
+        $url = $_GET['url'] ?? $_SERVER['REQUEST_URI'] ?? '';
+        if (strpos($url, 'stopImpersonating') !== false) {
+            return;
+        }
+        
         if (!hasPermission('admin.access')) {
             flash('error', 'You do not have permission to access admin functions.');
             redirect('dashboard');
@@ -27,6 +39,126 @@ class Admin extends Controller {
         ];
         
         $this->view('admin/index', $viewData);
+    }
+
+    /**
+     * Ticket routing method
+     * Handles /admin/tickets/categories, /admin/tickets/settings, etc.
+     */
+    public function tickets($page = null) {
+        // Handle no page argument
+        if (empty($page)) {
+            $this->ticketSettings();
+            return;
+        }
+
+        switch (strtolower($page)) {
+            case 'categories':
+                $this->categories();
+                break;
+            case 'settings':
+                $this->ticketSettings();
+                break;
+            default:
+                // Default to settings if unknown sub-page
+                $this->ticketSettings();
+                break;
+        }
+    }
+
+    /**
+     * Manage Ticket Categories
+     */
+    public function categories() {
+        if (!hasPermission('admin.access')) {
+            flash('error', 'You do not have permission to manage categories.');
+            redirect('admin');
+        }
+
+        if (!class_exists('TicketCategory')) {
+            require_once APPROOT . '/app/models/TicketCategory.php';
+        }
+        $catModel = new TicketCategory();
+
+        $categories = $catModel->getAll();
+
+        $this->view('admin/categories', [
+            'title' => 'Ticket Categories',
+            'categories' => $categories
+        ]);
+    }
+
+    public function addCategory() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('admin/categories');
+        }
+        if (!hasPermission('admin.access')) {
+            flash('error', 'You do not have permission to add categories.');
+            redirect('admin/categories');
+        }
+        $name = trim($_POST['name'] ?? '');
+        $slaHours = isset($_POST['sla_hours']) && $_POST['sla_hours'] !== '' ? (int)$_POST['sla_hours'] : null;
+
+        if ($name === '') {
+            flash('error', 'Category name is required.');
+            redirect('admin/categories');
+        }
+
+        if (!class_exists('TicketCategory')) {
+            require_once APPROOT . '/app/models/TicketCategory.php';
+        }
+        $catModel = new TicketCategory();
+        $ok = $catModel->create($name, $slaHours);
+        flash($ok ? 'success' : 'error', $ok ? 'Category added.' : 'Failed to add category.');
+        redirect('admin/categories');
+    }
+
+    public function toggleCategory($id) {
+        if (!hasPermission('admin.access')) {
+            flash('error', 'Permission denied.');
+            redirect('admin/categories');
+        }
+        $active = isset($_GET['active']) ? (int)$_GET['active'] : 1;
+        if (!class_exists('TicketCategory')) {
+            require_once APPROOT . '/app/models/TicketCategory.php';
+        }
+        $catModel = new TicketCategory();
+        $catModel->setActive((int)$id, $active === 1);
+        redirect('admin/categories');
+    }
+
+    public function deleteCategory($id) {
+        if (!hasPermission('admin.access')) {
+            flash('error', 'Permission denied.');
+            redirect('admin/categories');
+        }
+        if (!class_exists('TicketCategory')) {
+            require_once APPROOT . '/app/models/TicketCategory.php';
+        }
+        $catModel = new TicketCategory();
+        $catModel->delete((int)$id);
+        redirect('admin/categories');
+    }
+
+    /**
+     * Ticket management settings (admin only)
+     */
+    public function ticketSettings() {
+        if (!hasPermission('admin.access')) {
+            flash('error', 'You do not have permission to view ticket settings.');
+            redirect('admin');
+        }
+
+        if (!class_exists('TicketCategory')) {
+            require_once APPROOT . '/app/models/TicketCategory.php';
+        }
+        $catModel = new TicketCategory();
+        $categories = $catModel->getAll();
+
+        $this->view('admin/ticket_settings', [
+            'title' => 'Ticket Management',
+            'categories' => $categories
+        ]);
     }
     
     /**
@@ -96,6 +228,84 @@ class Admin extends Controller {
         ];
         
         $this->view('admin/users', $viewData);
+    }
+
+    /**
+     * Impersonate another user (Admin only)
+     */
+    public function impersonate($userId) {
+        if (!hasPermission('users.manage')) {
+            flash('error', 'You do not have permission to impersonate users.');
+            redirect('admin/users');
+        }
+
+        if (empty($userId)) {
+            flash('error', 'Invalid user ID.');
+            redirect('admin/users');
+        }
+
+        // Prevent recursive impersonation or self-impersonation
+        if ($_SESSION['user_id'] == $userId) {
+            flash('error', 'You cannot impersonate yourself.');
+            redirect('admin/users');
+        }
+
+        $userModel = $this->model('User');
+        $user = $userModel->getUserById($userId);
+
+        if (!$user) {
+            flash('error', 'User not found.');
+            redirect('admin/users');
+        }
+
+        // Store original session if not already stored
+        if (!isset($_SESSION['original_user'])) {
+            $_SESSION['original_user'] = [
+                'user_id' => $_SESSION['user_id'],
+                'user_name' => $_SESSION['user_name'],
+                'user_email' => $_SESSION['user_email'],
+                'role' => $_SESSION['role'],
+                'profile_picture' => $_SESSION['profile_picture'] ?? null
+            ];
+        }
+
+        // Set new session data
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_name'] = $user['full_name'] ?? $user['username'];
+        $_SESSION['user_email'] = $user['email'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['profile_picture'] = $user['profile_picture'] ?? null;
+        
+        // Log the action (using the original admin ID)
+        if (function_exists('log_activity')) {
+            log_activity('user', $userId, 'impersonate', 'Admin impersonated user', [], $_SESSION['original_user']['user_id']);
+        }
+
+        flash('success', 'You are now logged in as ' . htmlspecialchars($user['name'] ?? $user['username']));
+        redirect('dashboard');
+    }
+
+    /**
+     * Stop impersonating and return to admin account
+     */
+    public function stopImpersonating() {
+        if (!isset($_SESSION['original_user'])) {
+            redirect('dashboard');
+        }
+
+        $original = $_SESSION['original_user'];
+
+        // Restore session
+        $_SESSION['user_id'] = $original['user_id'];
+        $_SESSION['user_name'] = $original['user_name'];
+        $_SESSION['user_email'] = $original['user_email'];
+        $_SESSION['role'] = $original['role'];
+        $_SESSION['profile_picture'] = $original['profile_picture'];
+
+        unset($_SESSION['original_user']);
+
+        flash('success', 'Welcome back, ' . htmlspecialchars($_SESSION['user_name']));
+        redirect('admin/users');
     }
 
     /**

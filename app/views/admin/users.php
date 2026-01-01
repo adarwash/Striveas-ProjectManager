@@ -102,9 +102,18 @@
                                         data-user-id="<?= $user['id'] ?>"
                                         data-user-name="<?= $user['name'] ?>"
                                         data-user-email="<?= $user['email'] ?>"
-                                        data-user-role="<?= $user['role'] ?>">
+                                        data-user-role="<?= $user['role'] ?>"
+                                        title="Edit User">
                                         <i class="bi bi-pencil"></i>
                                     </button>
+                                    <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                    <a href="<?= URLROOT ?>/admin/impersonate/<?= $user['id'] ?>" 
+                                       class="btn btn-sm btn-outline-dark" 
+                                       onclick="return confirm('Are you sure you want to login as <?= htmlspecialchars($user['name']) ?>?');"
+                                       title="Login as User">
+                                        <i class="bi bi-person-bounding-box"></i>
+                                    </a>
+                                    <?php endif; ?>
                                     <button type="button" class="btn btn-sm btn-outline-danger delete-user-btn" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#deleteUserModal"

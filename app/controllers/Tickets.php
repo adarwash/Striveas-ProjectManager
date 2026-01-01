@@ -415,12 +415,24 @@ class Tickets extends Controller {
                 'tags' => trim($_POST['tags']),
                 'project_id' => $_POST['project_id'] ?: null,
                 'client_id' => $_POST['client_id'] ?: null,
+                'inbound_email_address' => trim($_POST['contact_email'] ?? ''),
                 'created_by' => $_SESSION['user_id'],
                 'source' => 'web'
             ];
             
             // Validation
             $errors = [];
+            
+            // Auto-fetch client email if not provided but client is selected
+            if (empty($data['inbound_email_address']) && !empty($data['client_id'])) {
+                $clientModel = $this->model('Client');
+                $client = $clientModel->getClientById($data['client_id']);
+                if ($client && !empty($client['email'])) {
+                    $data['inbound_email_address'] = $client['email'];
+                    error_log('Auto-filled contact email from client: ' . $client['email']);
+                }
+            }
+
             if (empty($data['subject'])) {
                 $errors[] = 'Subject is required.';
             }
@@ -442,6 +454,12 @@ class Tickets extends Controller {
                     // Send notification email if assigned
                     if ($data['assigned_to']) {
                         $this->sendTicketNotification($ticketId, 'ticket_created');
+                    }
+
+                    // Send auto-acknowledgment if contact email is provided
+                    if (!empty($data['inbound_email_address'])) {
+                        // We use the same auto-acknowledgment logic as inbound emails
+                        $this->ticketModel->sendAutoAcknowledgmentEmail($ticketId, $data['inbound_email_address']);
                     }
                     
                     redirect('tickets/show/' . $ticketId);
