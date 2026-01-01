@@ -575,7 +575,7 @@ class MicrosoftGraphService {
     /**
      * Send email
      */
-    public function sendEmail($from, $to, $subject, $body, $cc = [], $bcc = [], $replyTo = null) {
+    public function sendEmail($from, $to, $subject, $body, $cc = [], $bcc = [], $replyTo = null, array $attachments = []) {
         $token = $this->getAccessToken();
         
         $encodedFrom = urlencode($from);
@@ -621,6 +621,25 @@ class MicrosoftGraphService {
             $message['message']['replyTo'] = [
                 ['emailAddress' => ['address' => $replyTo]]
             ];
+        }
+
+        // Add file attachments (base64) if provided
+        if (!empty($attachments)) {
+            $graphAttachments = [];
+            foreach ($attachments as $att) {
+                if (empty($att['name']) || empty($att['content'])) continue;
+                $graphAttachments[] = [
+                    '@odata.type' => '#microsoft.graph.fileAttachment',
+                    'name' => $att['name'],
+                    'contentType' => $att['contentType'] ?? 'application/octet-stream',
+                    'contentBytes' => base64_encode($att['content']),
+                    'isInline' => !empty($att['cid']) ? true : false,
+                    'contentId' => !empty($att['cid']) ? $att['cid'] : null
+                ];
+            }
+            if (!empty($graphAttachments)) {
+                $message['message']['attachments'] = $graphAttachments;
+            }
         }
         
         $ch = curl_init($url);

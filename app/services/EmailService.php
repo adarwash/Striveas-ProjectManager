@@ -87,7 +87,7 @@ class EmailService {
      * @param array $emailData Email data
      * @return bool Success status
      */
-    public function sendEmail($emailData) {
+    public function sendEmail($emailData, array $attachments = []) {
         try {
             $this->lastSendError = null;
             require_once APPROOT . '/app/services/MicrosoftGraphService.php';
@@ -142,8 +142,33 @@ class EmailService {
                 }
             }
             
-            // Add custom headers to body
+            // Inline data:image embeds -> convert to inline attachments with cid
+            $inlineAttachments = [];
             $fullBody = $customHeaders . $body;
+            $imgPattern = '/<img[^>]+src="data:(image\/[^;]+);base64,([^"]+)"[^>]*>/i';
+            if (preg_match_all($imgPattern, $fullBody, $matches, PREG_SET_ORDER)) {
+                $idx = 0;
+                foreach ($matches as $m) {
+                    $mime = $m[1] ?? 'image/png';
+                    $b64 = $m[2] ?? '';
+                    $content = base64_decode($b64);
+                    if ($content === false) {
+                        continue;
+                    }
+                    $cid = 'inline' . (++$idx) . '@ticket';
+                    $inlineAttachments[] = [
+                        'name' => 'inline' . $idx,
+                        'contentType' => $mime,
+                        'content' => $content,
+                        'cid' => $cid
+                    ];
+                    // replace src with cid
+                    $fullBody = str_replace($m[0], preg_replace('/src="[^"]+"/i', 'src="cid:' . $cid . '"', $m[0]), $fullBody);
+                }
+            }
+
+            // Merge inline attachments first, then supplied attachments
+            $allAttachments = array_merge($inlineAttachments, $attachments);
             
             $result = $graphService->sendEmail(
                 $fromEmail,
@@ -151,8 +176,9 @@ class EmailService {
                 $emailData['subject'],
                 $fullBody,
                 $cc,
-                $bcc
-                ,$replyTo
+                $bcc,
+                $replyTo,
+                $allAttachments
             );
             
             if ($result) {
@@ -264,6 +290,35 @@ class EmailService {
             foreach ($emails as $email) {
                 $this->updateEmailQueueStatus($email['id'], 'sending');
                 
+                // Collect attachments for this message (non-inline, downloaded)
+                $attachments = [];
+                if (!empty($email['message_id'])) {
+                    try {
+                        if (!class_exists('TicketAttachment')) {
+                            require_once APPROOT . '/app/models/TicketAttachment.php';
+                        }
+                        $attModel = new TicketAttachment();
+                        $atts = $attModel->getByMessageId((int)$email['message_id']);
+                        foreach ($atts as $att) {
+                            if (!empty($att['is_inline']) && (int)$att['is_inline'] === 1) continue;
+                            if (empty($att['is_downloaded']) || (int)$att['is_downloaded'] !== 1) continue;
+                            if (empty($att['file_path'])) continue;
+                            $fullPath = APPROOT . '/public/' . ltrim($att['file_path'], '/');
+                            if (!is_file($fullPath)) continue;
+                            $content = @file_get_contents($fullPath);
+                            if ($content === false) continue;
+                            $attachments[] = [
+                                'name' => $att['original_filename'] ?? $att['filename'] ?? basename($fullPath),
+                                'contentType' => $att['mime_type'] ?? 'application/octet-stream',
+                                'content' => $content
+                            ];
+                        }
+                        error_log('EmailService: loaded ' . count($attachments) . ' attachments for message_id ' . $email['message_id']);
+                    } catch (Exception $e) {
+                        error_log('EmailService: Failed to load attachments for message ' . $email['message_id'] . ': ' . $e->getMessage());
+                    }
+                }
+
                 $emailData = [
                     'to' => explode(',', $email['to_address']),
                     'cc' => $email['cc_address'] ? explode(',', $email['cc_address']) : null,
@@ -271,10 +326,11 @@ class EmailService {
                     'subject' => $email['subject'],
                     'body' => $email['body_text'],
                     'html_body' => $email['body_html'],
-                    'ticket_id' => $email['ticket_id']
+                    'ticket_id' => $email['ticket_id'],
+                    'message_id' => $email['message_id']
                 ];
                 
-                $success = $this->sendEmail($emailData);
+                $success = $this->sendEmail($emailData, $attachments);
                 
                 if ($success) {
                     // Clear any previous error_message on success

@@ -506,7 +506,7 @@
                 <!-- Add Reply Form -->
                 <?php if (hasPermission('tickets.comment')): ?>
                 <div class="card-footer bg-white">
-                    <form method="POST" action="<?= URLROOT ?>/tickets/addMessage/<?= $data['ticket']['id'] ?>">
+                    <form method="POST" action="<?= URLROOT ?>/tickets/addMessage/<?= $data['ticket']['id'] ?>" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label for="message" class="form-label">Add Reply</label>
                             <!-- Rich text editor (Quill) -->
@@ -519,24 +519,24 @@
                                 <div class="mb-3">
                                     <label for="message_type" class="form-label">Message Type</label>
                                     <select class="form-select" id="message_type" name="message_type">
-                                        <option value="comment">Comment</option>
-                                        <option value="status_change">Status Update</option>
+                                        <option value="comment">Comment (sends to customer)</option>
+                                        <option value="status_change">Status Update (sends to customer)</option>
                                         <?php if (hasPermission('tickets.internal_notes')): ?>
-                                            <option value="internal_note">Internal Note</option>
+                                            <option value="internal_note">Internal Note (no email, private)</option>
                                         <?php endif; ?>
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <div class="form-check mt-4">
-                                        <input class="form-check-input" type="checkbox" id="is_public" name="is_public" value="1" checked>
-                                        <label class="form-check-label" for="is_public">
-                                            Visible to customer
-                                        </label>
-                                    </div>
-                                </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="attachments">Attach files</label>
+                            <div id="dropZone" class="border rounded p-3 bg-light text-center" style="cursor: pointer;">
+                                <div class="fw-semibold">Drag & drop files here or click to browse</div>
+                                <div class="text-muted small mt-1">You can add multiple files.</div>
+                                <input type="file" class="d-none" id="attachments" name="attachments[]" multiple>
                             </div>
+                            <ul id="attachmentList" class="list-unstyled mt-2 mb-0 small text-muted"></ul>
+                            <div class="form-text">Files will be sent with this reply and visible in the attachments list.</div>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-send me-2"></i>Send Reply
@@ -862,6 +862,9 @@
 (() => {
     const editorEl = document.getElementById('replyEditor');
     const textarea = document.getElementById('message');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('attachments');
+    const fileList = document.getElementById('attachmentList');
     if (!editorEl || !textarea) return;
 
     const quill = new Quill('#replyEditor', {
@@ -880,6 +883,39 @@
 
     const form = textarea.closest('form');
     if (!form) return;
+
+    // Drag & drop for attachments
+    const updateFileList = () => {
+        if (!fileList || !fileInput) return;
+        fileList.innerHTML = '';
+        const files = fileInput.files;
+        if (!files || !files.length) {
+            fileList.innerHTML = '<li>No files selected.</li>';
+            return;
+        }
+        Array.from(files).forEach(f => {
+            const li = document.createElement('li');
+            li.textContent = `${f.name} (${Math.round(f.size/1024)} KB)`;
+            fileList.appendChild(li);
+        });
+    };
+
+    if (dropZone && fileInput) {
+        const openPicker = () => fileInput.click();
+        dropZone.addEventListener('click', openPicker);
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-primary'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-primary'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary');
+            if (e.dataTransfer?.files?.length) {
+                fileInput.files = e.dataTransfer.files;
+                updateFileList();
+            }
+        });
+        fileInput.addEventListener('change', updateFileList);
+        updateFileList();
+    }
 
     form.addEventListener('submit', (e) => {
         const html = quill.root.innerHTML || '';

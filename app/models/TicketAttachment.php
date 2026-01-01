@@ -23,6 +23,18 @@ class TicketAttachment {
         }
     }
 
+    public function getByMessageId(int $ticketMessageId): array {
+        try {
+            return $this->db->select(
+                "SELECT * FROM TicketAttachments WHERE ticket_message_id = :tmid ORDER BY created_at ASC",
+                ['tmid' => $ticketMessageId]
+            ) ?: [];
+        } catch (Exception $e) {
+            error_log('TicketAttachment getByMessageId error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getByMsIds(?string $msMessageId, ?string $msAttachmentId): array|bool {
         try {
             if (empty($msMessageId) || empty($msAttachmentId)) {

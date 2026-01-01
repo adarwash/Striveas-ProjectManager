@@ -24,8 +24,8 @@ class Tickets extends Controller {
         // Remove javascript: urls
         $html = preg_replace('/(href|src)\\s*=\\s*(\"|\\\')\\s*javascript:[^\"\\\']*(\"|\\\')/i', '$1=\"#\"', $html);
 
-        // Allow a safe subset of tags
-        $allowed = '<p><br><b><strong><i><em><u><s><strike><a><ul><ol><li><blockquote><code><pre><h1><h2><h3><h4><h5><h6><span><div>';
+        // Allow a safe subset of tags (include img for inline images)
+        $allowed = '<p><br><b><strong><i><em><u><s><strike><a><ul><ol><li><blockquote><code><pre><h1><h2><h3><h4><h5><h6><span><div><img>';
         $html = strip_tags($html, $allowed);
 
         return $html;
@@ -582,11 +582,14 @@ class Tickets extends Controller {
         $rawMessage = (string)($_POST['message'] ?? '');
         $content = $format === 'html' ? $this->sanitizeReplyHtml($rawMessage) : trim($rawMessage);
 
+        $msgType = $_POST['message_type'] ?? 'comment';
+        $isPublic = ($msgType !== 'internal_note') ? 1 : 0;
+
         $messageData = [
             'user_id' => $_SESSION['user_id'],
             'content' => $content,
-            'message_type' => $_POST['message_type'] ?? 'comment',
-            'is_public' => isset($_POST['is_public']) ? 1 : 0,
+            'message_type' => $msgType,
+            'is_public' => $isPublic,
             'content_format' => $format
         ];
         
@@ -599,6 +602,56 @@ class Tickets extends Controller {
         error_log('Tickets@addMessage result ID: ' . var_export($messageId, true));
         
         if ($messageId) {
+            // Handle file attachments (manual uploads on reply)
+            if (!empty($_FILES['attachments']) && is_array($_FILES['attachments']['name'])) {
+                try {
+                    if (!class_exists('TicketAttachment')) {
+                        require_once APPROOT . '/app/models/TicketAttachment.php';
+                    }
+                    $attModel = new TicketAttachment();
+                    $uploadDir = APPROOT . '/public/uploads/ticket_attachments/' . date('Y/m');
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    $count = count($_FILES['attachments']['name']);
+                    for ($i = 0; $i < $count; $i++) {
+                        $err = $_FILES['attachments']['error'][$i];
+                        if ($err !== UPLOAD_ERR_OK) {
+                            continue;
+                        }
+                        $tmp = $_FILES['attachments']['tmp_name'][$i];
+                        $orig = $_FILES['attachments']['name'][$i];
+                        $size = (int)$_FILES['attachments']['size'][$i];
+                        $type = $_FILES['attachments']['type'][$i] ?? 'application/octet-stream';
+
+                        $safeName = $attModel->getSafeFilename($orig);
+                        $finalName = $messageId . '_' . uniqid('', true) . '_' . $safeName;
+                        $dest = $uploadDir . '/' . $finalName;
+                        if (move_uploaded_file($tmp, $dest)) {
+                            $relative = 'uploads/ticket_attachments/' . date('Y/m') . '/' . $finalName;
+                            $attModel->create([
+                                'ticket_id' => (int)$id,
+                                'ticket_message_id' => (int)$messageId,
+                                'ms_message_id' => null,
+                                'ms_attachment_id' => null,
+                                'content_id' => null,
+                                'filename' => $safeName,
+                                'original_filename' => $orig,
+                                'file_path' => $relative,
+                                'file_size' => $size,
+                                'mime_type' => $type,
+                                'is_inline' => 0,
+                                'is_downloaded' => 1,
+                                'download_error' => null,
+                                'downloaded_at' => date('Y-m-d H:i:s')
+                            ]);
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log('Tickets@addMessage attachment upload error: ' . $e->getMessage());
+                }
+            }
+
             flash('success', 'Message added successfully.');
             
             try {
@@ -633,16 +686,20 @@ class Tickets extends Controller {
                 }
             }
             
-            // Send notification email
-            $this->sendTicketNotification($id, 'ticket_updated', $messageData['content'], $messageData['content_format']);
-            
-            // Process email queue immediately to send the notification right away
-            try {
-                require_once APPROOT . '/app/services/EmailService.php';
-                $emailService = new EmailService();
-                $emailService->processEmailQueue();
-            } catch (Exception $e) {
-                error_log('Failed to process email queue immediately: ' . $e->getMessage());
+            // Send notification email only for public, non-internal messages
+            $shouldNotify = ($messageData['is_public'] ?? 0) == 1
+                && ($messageData['message_type'] ?? 'comment') !== 'internal_note';
+            if ($shouldNotify) {
+                $this->sendTicketNotification($id, 'ticket_updated', $messageData['content'], $messageData['content_format'], null, $messageId);
+                
+                // Process email queue immediately to send the notification right away
+                try {
+                    require_once APPROOT . '/app/services/EmailService.php';
+                    $emailService = new EmailService();
+                    $emailService->processEmailQueue();
+                } catch (Exception $e) {
+                    error_log('Failed to process email queue immediately: ' . $e->getMessage());
+                }
             }
         } else {
             flash('error', 'Failed to add message. Please try again.');
@@ -936,7 +993,7 @@ class Tickets extends Controller {
                hasPermission('tickets.close');
     }
     
-    private function sendTicketNotification($ticketId, $template, $message = null, $messageFormat = 'text', $recipientUserId = null) {
+    private function sendTicketNotification($ticketId, $template, $message = null, $messageFormat = 'text', $recipientUserId = null, $ticketMessageId = null) {
         try {
             $ticket = $this->ticketModel->getById($ticketId);
             if (!$ticket) {
@@ -971,6 +1028,38 @@ class Tickets extends Controller {
             $updateMessageText = $messageFormat === 'html' ? trim(strip_tags((string)$message)) : (string)$message;
             $updateMessageHtml = $messageFormat === 'html' ? (string)$message : null;
             
+            // Prepare attachment links (not binary attach) for the specific ticket message
+            $attachmentLinksHtml = '';
+            if (!empty($ticketMessageId)) {
+                try {
+                    if (!class_exists('TicketAttachment')) {
+                        require_once APPROOT . '/app/models/TicketAttachment.php';
+                    }
+                    $attModel = new TicketAttachment();
+                    $atts = $attModel->getByMessageId((int)$ticketMessageId);
+                    $downloadable = array_filter($atts, function($a) {
+                        return empty($a['is_inline']) || (int)$a['is_inline'] !== 1;
+                    });
+                    if (!empty($downloadable)) {
+                        $items = array_map(function($a) {
+                            $name = $a['original_filename'] ?? $a['filename'] ?? 'attachment';
+                            if (!empty($a['file_path'])) {
+                                $url = URLROOT . '/' . ltrim($a['file_path'], '/');
+                                return '<li><a href="' . htmlspecialchars($url) . '" target="_blank">' . htmlspecialchars($name) . '</a></li>';
+                            }
+                            return '<li>' . htmlspecialchars($name) . ' (pending)</li>';
+                        }, $downloadable);
+                        $attachmentLinksHtml = '<p><strong>Attachments:</strong></p><ul>' . implode('', $items) . '</ul>';
+                        // append to message HTML if present
+                        if ($messageFormat === 'html') {
+                            $message = (string)$message . $attachmentLinksHtml;
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log('sendTicketNotification: attachment link build failed: ' . $e->getMessage());
+                }
+            }
+
             $emailData = $this->emailService->createTicketEmail($template, [
                 'ticket_id' => $ticket['id'],
                 'ticket_number' => $ticket['ticket_number'],
@@ -988,6 +1077,9 @@ class Tickets extends Controller {
                 'due_date' => $ticket['due_date'] ?? 'Not set',
                 'resolution' => $updateMessageText ?? ''
             ]);
+            if ($ticketMessageId) {
+                $emailData['message_id'] = $ticketMessageId;
+            }
             
             // Queue for sending
             $result = $this->emailService->queueEmail($emailData, 5);
