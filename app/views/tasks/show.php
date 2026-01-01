@@ -1,6 +1,6 @@
 <?php
 // Set title for the page
-$title = htmlspecialchars($task->title) . ' - HiveITPortal';
+$title = htmlspecialchars($task->title) . ' - ' . DEFAULT_TITLE;
 ?>
 
 <!-- Page Header -->

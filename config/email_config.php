@@ -12,7 +12,7 @@ define('SMTP_PASSWORD', 'your-app-password-here');  // App password from Microso
 define('SMTP_ENCRYPTION', 'tls');
 define('SMTP_AUTH', true);
 define('FROM_EMAIL', 'support@yourdomain.com');
-define('FROM_NAME', 'Hive IT Support');
+define('FROM_NAME', SITENAME);
 
 // IMAP Settings for RECEIVING emails (Microsoft 365)
 define('IMAP_HOST', 'outlook.office365.com');

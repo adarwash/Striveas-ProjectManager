@@ -1,6 +1,6 @@
 <?php
 // Set title for the page
-$title = 'Dashboard - HiveIT Portal';
+$title = 'Dashboard - ' . DEFAULT_TITLE;
 ?>
 
 <?php require VIEWSPATH . '/partials/header.php'; ?>

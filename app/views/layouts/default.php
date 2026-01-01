@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?? 'HiveITPortal' ?></title>
+    <title><?= $title ?? DEFAULT_TITLE ?></title>
     
     <!-- Dark Mode Detection (must run before any CSS) -->
     <script>

@@ -1104,6 +1104,11 @@ class Clients extends Controller {
                             (string)$data['status'],
                             isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null
                         );
+                        
+                        // Track conversion from Prospect to Active
+                        if (strtolower($client['status']) === 'prospect' && strtolower($data['status']) === 'active') {
+                            $this->clientModel->setConvertedToActiveDate((int)$id);
+                        }
                     }
                     flash('client_success', 'Client updated successfully');
                     redirect('clients');

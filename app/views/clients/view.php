@@ -205,6 +205,16 @@
                                     <?= htmlspecialchars($client_age ?? '—') ?>
                                 </dd>
                                 
+                                <?php if (!empty($client['converted_to_active_date'])): ?>
+                                <dt class="col-sm-4">Converted to Active:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge text-bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        <?= date('M j, Y', strtotime($client['converted_to_active_date'])) ?>
+                                    </span>
+                                </dd>
+                                <?php endif; ?>
+                                
                                 <dt class="col-sm-4">Last Updated:</dt>
                                 <dd class="col-sm-8">
                                     <?php if (!empty($client['updated_at'])): ?>

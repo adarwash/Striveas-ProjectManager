@@ -38,7 +38,8 @@ class Client {
         try {
             $columns = [
                 'is_restricted' => 'BIT NOT NULL CONSTRAINT DF_Clients_IsRestricted DEFAULT(0)',
-                'allowed_role_ids' => 'NVARCHAR(MAX) NULL'
+                'allowed_role_ids' => 'NVARCHAR(MAX) NULL',
+                'converted_to_active_date' => 'DATETIME NULL'
             ];
 
             foreach ($columns as $column => $definition) {
@@ -66,6 +67,22 @@ class Client {
             return array_filter(array_map('intval', $value));
         }
         return array_filter(array_map('intval', explode(',', (string)$value)));
+    }
+
+    /**
+     * Set converted_to_active_date to now for a client
+     */
+    public function setConvertedToActiveDate(int $clientId): bool {
+        try {
+            $this->db->update(
+                "UPDATE Clients SET converted_to_active_date = GETDATE() WHERE id = :id",
+                ['id' => $clientId]
+            );
+            return true;
+        } catch (Exception $e) {
+            error_log('setConvertedToActiveDate error: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**

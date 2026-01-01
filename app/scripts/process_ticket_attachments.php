@@ -3,7 +3,7 @@
  * Download pending TicketAttachments from Microsoft Graph.
  *
  * Usage:
- *   php app/scripts/process_ticket_attachments.php [limit]
+ *   php app/scripts/process_ticket_attachments.php [limit] [ticketId]
  */
 
 require_once __DIR__ . '/../../config/config.php';
@@ -16,6 +16,12 @@ $limit = isset($argv[1]) ? (int)$argv[1] : 25;
 if ($limit <= 0) { $limit = 25; }
 if ($limit > 200) { $limit = 200; }
 
+$ticketId = null;
+if (isset($argv[2]) && is_numeric($argv[2])) {
+    $ticketId = (int)$argv[2];
+    if ($ticketId <= 0) { $ticketId = null; }
+}
+
 $settings = new Setting();
 $supportEmail = $settings->get('graph_support_email') ?: $settings->get('graph_connected_email');
 if (empty($supportEmail)) {
@@ -24,7 +30,46 @@ if (empty($supportEmail)) {
 }
 
 $attachmentModel = new TicketAttachment();
-$pending = $attachmentModel->getPending($limit);
+$pending = [];
+
+// Prevent duplicate concurrent downloads for the same ticket.
+// Uses SQL Server application lock (session-scoped).
+$lockPdo = null;
+if (!empty($ticketId)) {
+    try {
+        $cfg = DB1;
+        $dsn = 'sqlsrv:Server=' . $cfg['host'] . ';Database=' . $cfg['dbname'] . ';TrustServerCertificate=true';
+        $lockPdo = new PDO($dsn, $cfg['user'], $cfg['pass']);
+        $lockPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $resource = 'ticket_attachments_' . (int)$ticketId;
+        $sql = "DECLARE @res INT;
+                EXEC @res = sp_getapplock
+                    @Resource = :res,
+                    @LockMode = 'Exclusive',
+                    @LockTimeout = 0,
+                    @DbPrincipal = 'public';
+                SELECT @res AS res;";
+        $stmt = $lockPdo->prepare($sql);
+        $stmt->execute(['res' => $resource]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $res = (int)($row['res'] ?? -999);
+        // sp_getapplock returns >= 0 on success, < 0 on failure
+        if ($res < 0) {
+            echo "Attachment download already running for ticket {$ticketId}\n";
+            exit(0);
+        }
+    } catch (Throwable $e) {
+        // If lock fails, we still proceed (worst case: duplicate download).
+        fwrite(STDERR, "Failed to acquire attachment lock: " . $e->getMessage() . "\n");
+    }
+}
+
+if (!empty($ticketId)) {
+    $pending = $attachmentModel->getPendingForTicketId($ticketId, $limit);
+} else {
+    $pending = $attachmentModel->getPending($limit);
+}
 if (empty($pending)) {
     echo "No pending attachments\n";
     exit(0);

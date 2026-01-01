@@ -78,6 +78,30 @@
 
             return trim($html);
         };
+
+        // Build conversation timeline messages (group outbound email logs with the agent comment that triggered them)
+        $messagesForTimeline = [];
+        $msgs = $data['messages'] ?? [];
+        $total = is_array($msgs) ? count($msgs) : 0;
+        for ($i = 0; $i < $total; $i++) {
+            $m = $msgs[$i];
+            if (($m['message_type'] ?? '') === 'email_outbound' && isset($msgs[$i + 1])) {
+                $next = $msgs[$i + 1];
+                $sameUser = !empty($m['user_id']) && (int)$m['user_id'] === (int)($next['user_id'] ?? 0);
+                $nextIsComment = ($next['message_type'] ?? '') === 'comment';
+                $t1 = strtotime((string)($m['created_at'] ?? '')) ?: 0;
+                $t2 = strtotime((string)($next['created_at'] ?? '')) ?: 0;
+                // Email sending can lag slightly (queue / background worker). Allow a small window for pairing.
+                $closeInTime = ($t1 > 0 && $t2 > 0) ? (abs($t1 - $t2) <= 300) : false;
+                if ($sameUser && $nextIsComment && $closeInTime) {
+                    $next['__embeddedOutbound'] = $m;
+                    $messagesForTimeline[] = $next;
+                    $i++; // consume the comment
+                    continue;
+                }
+            }
+            $messagesForTimeline[] = $m;
+        }
     ?>
     <!-- Modern Page Header -->
     <div class="page-header">
@@ -250,37 +274,21 @@
                 <div class="card-header bg-white">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-chat-dots me-2"></i>Conversation
-                        <span class="badge bg-secondary ms-2"><?= count($data['messages']) ?></span>
+                        <span class="badge bg-secondary ms-2"><?= count($messagesForTimeline) ?></span>
                     </h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="timeline">
-                        <?php
-                            // Track duplicate acknowledgement-style emails (same subject + body)
-                            $renderedEmailHashes = [];
-                        ?>
-                        <?php if (empty($data['messages'])): ?>
+                        <?php if (empty($messagesForTimeline)): ?>
                             <div class="p-4 text-muted">
                                 No conversation messages yet.
                             </div>
                         <?php else: ?>
-                            <?php foreach ($data['messages'] as $index => $message): ?>
-                                <?php
-                                    // Lightweight dedupe: if two email messages have identical subject and body, skip the duplicate
-                                    $isEmailMsg = in_array($message['message_type'] ?? '', ['email_inbound', 'email_outbound'], true);
-                                    if ($isEmailMsg) {
-                                        $subjectNorm = trim(preg_replace('/\s+/', ' ', (string)($message['subject'] ?? '')));
-                                        $bodyRaw = (string)($message['content'] ?? '');
-                                        $bodyNorm = trim(preg_replace('/\s+/', ' ', strip_tags($bodyRaw)));
-                                        $hash = sha1($subjectNorm . '|' . $bodyNorm);
-                                        if (isset($renderedEmailHashes[$hash])) {
-                                            // Skip rendering exact-duplicate email
-                                            continue;
-                                        }
-                                        $renderedEmailHashes[$hash] = true;
-                                    }
-                                ?>
-                                <div class="timeline-item border-bottom p-4 <?= ($message['is_system_message'] ?? 0) ? 'bg-light' : '' ?>">
+                            <?php foreach ($messagesForTimeline as $index => $message): ?>
+                                <?php if ($index > 0): ?>
+                                    <div class="message-divider my-3"></div>
+                                <?php endif; ?>
+                                <div class="timeline-item p-4 <?= ($message['is_system_message'] ?? 0) ? 'bg-light' : '' ?>">
                                     <div class="d-flex">
                                         <div class="flex-shrink-0">
                                             <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
@@ -304,7 +312,7 @@
                                                 <?php endif; ?>
                                             </div>
                                         </div>
-                                        <div class="flex-grow-1 ms-3 col-8">
+                                        <div class="flex-grow-1 ms-3">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
                                                 <div>
                                                     <h6 class="mb-0">
@@ -342,13 +350,8 @@
                                             <?php endif; ?>
                                             
                                             <div class="message-content">
-                                                <?php if (in_array($message['message_type'], ['email_inbound', 'email_outbound'])): ?>
-                                                    <div class="reply-separator" aria-hidden="true">
-                                                        Reply above this line
-                                                    </div>
-                                                <?php endif; ?>
                                                 <?php if (($message['content_format'] ?? 'text') === 'html'): ?>
-                                                    <div class="html-content collapsible-message">
+                                                    <div class="html-content">
                                                         <?php
                                                             // Render stored HTML for email content, but fallback if it's actually plain text
                                                             $c = (string)($message['content'] ?? '');
@@ -361,9 +364,7 @@
                                                         ?>
                                                     </div>
                                                 <?php else: ?>
-                                                    <div class="plain-content collapsible-message">
-                                                        <?= nl2br(htmlspecialchars($message['content'])) ?>
-                                                    </div>
+                                                    <?= nl2br(htmlspecialchars($message['content'])) ?>
                                                 <?php endif; ?>
                                             </div>
 
@@ -392,6 +393,47 @@
                                                             $looksHtmlFull = preg_match('/<\s*\w+[^>]*>/', $full) === 1;
                                                             echo $looksHtmlFull ? $full : nl2br(htmlspecialchars($full));
                                                         ?>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($message['__embeddedOutbound']) && is_array($message['__embeddedOutbound'])): ?>
+                                                <?php
+                                                    $ob = $message['__embeddedOutbound'];
+                                                    $outCollapseId = 'sentEmail_' . (int)($ob['id'] ?? 0) . '_' . (int)($message['id'] ?? 0);
+                                                    $sentAt = $toDisplay($ob['created_at'] ?? '');
+                                                ?>
+                                                <div class="mt-3">
+                                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                                        <small class="text-muted">
+                                                            <i class="bi bi-envelope-check me-1"></i>
+                                                            Email sent<?= $sentAt ? (' at ' . $sentAt->format('g:i A')) : '' ?>
+                                                            <?php if (!empty($ob['email_to'])): ?>
+                                                                to <strong><?= htmlspecialchars($ob['email_to']) ?></strong>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($ob['subject'])): ?>
+                                                                <span class="ms-1">| Subject: <?= htmlspecialchars($ob['subject']) ?></span>
+                                                            <?php endif; ?>
+                                                        </small>
+                                                        <button class="btn btn-sm btn-outline-secondary"
+                                                                type="button"
+                                                                data-bs-toggle="collapse"
+                                                                data-bs-target="#<?= $outCollapseId ?>"
+                                                                aria-expanded="false"
+                                                                aria-controls="<?= $outCollapseId ?>">
+                                                            View sent email
+                                                        </button>
+                                                    </div>
+                                                    <div class="collapse mt-2" id="<?= $outCollapseId ?>">
+                                                        <div class="card card-body bg-light">
+                                                            <?php
+                                                                $oc = (string)($ob['content'] ?? '');
+                                                                $oc = $normalizeEmailHtml($oc);
+                                                                $oc = $rewriteCidImages($oc, $ob['email_message_id'] ?? null);
+                                                                $looksHtmlO = preg_match('/<\s*\w+[^>]*>/', $oc) === 1;
+                                                                echo $looksHtmlO ? $oc : nl2br(htmlspecialchars($oc));
+                                                            ?>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             <?php endif; ?>
@@ -468,6 +510,30 @@
 
         <!-- Sidebar -->
         <div class="col-lg-4">
+            <?php if (!empty($data['pending_attachments'])): ?>
+                <div class="card border-0 shadow-sm mb-4" id="pendingAttachmentsCard"
+                     data-ticket-id="<?= (int)$data['ticket']['id'] ?>"
+                     data-pending-count="<?= (int)$data['pending_attachments'] ?>">
+                    <div class="card-header bg-white">
+                        <h6 class="card-title mb-0 d-flex align-items-center justify-content-between">
+                            <span>
+                                <i class="bi bi-cloud-download me-2"></i>Attachments pending
+                                <span class="badge bg-secondary ms-2"><?= (int)$data['pending_attachments'] ?></span>
+                            </span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="fetchAttachmentsBtn">
+                                Fetch now
+                            </button>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-muted small mb-2">
+                            Attachments are queued for download and will appear shortly.
+                        </div>
+                        <div class="small" id="fetchAttachmentsStatus" aria-live="polite"></div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Attachments (non-inline / downloadable) -->
             <?php
                 $downloadableAttachments = array_filter($data['attachments'] ?? [], function($a) {
@@ -749,143 +815,6 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Collapse quoted email blocks (common email clients wrap in <blockquote> or gmail_quote)
-    const EMAIL_MSG_SELECTOR = '.message-content .html-content';
-
-    document.querySelectorAll(EMAIL_MSG_SELECTOR).forEach(function(container) {
-        const quotedBlocks = [];
-
-        // Detect common quoted elements
-        container.querySelectorAll('blockquote, .gmail_quote, .yahoo_quoted').forEach(function(el) {
-            quotedBlocks.push(el);
-        });
-
-        // Gmail sometimes nests in div with border-left styling; heuristic
-        container.querySelectorAll('div[style*="border-left"]').forEach(function(el) {
-            quotedBlocks.push(el);
-        });
-
-        if (!quotedBlocks.length) {
-            return;
-        }
-
-        // Deduplicate elements
-        const unique = Array.from(new Set(quotedBlocks));
-        unique.forEach(function(el) {
-            el.classList.add('quoted-section');
-        });
-
-        // Add toggle only once per container
-        if (container.querySelector('.quoted-toggle')) {
-            return;
-        }
-
-        const toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'btn btn-sm btn-outline-secondary quoted-toggle mb-2';
-        toggle.setAttribute('aria-expanded', 'false');
-        toggle.textContent = 'Show quoted text';
-
-        toggle.addEventListener('click', function() {
-            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-            toggle.setAttribute('aria-expanded', String(!isExpanded));
-            toggle.textContent = isExpanded ? 'Show quoted text' : 'Hide quoted text';
-            container.classList.toggle('quoted-collapsed', isExpanded);
-        });
-
-        // Insert toggle at top of container
-        container.prepend(toggle);
-        // Default collapsed
-        container.classList.add('quoted-collapsed');
-    });
-
-    // Collapse quoted/plain history in non-HTML messages (common markers)
-    const PLAIN_MSG_SELECTOR = '.message-content .plain-content';
-    const QUOTE_MARKERS = [
-        /-----\s*Original Message\s*-----/i,
-        /^On .*wrote:$/im,
-        /^From:\s.*$/im,
-        /Thank you for contacting us/i
-    ];
-
-    document.querySelectorAll(PLAIN_MSG_SELECTOR).forEach(function(container) {
-        // Skip if already processed
-        if (container.dataset.quoteProcessed === '1') return;
-
-        const text = container.innerText || '';
-        let cutIndex = -1;
-        QUOTE_MARKERS.some(marker => {
-            const m = text.search(marker);
-            if (m >= 0) { cutIndex = m; return true; }
-            return false;
-        });
-
-        if (cutIndex === -1) return;
-
-        const visibleText = text.slice(0, cutIndex).trimEnd();
-        const quotedText = text.slice(cutIndex);
-        if (!quotedText.trim()) return;
-
-        // Build new nodes
-        container.innerHTML = '';
-        const spanMain = document.createElement('span');
-        spanMain.textContent = visibleText;
-        const spanQuote = document.createElement('span');
-        spanQuote.textContent = quotedText;
-        spanQuote.classList.add('quoted-section');
-        container.append(spanMain, document.createElement('br'), spanQuote);
-
-        container.dataset.quoteProcessed = '1';
-
-        // Add toggle similar to html path
-        const toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'btn btn-sm btn-outline-secondary quoted-toggle mt-2';
-        toggle.setAttribute('aria-expanded', 'false');
-        toggle.textContent = 'Show quoted text';
-
-        toggle.addEventListener('click', function() {
-            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-            toggle.setAttribute('aria-expanded', String(!isExpanded));
-            toggle.textContent = isExpanded ? 'Show quoted text' : 'Hide quoted text';
-            container.classList.toggle('quoted-collapsed', isExpanded);
-        });
-
-        // Default collapsed
-        container.classList.add('quoted-collapsed');
-        container.parentNode.insertBefore(toggle, container.nextSibling);
-    });
-
-    // Collapsible large messages (HTML or plain)
-    const COLLAPSIBLE_SELECTOR = '.collapsible-message';
-    const MAX_HEIGHT = 260; // px before we collapse
-
-    document.querySelectorAll(COLLAPSIBLE_SELECTOR).forEach(function(block) {
-        // If content is short, skip
-        if (block.scrollHeight <= MAX_HEIGHT + 40) return;
-
-        block.classList.add('collapsible-collapsed');
-
-        const toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'btn btn-sm btn-outline-secondary quoted-toggle mt-2';
-        toggle.setAttribute('aria-expanded', 'false');
-        toggle.textContent = 'Show full message';
-
-        toggle.addEventListener('click', function() {
-            const expanded = block.classList.toggle('collapsible-expanded');
-            toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-            toggle.textContent = expanded ? 'Hide full message' : 'Show full message';
-        });
-
-        // Insert toggle after the block
-        block.parentNode.insertBefore(toggle, block.nextSibling);
-    });
-});
-</script>
-
 <!-- Quill (basic rich text editor) -->
 <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
@@ -924,6 +853,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         textarea.value = html;
+    });
+})();
+</script>
+
+<script>
+// Manual attachment fetch button
+(() => {
+    const card = document.getElementById('pendingAttachmentsCard');
+    const btn = document.getElementById('fetchAttachmentsBtn');
+    const status = document.getElementById('fetchAttachmentsStatus');
+    if (!card || !btn) return;
+
+    const ticketId = card.getAttribute('data-ticket-id');
+    const setStatus = (msg, cls) => {
+        if (!status) return;
+        status.className = 'small ' + (cls || '');
+        status.textContent = msg || '';
+    };
+
+    btn.addEventListener('click', async () => {
+        if (!ticketId) return;
+        btn.disabled = true;
+        setStatus('Starting download…', 'text-muted');
+        try {
+            const res = await fetch(`<?= URLROOT ?>/tickets/kickoffAttachments/${ticketId}`, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data || data.ok !== true) {
+                setStatus('Could not start attachment download.', 'text-danger');
+                return;
+            }
+            if (data.started) {
+                setStatus('Downloading in background. Refresh in a moment.', 'text-success');
+            } else {
+                setStatus('No pending attachments.', 'text-muted');
+            }
+        } catch (e) {
+            setStatus('Could not start attachment download.', 'text-danger');
+        } finally {
+            btn.disabled = false;
+        }
     });
 })();
 </script>
@@ -1026,6 +998,41 @@ document.getElementById('message').addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = this.scrollHeight + 'px';
 });
+</script>
+
+<script>
+// Email thread splitter: insert visual dividers at email header boundaries within messages
+(() => {
+    const emailMessages = document.querySelectorAll('.timeline-item .html-content, .timeline-item .plain-content');
+    
+    emailMessages.forEach(container => {
+        const html = container.innerHTML;
+        
+        // Detect Outlook/Gmail style header blocks (From:, Sent:/Date:, To:, Subject:)
+        // Pattern: <b>From:</b> ... <b>Sent:</b> ... <b>To:</b> ... <b>Subject:</b>
+        const headerPattern = /<div[^>]*>\s*<b>\s*(From|Sent|Date):\s*<\/b>.*?<b>\s*(To|Date|Sent):\s*<\/b>.*?<b>\s*Subject:\s*<\/b>.*?<\/div>/gi;
+        
+        const matches = [];
+        let match;
+        while ((match = headerPattern.exec(html)) !== null) {
+            matches.push({
+                text: match[0],
+                index: match.index
+            });
+        }
+        
+        if (matches.length === 0) return; // No thread detected
+        
+        // Insert dividers at each header block position
+        let offset = 0;
+        matches.forEach((m, i) => {
+            const divider = '<div class="email-reply-divider my-4" style="border-top: 2px solid #cbd5e1; margin: 2rem 0; padding-top: 1rem; color: #64748b; font-size: 0.85rem;"><i class="bi bi-reply me-2"></i>Previous message in thread:</div>';
+            const insertPos = m.index + offset;
+            container.innerHTML = container.innerHTML.slice(0, insertPos) + divider + container.innerHTML.slice(insertPos);
+            offset += divider.length;
+        });
+    });
+})();
 </script>
 
 <!-- Styles moved to /public/css/app.css -->

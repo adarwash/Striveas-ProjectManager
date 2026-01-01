@@ -1,6 +1,6 @@
 <?php
 // Set title for the page
-$title = 'Edit Task - HiveITPortal';
+$title = 'Edit Task - ' . DEFAULT_TITLE;
 ?>
 
 <!-- Page Header -->

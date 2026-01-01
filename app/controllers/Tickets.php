@@ -168,14 +168,19 @@ class Tickets extends Controller {
 
         // Load ticket attachments (stored directly on the ticket, not via EmailInbox)
         $attachments = [];
+        $pendingAttachmentCount = 0;
         try {
             if (!class_exists('TicketAttachment')) {
                 require_once APPROOT . '/app/models/TicketAttachment.php';
             }
             $attachmentModel = new TicketAttachment();
             $attachments = $attachmentModel->getByTicketId((int)$id);
+            if (method_exists($attachmentModel, 'countPendingByTicketId')) {
+                $pendingAttachmentCount = (int)$attachmentModel->countPendingByTicketId((int)$id);
+            }
         } catch (Exception $e) {
             $attachments = [];
+            $pendingAttachmentCount = 0;
         }
 
         // Get users for assignment
@@ -224,6 +229,7 @@ class Tickets extends Controller {
             'categories' => $lookupData['categories'],
             'users' => $users,
             'attachments' => $attachments,
+            'pending_attachments' => $pendingAttachmentCount,
             'can_edit' => hasPermission('tickets.update') || $this->canEditTicket($ticket, $_SESSION['user_id']),
             'can_assign' => hasPermission('tickets.assign'),
             'can_close' => hasPermission('tickets.close') || $this->canCloseTicket($ticket, $_SESSION['user_id']),
@@ -235,6 +241,55 @@ class Tickets extends Controller {
         ];
         
         $this->view('tickets/view', $viewData);
+    }
+
+    /**
+     * Kick off async attachment downloads for a ticket (non-blocking).
+     * Called by the UI (manual button / optional on-load).
+     */
+    public function kickoffAttachments($id) {
+        header('Content-Type: application/json');
+
+        $ticket = $this->ticketModel->getById($id);
+        if (!$ticket) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'error' => 'Ticket not found']);
+            return;
+        }
+
+        if (!hasPermission('tickets.read') && !$this->canAccessTicket($ticket, $_SESSION['user_id'])) {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'error' => 'Forbidden']);
+            return;
+        }
+
+        try {
+            if (!class_exists('TicketAttachment')) {
+                require_once APPROOT . '/app/models/TicketAttachment.php';
+            }
+            $attachmentModel = new TicketAttachment();
+            $pending = method_exists($attachmentModel, 'countPendingByTicketId')
+                ? (int)$attachmentModel->countPendingByTicketId((int)$id)
+                : 0;
+
+            if ($pending <= 0) {
+                echo json_encode(['ok' => true, 'started' => false, 'pending' => 0]);
+                return;
+            }
+
+            // Spawn a background worker to download just this ticket's pending attachments.
+            $script = APPROOT . '/app/scripts/process_ticket_attachments.php';
+            $limit = 200;
+            $cmd = 'php ' . escapeshellarg($script) . ' ' . (int)$limit . ' ' . (int)$id . ' > /dev/null 2>&1 &';
+            @exec($cmd);
+
+            echo json_encode(['ok' => true, 'started' => true, 'pending' => $pending]);
+            return;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+            return;
+        }
     }
 
     // Note: Do not define a view() method here to avoid clashing with base Controller::view()

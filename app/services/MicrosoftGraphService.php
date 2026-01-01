@@ -375,7 +375,7 @@ class MicrosoftGraphService {
 
             // Determine message row id (TicketMessages) for linkage
             $msgRow = $this->db->select(
-                "SELECT TOP 1 id FROM TicketMessages WHERE email_message_id COLLATE Latin1_General_100_BIN2 = :mid ORDER BY id DESC",
+                "SELECT TOP 1 id FROM TicketMessages WHERE email_message_id = :mid ORDER BY id DESC",
                 ['mid' => $messageId]
             );
             $ticketMessageId = !empty($msgRow) ? (int)$msgRow[0]['id'] : null;
@@ -573,15 +573,13 @@ class MicrosoftGraphService {
     }
     
     /**
-     * Send email and return message ID
-     * Uses createMessage + send to capture the sent message ID for deduplication
-     * 
-     * @return string|bool Message ID on success, false on failure
+     * Send email
      */
     public function sendEmail($from, $to, $subject, $body, $cc = [], $bcc = [], $replyTo = null) {
         $token = $this->getAccessToken();
         
         $encodedFrom = urlencode($from);
+        $url = "https://graph.microsoft.com/v1.0/users/{$encodedFrom}/sendMail";
         
         // Build recipients arrays
         $toRecipients = [];
@@ -599,66 +597,39 @@ class MicrosoftGraphService {
             $bccRecipients[] = ['emailAddress' => ['address' => $email]];
         }
         
-        $messageData = [
-            'subject' => $subject,
-            'body' => [
-                'contentType' => 'HTML',
-                'content' => $body
+        $message = [
+            'message' => [
+                'subject' => $subject,
+                'body' => [
+                    'contentType' => 'HTML',
+                    'content' => $body
+                ],
+                'toRecipients' => $toRecipients
             ],
-            'toRecipients' => $toRecipients
+            'saveToSentItems' => true
         ];
         
         if (!empty($ccRecipients)) {
-            $messageData['ccRecipients'] = $ccRecipients;
+            $message['message']['ccRecipients'] = $ccRecipients;
         }
         
         if (!empty($bccRecipients)) {
-            $messageData['bccRecipients'] = $bccRecipients;
+            $message['message']['bccRecipients'] = $bccRecipients;
         }
         
         if ($replyTo) {
-            $messageData['replyTo'] = [
+            $message['message']['replyTo'] = [
                 ['emailAddress' => ['address' => $replyTo]]
             ];
         }
         
-        // Step 1: Create draft message (returns message ID)
-        $createUrl = "https://graph.microsoft.com/v1.0/users/{$encodedFrom}/messages";
-        $ch = curl_init($createUrl);
+        $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $token,
             'Content-Type: application/json'
         ]);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($messageData));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        if ($httpCode !== 201) {
-            error_log('Graph API create message failed (HTTP ' . $httpCode . '): ' . $response);
-            throw new Exception('Failed to create email message: ' . $response);
-        }
-        
-        $messageResult = json_decode($response, true);
-        $messageId = $messageResult['id'] ?? null;
-        
-        if (!$messageId) {
-            throw new Exception('No message ID returned from Graph API');
-        }
-        
-        // Step 2: Send the created message
-        $encodedMessageId = rawurlencode($messageId);
-        $sendUrl = "https://graph.microsoft.com/v1.0/users/{$encodedFrom}/messages/{$encodedMessageId}/send";
-        
-        $ch = curl_init($sendUrl);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $token,
-            'Content-Length: 0'
-        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($message));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         
         $response = curl_exec($ch);
@@ -666,11 +637,10 @@ class MicrosoftGraphService {
         curl_close($ch);
         
         if ($httpCode !== 202) {
-            error_log('Graph API send message failed (HTTP ' . $httpCode . '): ' . $response);
             throw new Exception('Failed to send email: ' . $response);
         }
         
-        return $messageId;
+        return true;
     }
 
     /**
@@ -816,43 +786,16 @@ class MicrosoftGraphService {
             $ticketModel = new Ticket();
             $processedCount = 0;
             
-
-            $parseEmailBody = function(array $email) {
-                $bodyType = strtolower((string)($email['body']['contentType'] ?? 'html'));
-                $rawBody = (string)($email['body']['content'] ?? '');
-                $bodyHtml = '';
-                $bodyText = '';
-                $fullHtml = '';
-                if ($bodyType === 'text') {
-                    $fullHtml = nl2br(htmlspecialchars($rawBody));
-                    $bodyText = $this->extractLatestReplyText($rawBody);
-                    $bodyHtml = nl2br(htmlspecialchars($bodyText));
-                } else {
-                    $fullHtml = $this->sanitizeEmailHtml($rawBody);
-                    $bodyHtml = $this->extractLatestReplyHtml($fullHtml);
-                    $bodyText = trim(strip_tags($bodyHtml));
-                }
-                return [$bodyType, $bodyHtml, $bodyText, $fullHtml];
-            };
-
             foreach ($emails as $email) {
                 error_log('processEmailsToTickets: Processing email: ' . $email['subject']);
                 $messageId = $email['id'] ?? '';
                 if (empty($messageId)) {
                     continue;
                 }
-                
-                // Skip emails FROM the support address (these are our own sent emails bouncing back)
-                $fromAddress = $email['from']['emailAddress']['address'] ?? '';
-                if (strtolower($fromAddress) === strtolower($supportEmail)) {
-                    error_log('processEmailsToTickets: Skipping outbound email from ' . $fromAddress . ' (same as support email)');
-                    $this->markAsRead($supportEmail, $messageId);
-                    continue;
-                }
 
                 // Dedupe: if a TicketMessage already exists with this message id, skip
                 $dup = $this->db->select(
-                    "SELECT TOP 1 id FROM TicketMessages WHERE email_message_id COLLATE Latin1_General_100_BIN2 = :mid",
+                    "SELECT TOP 1 id FROM TicketMessages WHERE email_message_id = :mid",
                     ['mid' => $messageId]
                 );
                 if (!empty($dup)) {
@@ -863,7 +806,7 @@ class MicrosoftGraphService {
 
                 // Dedupe fallback: if a Ticket already exists for this exact message, attach it as message + mark read
                 $existingByMsg = $this->db->select(
-                    "SELECT TOP 1 id FROM Tickets WHERE original_message_id COLLATE Latin1_General_100_BIN2 = :mid ORDER BY id DESC",
+                    "SELECT TOP 1 id FROM Tickets WHERE original_message_id = :mid ORDER BY id DESC",
                     ['mid' => $messageId]
                 );
                 if (!empty($existingByMsg) && !empty($existingByMsg[0]['id'])) {
@@ -1021,7 +964,7 @@ class MicrosoftGraphService {
 
                         // Determine message row id (TicketMessages) for linkage
                         $msgRow = $this->db->select(
-                            "SELECT TOP 1 id FROM TicketMessages WHERE email_message_id COLLATE Latin1_General_100_BIN2 = :mid ORDER BY id DESC",
+                            "SELECT TOP 1 id FROM TicketMessages WHERE email_message_id = :mid ORDER BY id DESC",
                             ['mid' => $messageId]
                         );
                         $ticketMessageId = !empty($msgRow) ? (int)$msgRow[0]['id'] : null;
@@ -1061,129 +1004,6 @@ class MicrosoftGraphService {
                 $processedCount++;
             }
             
-
-            // Backfill: some mail clients mark messages as read immediately.
-            // When running unread-only, also scan recent messages and import READ replies
-            // that belong to existing tickets (by [TKT-...] subject or conversationId).
-            if ($unreadOnly) {
-                try {
-                    $recent = $this->getEmails($supportEmail, $limit, false);
-                    foreach ($recent as $email) {
-                        if (empty($email['isRead'])) { continue; }
-                        $messageId = $email['id'] ?? '';
-                        if (empty($messageId)) { continue; }
-                        
-                        // Skip emails FROM the support address (our own sent emails)
-                        $fromAddress = $email['from']['emailAddress']['address'] ?? '';
-                        if (strtolower($fromAddress) === strtolower($supportEmail)) {
-                            continue;
-                        }
-
-                        // Case-sensitive dedupe (Graph IDs are case-sensitive)
-                        $dup = $this->db->select(
-                            "SELECT TOP 1 id FROM TicketMessages WHERE email_message_id COLLATE Latin1_General_100_BIN2 = :mid",
-                            ['mid' => $messageId]
-                        );
-                        if (!empty($dup)) { continue; }
-
-                        $subjectOriginal = $email['subject'] ?? '';
-                        $emailDate = $this->formatGraphDateForDb($email['receivedDateTime'] ?? null);
-                        $conversationId = $email['conversationId'] ?? null;
-
-                        // Only attach to existing tickets; do NOT create new tickets from already-read mail
-                        $ticketId = null;
-                        if (preg_match('/\[TKT-\d{4}-\d{6}\]/', (string)$subjectOriginal, $matches)) {
-                            $ticketNumber = trim($matches[0], '[]');
-                            $existingTicket = $ticketModel->getByNumber($ticketNumber);
-                            if ($existingTicket) {
-                                $ticketId = (int)$existingTicket['id'];
-                            }
-                        }
-                        if (!$ticketId && !empty($conversationId)) {
-                            $foundTicket = $this->db->select(
-                                "SELECT TOP 1 id FROM Tickets WHERE email_thread_id = :tid ORDER BY created_at DESC",
-                                ['tid' => $conversationId]
-                            );
-                            if (!empty($foundTicket) && !empty($foundTicket[0]['id'])) {
-                                $ticketId = (int)$foundTicket[0]['id'];
-                            }
-                        }
-                        if (!$ticketId) { continue; }
-
-                        [$bodyType, $bodyHtml, $bodyText, $fullHtml] = $parseEmailBody($email);
-
-                        $ticketModel->addMessage($ticketId, [
-                            'user_id' => null,
-                            'message_type' => 'email_inbound',
-                            'subject' => $subjectOriginal,
-                            'content' => !empty($bodyHtml) ? $bodyHtml : $bodyText,
-                            'content_format' => !empty($bodyHtml) ? 'html' : 'text',
-                            'content_full' => $fullHtml,
-                            'content_full_format' => 'html',
-                            'email_message_id' => $messageId,
-                            'email_from' => $fromAddress,
-                            'email_to' => $supportEmail,
-                            'email_cc' => null,
-                            'email_headers' => null,
-                            'is_public' => 1,
-                            'created_at' => $emailDate,
-                            'suppress_ticket_touch' => false
-                        ]);
-
-                        // Queue attachment records (async download)
-                        try {
-                            $hasAttachmentsFlag = !empty($email['hasAttachments']);
-                            $mayHaveInlineCid = (stripos((string)$bodyHtml, 'cid:') !== false);
-                            if ($hasAttachmentsFlag || $mayHaveInlineCid) {
-                                if ($hasAttachmentsFlag || $mayHaveInlineCid) {
-                                if (!class_exists('TicketAttachment')) {
-                                    require_once APPROOT . '/app/models/TicketAttachment.php';
-                                }
-                                $ticketAttachmentModel = new TicketAttachment();
-
-                                // Determine message row id (TicketMessages) for linkage
-                                $msgRow = $this->db->select(
-                                    "SELECT TOP 1 id FROM TicketMessages WHERE email_message_id COLLATE Latin1_General_100_BIN2 = :mid ORDER BY id DESC",
-                                    ['mid' => $messageId]
-                                );
-                                $ticketMessageId = !empty($msgRow) ? (int)$msgRow[0]['id'] : null;
-
-                                $attachments = $this->getEmailAttachments($supportEmail, $messageId);
-                                foreach ($attachments as $att) {
-                                    $attId = $att['id'] ?? null;
-                                    if (empty($attId)) { continue; }
-
-                                    $existing = $ticketAttachmentModel->getByMsIds($messageId, $attId);
-                                    if ($existing) { continue; }
-
-                                    $ticketAttachmentModel->create([
-                                        'ticket_id' => (int)$ticketId,
-                                        'ticket_message_id' => $ticketMessageId,
-                                        'ms_message_id' => $messageId,
-                                        'ms_attachment_id' => $attId,
-                                        'content_id' => $att['contentId'] ?? null,
-                                        'filename' => $att['name'] ?? ('attachment_' . $attId),
-                                        'original_filename' => $att['name'] ?? ('attachment_' . $attId),
-                                        'file_size' => $att['size'] ?? 0,
-                                        'mime_type' => $att['contentType'] ?? 'application/octet-stream',
-                                        'is_inline' => !empty($att['isInline']) ? 1 : 0,
-                                        'is_downloaded' => 0
-                                    ]);
-                                    // Async download via process_ticket_attachments.php
-                                }
-                            }
-                            }
-                        } catch (Exception $e) {
-                            error_log('processEmailsToTickets: backfill attachment processing failed: ' . $e->getMessage());
-                        }
-
-                        $processedCount++;
-                    }
-                } catch (Exception $e) {
-                    error_log('processEmailsToTickets: backfill read-replies failed: ' . $e->getMessage());
-                }
-            }
-
             return $processedCount;
             
         } catch (Exception $e) {

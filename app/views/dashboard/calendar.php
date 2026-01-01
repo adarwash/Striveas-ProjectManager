@@ -1486,7 +1486,7 @@
                         <div class="text-center py-4">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" alt="Google Calendar" width="64" class="mb-3">
                             <h5>Connect with Google Calendar</h5>
-                            <p class="text-muted">Import events from your Google Calendar into HiveITPortal</p>
+                            <p class="text-muted">Import events from your Google Calendar into <?= DEFAULT_TITLE ?></p>
                             <form action="/dashboard/connectCalendar" method="post" id="googleForm">
                                 <input type="hidden" name="calendar_type" value="google">
                                 <button type="submit" class="btn btn-primary" id="googleConnectBtn">

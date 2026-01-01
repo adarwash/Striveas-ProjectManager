@@ -145,7 +145,7 @@ class EmailService {
             // Add custom headers to body
             $fullBody = $customHeaders . $body;
             
-            $messageId = $graphService->sendEmail(
+            $result = $graphService->sendEmail(
                 $fromEmail,
                 $to,
                 $emailData['subject'],
@@ -155,16 +155,16 @@ class EmailService {
                 ,$replyTo
             );
             
-            if ($messageId) {
-                error_log('EmailService: Email sent successfully via Microsoft Graph. To: ' . implode(',', $to) . ', Message ID: ' . $messageId);
+            if ($result) {
+                error_log('EmailService: Email sent successfully via Microsoft Graph. To: ' . implode(',', $to));
                 
-                // Log successful send with Graph message_id for deduplication
+                // Log successful send
                 if (!empty($emailData['ticket_id'])) {
-                    $this->logOutboundEmail($emailData, $messageId, $fromEmail, $to, $fullBody, $contentFormat);
+                    $this->logOutboundEmail($emailData, 'graph-' . time(), $fromEmail, $to, $fullBody, $contentFormat);
                 }
             }
             
-            return (bool)$messageId;
+            return $result;
         } catch (Exception $e) {
             $this->lastSendError = $e->getMessage();
             error_log('EmailService Send Error (Microsoft Graph): ' . $e->getMessage());

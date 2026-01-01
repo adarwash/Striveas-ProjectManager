@@ -394,23 +394,9 @@ class PermissionHelper {
                 'url' => '/employees/performance',
                 'icon' => 'bi bi-graph-up-arrow',
                 'permission' => 'employees.read'
-            ],
-            [
-                'title' => 'Audit Log',
-                'url' => '/auditlogs',
-                'icon' => 'bi bi-journal-check',
-                'permission' => 'admin.access'
             ]
         ];
         
-        // Admin users can see everything in navigation (even if permission tables are incomplete)
-        if (self::isAdmin()) {
-            return [
-                'main' => $menuItems,
-                'admin' => $adminItems
-            ];
-        }
-
         $accessibleItems = [];
         $accessibleAdminItems = [];
         

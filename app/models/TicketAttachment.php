@@ -29,7 +29,11 @@ class TicketAttachment {
                 return false;
             }
             $rows = $this->db->select(
-                "SELECT TOP 1 * FROM TicketAttachments WHERE ms_message_id COLLATE Latin1_General_100_BIN2 = :mid AND ms_attachment_id COLLATE Latin1_General_100_BIN2 = :aid ORDER BY id DESC",
+                // Graph IDs are case-sensitive; force case-sensitive comparisons
+                "SELECT TOP 1 * FROM TicketAttachments
+                 WHERE ms_message_id COLLATE Latin1_General_100_BIN2 = :mid
+                   AND ms_attachment_id COLLATE Latin1_General_100_BIN2 = :aid
+                 ORDER BY id DESC",
                 ['mid' => $msMessageId, 'aid' => $msAttachmentId]
             );
             return $rows[0] ?? false;
@@ -53,6 +57,45 @@ class TicketAttachment {
             return $this->db->select($query) ?: [];
         } catch (Exception $e) {
             error_log('TicketAttachment getPending error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function countPendingByTicketId(int $ticketId): int {
+        try {
+            $rows = $this->db->select(
+                "SELECT COUNT(*) AS c
+                 FROM TicketAttachments
+                 WHERE ticket_id = :ticket_id
+                   AND is_downloaded = 0
+                   AND (download_error IS NULL OR download_error = '')
+                   AND ms_message_id IS NOT NULL
+                   AND ms_attachment_id IS NOT NULL",
+                ['ticket_id' => $ticketId]
+            );
+            return (int)($rows[0]['c'] ?? 0);
+        } catch (Exception $e) {
+            error_log('TicketAttachment countPendingByTicketId error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getPendingForTicketId(int $ticketId, int $limit = 25): array {
+        try {
+            $ticketId = (int)$ticketId;
+            $limit = max(1, min(200, (int)$limit));
+            // NOTE: TOP cannot be parameterized in SQL Server via PDO easily; inject bounded int.
+            $query = "SELECT TOP {$limit} *
+                      FROM TicketAttachments
+                      WHERE ticket_id = :ticket_id
+                        AND is_downloaded = 0
+                        AND (download_error IS NULL OR download_error = '')
+                        AND ms_message_id IS NOT NULL
+                        AND ms_attachment_id IS NOT NULL
+                      ORDER BY created_at ASC, id ASC";
+            return $this->db->select($query, ['ticket_id' => $ticketId]) ?: [];
+        } catch (Exception $e) {
+            error_log('TicketAttachment getPendingForTicketId error: ' . $e->getMessage());
             return [];
         }
     }

@@ -736,7 +736,7 @@ class Employees extends Controller {
             
             // Footer
             echo '<div class="footer">
-                                        HiveITPortal | Generated on ' . date('Y-m-d H:i') . '
+                                        ' . DEFAULT_TITLE . ' | Generated on ' . date('Y-m-d H:i') . '
             </div>';
             
             echo '</body></html>';

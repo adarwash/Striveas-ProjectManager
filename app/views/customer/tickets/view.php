@@ -81,17 +81,12 @@
 }
 
 .message-item {
-    border-bottom: 1px solid #f1f3f4;
     padding: 1.5rem;
     transition: background-color 0.3s ease;
 }
 
 .message-item:hover {
     background-color: #f8f9fa;
-}
-
-.message-item:last-child {
-    border-bottom: none;
 }
 
 .message-header {
@@ -140,7 +135,6 @@
 .message-content {
     line-height: 1.6;
     color: #495057;
-    overflow-x: auto;
 }
 
 .message-content p {
@@ -338,6 +332,9 @@
         <div class="conversation-body">
             <?php if (!empty($data['messages'])): ?>
                 <?php foreach ($data['messages'] as $index => $message): ?>
+                    <?php if ($index > 0): ?>
+                        <div class="message-divider my-3"></div>
+                    <?php endif; ?>
                     <div class="message-item <?= $message['message_type'] === 'system' ? 'system-message' : '' ?> 
                                               <?= strpos($message['message_type'], 'email') !== false ? 'email-message' : '' ?>"
                          style="animation-delay: <?= 0.3 + ($index * 0.1) ?>s;">
