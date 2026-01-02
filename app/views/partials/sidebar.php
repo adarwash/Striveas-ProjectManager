@@ -22,6 +22,7 @@ try {
     error_log('Sidebar meeting count error: ' . $e->getMessage());
     $todayMeetingCount = 0;
 }
+
 ?>
 
 <!-- Sidebar structure based on modern dashboard design -->

@@ -32,6 +32,7 @@ class Profile extends Controller {
     public function index() {
         $userId = $_SESSION['user_id'];
         $user = $this->userModel->getUserById($userId);
+        $userSettings = $this->userModel->getUserSettings($userId);
         
         // Get user's projects and tasks stats
         $projectsCount = $this->projectModel->getProjectsCountByUser($userId);
@@ -41,6 +42,7 @@ class Profile extends Controller {
         $data = [
             'title' => 'My Profile',
             'user' => $user,
+            'user_settings' => $userSettings,
             'projects_count' => $projectsCount,
             'tasks_stats' => $tasksStats,
             'recent_activity' => $recentActivity
@@ -318,6 +320,89 @@ class Profile extends Controller {
             ];
             
             $this->view('profile/skills', $data);
+        }
+    }
+
+    /**
+     * Update user's theme settings
+     *
+     * @return void
+     */
+    public function updateTheme() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $userId = $_SESSION['user_id'];
+            
+            // Tool picker: allow presets + safe custom gradient (built from color pickers)
+            $selection = trim((string)($_POST['nav_background'] ?? ''));
+            $themeCardHeaders = !empty($_POST['theme_card_headers']) ? 1 : 0;
+            // Project card headers (separate toggle)
+            // Use a hidden marker so we can tell "unchecked" vs "old form didn't have this field"
+            if (isset($_POST['theme_project_card_headers_present'])) {
+                $themeProjectCardHeaders = !empty($_POST['theme_project_card_headers']) ? 1 : 0;
+            } else {
+                // Backwards-compatible fallback
+                $themeProjectCardHeaders = $themeCardHeaders ? 1 : 0;
+            }
+            
+            // Header text color (auto/custom)
+            $headerTextMode = trim((string)($_POST['header_text_mode'] ?? 'auto'));
+            $headerTextColor = '';
+            if ($headerTextMode === 'custom') {
+                $c = strtoupper(trim((string)($_POST['header_text_color'] ?? '')));
+                if (!preg_match('/^#[0-9A-F]{6}$/', $c)) {
+                    $_SESSION['profile_error'] = 'Invalid header text color selected.';
+                    redirect('profile');
+                    return;
+                }
+                $headerTextColor = $c;
+            }
+            $allowedPresets = [
+                '',
+                'linear-gradient(135deg, #0061f2 0%, rgba(105, 0, 199, 0.8) 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+                'linear-gradient(to top, #09203f 0%, #537895 100%)',
+                'linear-gradient(to right, #654ea3, #eaafc8)',
+            ];
+            
+            $navBackground = '';
+            if ($selection === 'custom') {
+                $start = strtoupper(trim((string)($_POST['custom_color_start'] ?? '')));
+                $end = strtoupper(trim((string)($_POST['custom_color_end'] ?? '')));
+                $angle = (int)($_POST['custom_angle'] ?? 135);
+                
+                if (!preg_match('/^#[0-9A-F]{6}$/', $start) || !preg_match('/^#[0-9A-F]{6}$/', $end) || $angle < 0 || $angle > 360) {
+                    $_SESSION['profile_error'] = 'Invalid custom gradient values.';
+                    redirect('profile');
+                    return;
+                }
+                
+                // Build a safe gradient string server-side (prevents CSS injection)
+                $navBackground = "linear-gradient({$angle}deg, {$start} 0%, {$end} 100%)";
+            } else {
+                $navBackground = $selection;
+                if (!in_array($navBackground, $allowedPresets, true)) {
+                    $_SESSION['profile_error'] = 'Invalid theme option selected.';
+                    redirect('profile');
+                    return;
+                }
+            }
+            
+            // Update settings
+            if ($this->userModel->updateUserSettings($userId, [
+                'nav_background' => $navBackground,
+                'theme_card_headers' => $themeCardHeaders,
+                'theme_project_card_headers' => $themeProjectCardHeaders,
+                'theme_header_text_color' => $headerTextColor
+            ])) {
+                 $_SESSION['profile_success'] = 'Theme updated successfully';
+            } else {
+                 $_SESSION['profile_error'] = 'Failed to update theme';
+            }
+            
+            redirect('profile');
+        } else {
+            redirect('profile');
         }
     }
 } 

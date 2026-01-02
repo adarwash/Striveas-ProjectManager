@@ -9,120 +9,222 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
 <div class="page-header">
     <div>
         <h1 class="page-title"><i class="fas fa-tachometer-alt me-3"></i>Dashboard</h1>
-        <p class="text-muted mb-0">Welcome back, <?= $_SESSION['user_name'] ?>!</p>
+        <?php 
+            $hour = date('G');
+            $greeting = 'Good evening';
+            if ($hour < 12) {
+                $greeting = 'Good morning';
+            } elseif ($hour < 18) {
+                $greeting = 'Good afternoon';
+            }
+            $firstName = !empty($data['user']['first_name']) ? $data['user']['first_name'] : ($_SESSION['user_name'] ?? 'User');
+        ?>
+        <p class="text-muted mb-0"><?= $greeting ?>, <?= htmlspecialchars($firstName) ?>! Here's your plan for today.</p>
     </div>
     <div>
         <span class="badge bg-light text-dark"><?= $_SESSION['role'] ?? 'User' ?></span>
     </div>
 </div>
 
-<!-- Modern Stats Overview -->
-<div class="row g-4 mb-5">
-    <div class="col-lg-3 col-md-6">
-        <div class="stats-card purple clickable-card" data-href="/clients">
-            <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                    <div class="stats-number"><?= $stats['active_clients'] ?? 0 ?></div>
-                    <div class="stats-label">Active Clients</div>
-                </div>
-                <div class="stats-icon">
-                    <i class="fas fa-building"></i>
-                </div>
+<!-- Compact Stats Overview -->
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+    <div class="col">
+        <div class="compact-stat-card purple clickable-card" data-href="/clients">
+            <div class="compact-stat-icon">
+                <i class="fas fa-building"></i>
             </div>
-        </div>
-                    </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="stats-card green clickable-card" data-href="/users">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="stats-number"><?= $stats['total_users'] ?? 0 ?></div>
-                    <div class="stats-label">Total Users</div>
-                    </div>
-                <div class="stats-icon">
-                    <i class="fas fa-users"></i>
-                </div>
+            <div class="compact-stat-content">
+                <div class="compact-stat-value"><?= $stats['active_clients'] ?? 0 ?></div>
+                <div class="compact-stat-label">Clients</div>
             </div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="stats-card orange clickable-card" data-href="/users?role=technician">
-            <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                    <div class="stats-number"><?= $stats['technicians'] ?? 0 ?></div>
-                    <div class="stats-label">Technicians</div>
-                </div>
-                <div class="stats-icon">
-                    <i class="fas fa-tools"></i>
-                </div>
+    <div class="col">
+        <div class="compact-stat-card green clickable-card" data-href="/users">
+            <div class="compact-stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="compact-stat-content">
+                <div class="compact-stat-value"><?= $stats['total_users'] ?? 0 ?></div>
+                <div class="compact-stat-label">Users</div>
             </div>
         </div>
-                    </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="stats-card blue clickable-card" data-href="/sites">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="stats-number"><?= $stats['active_sites'] ?? 0 ?></div>
-                    <div class="stats-label">Active Sites</div>
-                    </div>
-                <div class="stats-icon">
-                    <i class="fas fa-map-marker-alt"></i>
-                </div>
+    </div>
+    <div class="col">
+        <div class="compact-stat-card orange clickable-card" data-href="/users?role=technician">
+            <div class="compact-stat-icon">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="compact-stat-content">
+                <div class="compact-stat-value"><?= $stats['technicians'] ?? 0 ?></div>
+                <div class="compact-stat-label">Techs</div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="compact-stat-card blue clickable-card" data-href="/sites">
+            <div class="compact-stat-icon">
+                <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="compact-stat-content">
+                <div class="compact-stat-value"><?= $stats['active_sites'] ?? 0 ?></div>
+                <div class="compact-stat-label">Sites</div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="compact-stat-card purple clickable-card" data-href="/clients?status=Prospect">
+            <div class="compact-stat-icon">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="compact-stat-content">
+                <div class="compact-stat-value"><?= $stats['prospect_clients'] ?? 0 ?></div>
+                <div class="compact-stat-label">Prospects</div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="compact-stat-card red clickable-card" data-href="/tickets?status=open">
+            <div class="compact-stat-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="compact-stat-content">
+                <div class="compact-stat-value"><?= $stats['open_tickets'] ?? 0 ?></div>
+                <div class="compact-stat-label">Tickets</div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="compact-stat-card orange clickable-card" data-href="/tasks?status=open">
+            <div class="compact-stat-icon">
+                <i class="fas fa-list-ul"></i>
+            </div>
+            <div class="compact-stat-content">
+                <div class="compact-stat-value"><?= $stats['open_tasks'] ?? 0 ?></div>
+                <div class="compact-stat-label">Tasks</div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="compact-stat-card green clickable-card" data-href="/time/dashboard">
+            <div class="compact-stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="compact-stat-content">
+                <div class="compact-stat-value"><?= $stats['currently_working'] ?? 0 ?></div>
+                <div class="compact-stat-label">Working</div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Additional Stats Row -->
-<div class="row g-4 mb-5">
-    <div class="col-lg-3 col-md-6">
-        <div class="stats-card purple clickable-card" data-href="/clients?status=Prospect">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="stats-number"><?= $stats['prospect_clients'] ?? 0 ?></div>
-                    <div class="stats-label">Prospect Clients</div>
-                </div>
-                <div class="stats-icon">
-                    <i class="fas fa-user-tie"></i>
-                </div>
+<!-- Removed redundant compact stats block -->
+<!-- Plan for the Day Row -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0 text-primary"><i class="bi bi-calendar-day me-2"></i>My Plan for Today</h5>
             </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="stats-card red clickable-card" data-href="/tickets?status=open">
-            <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                    <div class="stats-number"><?= $stats['open_tickets'] ?? 0 ?></div>
-                    <div class="stats-label">Open Tickets</div>
-                </div>
-                <div class="stats-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-            </div>
-        </div>
+            <div class="card-body">
+                <?php
+                    // Collect items for the plan
+                    $planItems = [];
+                    
+                    // 1. Overdue/Due Today Tasks
+                    if (!empty($assigned_tasks)) {
+                        foreach ($assigned_tasks as $task) {
+                            if (!empty($task->due_date)) {
+                                $dueTs = strtotime($task->due_date);
+                                $isToday = date('Y-m-d', $dueTs) === date('Y-m-d');
+                                $isOverdue = $dueTs < strtotime('today');
+                                
+                                if ($isToday || $isOverdue) {
+                                    $planItems[] = [
+                                        'type' => 'task',
+                                        'priority' => $isOverdue ? 1 : 2, // Overdue is highest priority
+                                        'time' => $dueTs,
+                                        'title' => $task->title,
+                                        'status' => $task->status,
+                                        'link' => '/tasks/show/' . $task->id,
+                                        'meta' => $isOverdue ? 'Overdue' : 'Due Today'
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 2. Open Tickets (High Priority or Assigned)
+                    if (!empty($data['assigned_tickets'])) {
+                        foreach ($data['assigned_tickets'] as $ticket) {
+                            $isHighPri = ($ticket['priority_level'] ?? 0) >= 4; // High/Critical
+                            $planItems[] = [
+                                'type' => 'ticket',
+                                'priority' => $isHighPri ? 1 : 3,
+                                'time' => strtotime($ticket['created_at']), // Sort by creation for now
+                                'title' => '#' . $ticket['ticket_number'] . ': ' . $ticket['subject'],
+                                'status' => $ticket['status_name'],
+                                'link' => '/tickets/show/' . $ticket['id'],
+                                'meta' => $ticket['priority_display']
+                            ];
+                        }
+                    }
+                    
+                    // Sort items by priority then time
+                    usort($planItems, function($a, $b) {
+                        if ($a['priority'] !== $b['priority']) {
+                            return $a['priority'] - $b['priority'];
+                        }
+                        // For same priority, maybe sort tickets by oldest first (FIFO) and tasks by due date
+                        return $a['time'] - $b['time'];
+                    });
+                ?>
+                
+                <?php if (empty($planItems)): ?>
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-check-circle fs-1 text-success mb-2"></i>
+                        <p>You have no urgent items for today. Great job!</p>
+                        <a href="/tasks" class="btn btn-sm btn-outline-primary mt-2">View All Tasks</a>
                     </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="stats-card orange clickable-card" data-href="/tasks?status=open">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="stats-number"><?= $stats['open_tasks'] ?? 0 ?></div>
-                    <div class="stats-label">Open Tasks</div>
+                <?php else: ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($planItems as $item): ?>
+                            <a href="<?= $item['link'] ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <?php if ($item['type'] === 'task'): ?>
+                                        <span class="badge bg-primary me-2"><i class="bi bi-check2-square"></i> Task</span>
+                                    <?php elseif ($item['type'] === 'ticket'): ?>
+                                        <span class="badge bg-danger me-2"><i class="bi bi-ticket-perforated"></i> Ticket</span>
+                                    <?php endif; ?>
+                                    <span class="fw-medium"><?= htmlspecialchars($item['title']) ?></span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge <?= $item['meta'] === 'Overdue' || $item['meta'] === 'Critical' ? 'bg-danger' : 'bg-warning text-dark' ?>">
+                                        <?= $item['meta'] ?>
+                                    </span>
+                                </div>
+                            </a>
+                        <?php endforeach; ?>
                     </div>
-                <div class="stats-icon">
-                    <i class="fas fa-list-ul"></i>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-3 col-md-6">
-        <div class="stats-card green clickable-card" data-href="/time/dashboard">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="stats-number"><?= $stats['currently_working'] ?? 0 ?></div>
-                    <div class="stats-label">Currently Working</div>
-                    </div>
-                <div class="stats-icon">
-                    <i class="fas fa-clock"></i>
+    <div class="col-lg-4">
+        <!-- Quick Status Card -->
+        <div class="card h-100 border-0 shadow-sm bg-primary text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
+                <div class="d-grid gap-2 mt-3">
+                    <a href="/tickets/create" class="btn btn-light text-primary fw-bold text-start">
+                        <i class="bi bi-plus-circle me-2"></i> Create Ticket
+                    </a>
+                    <a href="/tasks/create" class="btn btn-light text-primary fw-bold text-start">
+                        <i class="bi bi-list-check me-2"></i> Add Task
+                    </a>
+                    <a href="/time/dashboard" class="btn btn-light text-primary fw-bold text-start">
+                        <i class="bi bi-stopwatch me-2"></i> Time Clock
+                    </a>
                 </div>
             </div>
         </div>

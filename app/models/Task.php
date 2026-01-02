@@ -864,6 +864,42 @@ class Task {
     }
     
     /**
+     * Get open tasks (status not Completed) assigned to a user
+     */
+    public function getOpenTasksByUser($userId, array $blockedClientIds = []) {
+        $query = "SELECT t.*, p.title as project_title, p.client_id
+                 FROM tasks t
+                 LEFT JOIN projects p ON t.project_id = p.id
+                 WHERE t.assigned_to = ? AND t.status != 'Completed'";
+
+        $params = [$userId];
+        if (!empty($blockedClientIds)) {
+            $placeholders = implode(',', array_fill(0, count($blockedClientIds), '?'));
+            $query .= " AND (p.client_id IS NULL OR p.client_id NOT IN ($placeholders))";
+            $params = array_merge($params, array_map('intval', $blockedClientIds));
+        }
+
+        $query .= " ORDER BY t.due_date ASC, t.priority DESC";
+        
+        try {
+            $results = $this->db->select($query, $params);
+            
+            // Convert arrays to objects
+            $tasks = [];
+            if (!empty($results)) {
+                foreach ($results as $result) {
+                    $tasks[] = (object)$result;
+                }
+            }
+            
+            return $tasks;
+        } catch (Exception $e) {
+            error_log('Error in getOpenTasksByUser: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Get recent task activity for a specific project
      * 
      * @param int $projectId The project ID

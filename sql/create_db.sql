@@ -1521,6 +1521,10 @@ CREATE TABLE [dbo].[UserSettings](
 	[email_notifications] [bit] NULL,
 	[task_reminders] [bit] NULL,
 	[project_updates] [bit] NULL,
+	[nav_background] [nvarchar](400) NULL,
+	[theme_card_headers] [bit] NOT NULL CONSTRAINT [DF_UserSettings_theme_card_headers] DEFAULT ((0)),
+	[theme_project_card_headers] [bit] NOT NULL CONSTRAINT [DF_UserSettings_theme_project_card_headers] DEFAULT ((1)),
+	[theme_header_text_color] [nvarchar](20) NULL,
 	[created_at] [datetime] NULL,
 	[updated_at] [datetime] NULL,
 PRIMARY KEY CLUSTERED 

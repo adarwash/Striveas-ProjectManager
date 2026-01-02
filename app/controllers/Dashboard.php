@@ -124,8 +124,14 @@ class Dashboard extends Controller {
         // Get tasks
         $tasks = $this->taskModel->getAllTasks($blockedClientIds);
         
-        // Get tasks assigned to the current user
-        $assignedTasks = $this->taskModel->getTasksByUserId($userId, $blockedClientIds);
+        // Get tasks assigned to the current user (only open tasks)
+        $assignedTasks = $this->taskModel->getOpenTasksByUser($userId, $blockedClientIds);
+        
+        // Get tickets assigned to the current user (only open tickets)
+        $ticketModel = $this->model('Ticket');
+        $assignedTickets = method_exists($ticketModel, 'getOpenTicketsByUser') 
+            ? $ticketModel->getOpenTicketsByUser($userId) 
+            : [];
         
         // Get departments
         $departments = $this->departmentModel->getAllDepartments();
@@ -162,11 +168,16 @@ class Dashboard extends Controller {
         // Get top clients by ticket volume within range
         $topClients = $this->clientModel->getTopClientsByTickets($range, 5, 90);
         
+        // Get active user data for personalized greeting
+        $user = $this->userModel->getUserById($userId);
+        
         $data = [
             'title' => 'Dashboard',
+            'user' => $user,
             'projects' => $projects,
             'tasks' => $tasks,
             'assigned_tasks' => $assignedTasks,
+            'assigned_tickets' => $assignedTickets,
             'departments' => $departments,
             'project_counts' => $projectCounts,
             'task_counts' => $taskCounts,

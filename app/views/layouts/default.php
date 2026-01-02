@@ -53,7 +53,57 @@
         <!-- Sidebar -->
         <?php require_once '../app/views/partials/sidebar.php'; ?>
             <!-- Universal Search Bar -->
-            <div class="search-header">
+            <?php
+            // User theme customization for the top search header (tool picker from Profile)
+            $searchHeaderBg = '';
+            $themeCardHeadersEnabled = false;
+            $themeHeaderTextColor = '';
+            $themeProjectCardHeadersEnabled = true;
+            if (isset($_SESSION['user_id'])) {
+                try {
+                    if (!class_exists('User')) {
+                        require_once APPROOT . '/app/models/User.php';
+                    }
+                    $userModelForTheme = new User();
+                    $userSettings = $userModelForTheme->getUserSettings((int)$_SESSION['user_id']);
+                    $searchHeaderBg = $userSettings['nav_background'] ?? '';
+                    $themeCardHeadersEnabled = !empty($userSettings['theme_card_headers']);
+                    $themeHeaderTextColor = $userSettings['theme_header_text_color'] ?? '';
+                    // Default to ON if unset (preserve prior behavior)
+                    $themeProjectCardHeadersEnabled = array_key_exists('theme_project_card_headers', $userSettings)
+                        ? !empty($userSettings['theme_project_card_headers'])
+                        : $themeCardHeadersEnabled;
+                } catch (Exception $e) {
+                    $searchHeaderBg = '';
+                    $themeCardHeadersEnabled = false;
+                    $themeHeaderTextColor = '';
+                    $themeProjectCardHeadersEnabled = true;
+                }
+            }
+            
+            // Expose to CSS so other UI (e.g. active sidebar link) can match the theme
+            $cssVars = [];
+            if (!empty($searchHeaderBg)) {
+                $cssVars[] = '--user-theme-gradient:' . htmlspecialchars($searchHeaderBg) . ';';
+            }
+            $themeHeaderTextColor = strtoupper(trim((string)$themeHeaderTextColor));
+            if (preg_match('/^#[0-9A-F]{6}$/', $themeHeaderTextColor)) {
+                $cssVars[] = '--user-theme-header-text-color:' . htmlspecialchars($themeHeaderTextColor) . ';';
+            }
+            if (!empty($cssVars)) {
+                echo '<style>:root{' . implode('', $cssVars) . '}</style>';
+            }
+            
+            // Enable themed card headers (optional toggle)
+            if ($themeCardHeadersEnabled) {
+                echo '<script>document.body.classList.add("theme-card-headers-enabled");</script>';
+            }
+            // Enable themed project card headers (optional toggle; only meaningful when theme gradient exists)
+            if ($themeCardHeadersEnabled && $themeProjectCardHeadersEnabled) {
+                echo '<script>document.body.classList.add("theme-project-card-headers-enabled");</script>';
+            }
+            ?>
+            <div class="search-header" style="<?= !empty($searchHeaderBg) ? 'background: ' . htmlspecialchars($searchHeaderBg) . ' !important;' : '' ?>">
                 <div class="search-container">
                     <div class="universal-search">
                         <div class="search-input-wrapper">
@@ -648,6 +698,226 @@
                 updateThemeIcon();
             });
         }
+        
+        // ==========================================================
+        // Theme Contrast Helper (Card Header Buttons)
+        // Ensures buttons/links inside themed headers remain readable
+        // ==========================================================
+        (function applyThemedHeaderButtonContrast() {
+            const hasCardHeaders = document.body.classList.contains('theme-card-headers-enabled');
+            const hasProjectHeaders = document.body.classList.contains('theme-project-card-headers-enabled');
+            if (!hasCardHeaders && !hasProjectHeaders) {
+                return;
+            }
+            
+            const MIN_CONTRAST = 4.5; // WCAG AA for normal text
+            
+            function clamp(v, min, max) {
+                return Math.max(min, Math.min(max, v));
+            }
+            
+            function parseColor(str) {
+                if (!str) return null;
+                const s = String(str).trim();
+                if (!s) return null;
+                if (s === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+                
+                // #RGB, #RRGGBB, #RRGGBBAA
+                if (s[0] === '#') {
+                    let hex = s.slice(1);
+                    if (hex.length === 3) {
+                        hex = hex.split('').map(ch => ch + ch).join('');
+                    }
+                    if (hex.length === 6) {
+                        const r = parseInt(hex.slice(0, 2), 16);
+                        const g = parseInt(hex.slice(2, 4), 16);
+                        const b = parseInt(hex.slice(4, 6), 16);
+                        return { r, g, b, a: 1 };
+                    }
+                    if (hex.length === 8) {
+                        const r = parseInt(hex.slice(0, 2), 16);
+                        const g = parseInt(hex.slice(2, 4), 16);
+                        const b = parseInt(hex.slice(4, 6), 16);
+                        const a = parseInt(hex.slice(6, 8), 16) / 255;
+                        return { r, g, b, a: clamp(a, 0, 1) };
+                    }
+                }
+                
+                // rgb()/rgba()
+                const m = s.match(/rgba?\(([^)]+)\)/i);
+                if (m) {
+                    const parts = m[1].split(',').map(p => p.trim());
+                    if (parts.length >= 3) {
+                        const r = clamp(parseFloat(parts[0]), 0, 255);
+                        const g = clamp(parseFloat(parts[1]), 0, 255);
+                        const b = clamp(parseFloat(parts[2]), 0, 255);
+                        const a = parts.length >= 4 ? clamp(parseFloat(parts[3]), 0, 1) : 1;
+                        return { r, g, b, a };
+                    }
+                }
+                
+                return null;
+            }
+            
+            function composite(fg, bg) {
+                const a = clamp(fg.a ?? 1, 0, 1);
+                const r = Math.round((fg.r * a) + (bg.r * (1 - a)));
+                const g = Math.round((fg.g * a) + (bg.g * (1 - a)));
+                const b = Math.round((fg.b * a) + (bg.b * (1 - a)));
+                return { r, g, b, a: 1 };
+            }
+            
+            function srgbToLinear(x) {
+                const v = x / 255;
+                return v <= 0.03928 ? (v / 12.92) : Math.pow((v + 0.055) / 1.055, 2.4);
+            }
+            
+            function luminance(c) {
+                const r = srgbToLinear(c.r);
+                const g = srgbToLinear(c.g);
+                const b = srgbToLinear(c.b);
+                return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            }
+            
+            function contrastRatio(fg, bg) {
+                const L1 = luminance(fg);
+                const L2 = luminance(bg);
+                const light = Math.max(L1, L2);
+                const dark = Math.min(L1, L2);
+                return (light + 0.05) / (dark + 0.05);
+            }
+            
+            function extractGradientColors(gradientStr) {
+                const s = String(gradientStr || '').trim();
+                if (!s || s === 'none') return [];
+                const matches = s.match(/#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)/g) || [];
+                return matches.map(parseColor).filter(Boolean);
+            }
+            
+            function averageColor(a, b) {
+                return {
+                    r: Math.round((a.r + b.r) / 2),
+                    g: Math.round((a.g + b.g) / 2),
+                    b: Math.round((a.b + b.b) / 2),
+                    a: 1
+                };
+            }
+            
+            // Determine base background for compositing semi-transparent colors
+            function getPageBaseColor() {
+                const bodyBg = parseColor(getComputedStyle(document.body).backgroundColor);
+                if (bodyBg && (bodyBg.a ?? 1) > 0) return { ...bodyBg, a: 1 };
+                
+                const theme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+                return theme === 'dark' ? { r: 13, g: 17, b: 23, a: 1 } : { r: 255, g: 255, b: 255, a: 1 };
+            }
+            
+            // Determine theme gradient endpoints for worst-case contrast
+            function getThemeGradientColors() {
+                const base = getPageBaseColor();
+                const root = getComputedStyle(document.documentElement);
+                let gradient = (root.getPropertyValue('--user-theme-gradient') || '').trim();
+                if (!gradient) {
+                    const sh = document.querySelector('.search-header');
+                    if (sh) {
+                        gradient = getComputedStyle(sh).backgroundImage || '';
+                    }
+                }
+                
+                const colors = extractGradientColors(gradient);
+                if (colors.length >= 2) {
+                    const first = colors[0].a < 1 ? composite(colors[0], base) : { ...colors[0], a: 1 };
+                    const last = colors[colors.length - 1].a < 1 ? composite(colors[colors.length - 1], base) : { ...colors[colors.length - 1], a: 1 };
+                    return [first, last];
+                }
+                if (colors.length === 1) {
+                    const c = colors[0].a < 1 ? composite(colors[0], base) : { ...colors[0], a: 1 };
+                    return [c, c];
+                }
+                
+                // Fallback to default header gradient in CSS
+                const fallbackA = { r: 102, g: 126, b: 234, a: 1 }; // #667eea
+                const fallbackB = { r: 118, g: 75, b: 162, a: 1 };  // #764ba2
+                return [fallbackA, fallbackB];
+            }
+            
+            function pickBestBW(bgColors) {
+                const white = { r: 255, g: 255, b: 255, a: 1 };
+                const black = { r: 0, g: 0, b: 0, a: 1 };
+                
+                const whiteMin = Math.min(...bgColors.map(bg => contrastRatio(white, bg)));
+                const blackMin = Math.min(...bgColors.map(bg => contrastRatio(black, bg)));
+                
+                return whiteMin >= blackMin ? white : black;
+            }
+            
+            const [gradA, gradB] = getThemeGradientColors();
+            const headerBase = averageColor(gradA, gradB);
+            const headerBgColors = [gradA, gradB];
+            
+            function ensureButtonReadable(btn) {
+                const cs = getComputedStyle(btn);
+                const currentText = parseColor(cs.color);
+                if (!currentText) return;
+                
+                // Determine effective background for this button
+                let bg = parseColor(cs.backgroundColor);
+                let bgColorsForCheck = null;
+                
+                // If transparent, treat it as sitting on top of the themed header gradient
+                if (!bg || (bg.a ?? 1) < 0.05) {
+                    bgColorsForCheck = headerBgColors;
+                } else {
+                    // If semi-transparent, composite over header base
+                    if ((bg.a ?? 1) < 1) {
+                        bg = composite(bg, headerBase);
+                    } else {
+                        bg = { ...bg, a: 1 };
+                    }
+                    bgColorsForCheck = [bg, bg];
+                }
+                
+                const currentMin = Math.min(...bgColorsForCheck.map(c => contrastRatio(currentText, c)));
+                if (currentMin >= MIN_CONTRAST) {
+                    return;
+                }
+                
+                // Pick black/white that gives best worst-case contrast
+                const chosen = pickBestBW(bgColorsForCheck);
+                const chosenMin = Math.min(...bgColorsForCheck.map(c => contrastRatio(chosen, c)));
+                if (chosenMin < currentMin) {
+                    return; // don't make it worse
+                }
+                
+                const rgb = `rgb(${chosen.r}, ${chosen.g}, ${chosen.b})`;
+                // Use !important to override themed CSS rules that may also be !important
+                btn.style.setProperty('color', rgb, 'important');
+                
+                // Keep icons inside the button readable too
+                btn.querySelectorAll('i, svg').forEach(el => {
+                    el.style.setProperty('color', rgb, 'important');
+                    if (el.tagName.toLowerCase() === 'svg') {
+                        el.style.setProperty('fill', rgb, 'important');
+                    }
+                });
+                
+                // Intentionally do NOT change border color; keep existing button styles
+            }
+            
+            // Apply to buttons within themed headers and project card headers
+            const selector = [
+                '.theme-card-headers-enabled .card-header .btn',
+                '.theme-project-card-headers-enabled .project-card-header .btn',
+                '.theme-project-card-headers-enabled .project-card-header .action-btn'
+            ].join(',');
+            
+            document.querySelectorAll(selector).forEach(ensureButtonReadable);
+            
+            // Expose for any AJAX fragments to re-run after DOM updates
+            window.applyThemedHeaderButtonContrast = function() {
+                document.querySelectorAll(selector).forEach(ensureButtonReadable);
+            };
+        })();
     </script>
 </body>
 </html> 

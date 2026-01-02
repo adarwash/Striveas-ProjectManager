@@ -4,6 +4,109 @@ class User {
     private $db;
     
     /**
+     * Check if a column exists on the UserSettings table (SQL Server)
+     */
+    private function userSettingsHasColumn(string $columnName): bool {
+        try {
+            $result = $this->db->select(
+                "SELECT 1 AS has_col
+                 FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_NAME = 'UserSettings'
+                   AND COLUMN_NAME = ?",
+                [$columnName]
+            );
+            return !empty($result);
+        } catch (Exception $e) {
+            // Fail closed; caller can fall back
+            return false;
+        }
+    }
+    
+    /**
+     * Ensure the UserSettings table has a nav_background column.
+     * Uses query() because EasySQL validation blocks ALTER in update().
+     */
+    private function ensureUserSettingsNavBackgroundColumn(): void {
+        try {
+            if ($this->userSettingsHasColumn('nav_background')) {
+                return;
+            }
+            
+            $this->db->query("
+                IF COL_LENGTH('dbo.UserSettings','nav_background') IS NULL
+                BEGIN
+                    ALTER TABLE [dbo].[UserSettings] ADD [nav_background] NVARCHAR(400) NULL;
+                END
+            ");
+        } catch (Exception $e) {
+            error_log('ensureUserSettingsNavBackgroundColumn Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Ensure the UserSettings table has a theme_card_headers column (0/1).
+     * Uses query() because EasySQL validation blocks ALTER in update().
+     */
+    private function ensureUserSettingsThemeCardHeadersColumn(): void {
+        try {
+            if ($this->userSettingsHasColumn('theme_card_headers')) {
+                return;
+            }
+
+            $this->db->query("
+                IF COL_LENGTH('dbo.UserSettings','theme_card_headers') IS NULL
+                BEGIN
+                    ALTER TABLE [dbo].[UserSettings] ADD [theme_card_headers] BIT NOT NULL CONSTRAINT DF_UserSettings_theme_card_headers DEFAULT ((0));
+                END
+            ");
+        } catch (Exception $e) {
+            error_log('ensureUserSettingsThemeCardHeadersColumn Error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Ensure the UserSettings table has a theme_header_text_color column (#RRGGBB).
+     * Uses query() because EasySQL validation blocks ALTER in update().
+     */
+    private function ensureUserSettingsThemeHeaderTextColorColumn(): void {
+        try {
+            if ($this->userSettingsHasColumn('theme_header_text_color')) {
+                return;
+            }
+            
+            $this->db->query("
+                IF COL_LENGTH('dbo.UserSettings','theme_header_text_color') IS NULL
+                BEGIN
+                    ALTER TABLE [dbo].[UserSettings] ADD [theme_header_text_color] NVARCHAR(20) NULL;
+                END
+            ");
+        } catch (Exception $e) {
+            error_log('ensureUserSettingsThemeHeaderTextColorColumn Error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Ensure the UserSettings table has a theme_project_card_headers column (0/1).
+     * Default is 1 to preserve current behavior when header theming is enabled.
+     */
+    private function ensureUserSettingsThemeProjectCardHeadersColumn(): void {
+        try {
+            if ($this->userSettingsHasColumn('theme_project_card_headers')) {
+                return;
+            }
+            
+            $this->db->query("
+                IF COL_LENGTH('dbo.UserSettings','theme_project_card_headers') IS NULL
+                BEGIN
+                    ALTER TABLE [dbo].[UserSettings] ADD [theme_project_card_headers] BIT NOT NULL CONSTRAINT DF_UserSettings_theme_project_card_headers DEFAULT ((1));
+                END
+            ");
+        } catch (Exception $e) {
+            error_log('ensureUserSettingsThemeProjectCardHeadersColumn Error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
      * Verify a submitted password against a stored value.
      * Supports bcrypt/argon (password_hash), legacy plain text,
      * and legacy MD5/SHA256 hex digests.
@@ -927,6 +1030,10 @@ class User {
                     'date_format' => 'M j, Y',
                     'timezone' => 'UTC',
                     'time_format' => '12',
+                    'nav_background' => '',
+                    'theme_card_headers' => 0,
+                    'theme_header_text_color' => '',
+                    'theme_project_card_headers' => 1,
                     'email_new_tickets' => true,
                     'email_ticket_updates' => true,
                     'email_comments' => true,
@@ -961,23 +1068,90 @@ class User {
      */
     public function updateUserSettings(int $userId, array $settings): bool {
         try {
-            // Check if user settings exist
-            $existingSettings = $this->db->select("SELECT id FROM UserSettings WHERE user_id = ?", [$userId]);
-            
-            if (empty($existingSettings)) {
-                // Insert new settings
-                $settingsJson = json_encode($settings);
-                $query = "INSERT INTO UserSettings (user_id, settings, created_at, updated_at) VALUES (?, ?, GETDATE(), GETDATE())";
-                $this->db->update($query, [$userId, $settingsJson]);
-            } else {
-                // Update existing settings
-                $existingData = $this->getUserSettings($userId);
-                $mergedSettings = array_merge($existingData, $settings);
-                $settingsJson = json_encode($mergedSettings);
-                
-                $query = "UPDATE UserSettings SET settings = ?, updated_at = GETDATE() WHERE user_id = ?";
-                $this->db->update($query, [$settingsJson, $userId]);
+            if (empty($settings)) {
+                return true;
             }
+            
+            // Support both schemas:
+            // - legacy UserSettings with explicit columns (email_notifications, etc.)
+            // - newer UserSettings with a JSON [settings] column
+            $hasJsonSettingsColumn = $this->userSettingsHasColumn('settings');
+            
+            if ($hasJsonSettingsColumn) {
+                // JSON schema: insert/update the settings JSON
+                $existingSettings = $this->db->select("SELECT id FROM UserSettings WHERE user_id = ?", [$userId]);
+                
+                if (empty($existingSettings)) {
+                    $settingsJson = json_encode($settings);
+                    $query = "INSERT INTO UserSettings (user_id, settings, created_at, updated_at) VALUES (?, ?, GETDATE(), GETDATE())";
+                    $this->db->update($query, [$userId, $settingsJson]);
+                } else {
+                    $existingData = $this->getUserSettings($userId);
+                    $mergedSettings = array_merge($existingData, $settings);
+                    $settingsJson = json_encode($mergedSettings);
+                    
+                    $query = "UPDATE UserSettings SET settings = ?, updated_at = GETDATE() WHERE user_id = ?";
+                    $this->db->update($query, [$settingsJson, $userId]);
+                }
+                
+                return true;
+            }
+            
+            // Legacy schema: ensure nav_background column exists (tool picker)
+            if (array_key_exists('nav_background', $settings)) {
+                $this->ensureUserSettingsNavBackgroundColumn();
+            }
+            // Legacy schema: ensure theme_card_headers column exists (toggle)
+            if (array_key_exists('theme_card_headers', $settings)) {
+                $this->ensureUserSettingsThemeCardHeadersColumn();
+            }
+            // Legacy schema: ensure theme_header_text_color column exists (picker)
+            if (array_key_exists('theme_header_text_color', $settings)) {
+                $this->ensureUserSettingsThemeHeaderTextColorColumn();
+            }
+            // Legacy schema: ensure theme_project_card_headers column exists (toggle)
+            if (array_key_exists('theme_project_card_headers', $settings)) {
+                $this->ensureUserSettingsThemeProjectCardHeadersColumn();
+            }
+            
+            // Ensure a row exists for this user
+            $existingSettings = $this->db->select("SELECT TOP 1 id FROM UserSettings WHERE user_id = ?", [$userId]);
+            if (empty($existingSettings)) {
+                // Defaults handle other columns
+                $this->db->update("INSERT INTO UserSettings (user_id) VALUES (?)", [$userId]);
+            }
+            
+            // Update only columns that exist
+            $updateParts = [];
+            $params = [];
+            
+            foreach ($settings as $key => $value) {
+                // Only allow simple column names
+                if (!is_string($key) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $key)) {
+                    continue;
+                }
+                
+                if (!$this->userSettingsHasColumn($key)) {
+                    continue;
+                }
+                
+                $updateParts[] = '[' . $key . '] = ?';
+                $params[] = $value;
+            }
+            
+            // Nothing to update
+            if (empty($updateParts)) {
+                return true;
+            }
+            
+            // Touch updated_at if present
+            if ($this->userSettingsHasColumn('updated_at')) {
+                $updateParts[] = '[updated_at] = GETDATE()';
+            }
+            
+            $params[] = $userId;
+            $query = "UPDATE UserSettings SET " . implode(', ', $updateParts) . " WHERE user_id = ?";
+            $this->db->update($query, $params);
             
             return true;
         } catch (Exception $e) {

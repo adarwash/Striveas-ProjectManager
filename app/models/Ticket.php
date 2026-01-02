@@ -618,6 +618,20 @@ class Ticket {
         }
     }
 
+    // Get open tickets assigned to user
+    public function getOpenTicketsByUser($userId) {
+        try {
+            $query = "SELECT td.* 
+                     FROM TicketDashboard td
+                     WHERE td.assigned_to = :user_id AND td.is_closed = 0
+                     ORDER BY td.priority_level DESC, td.created_at ASC";
+            return $this->db->select($query, ['user_id' => $userId]) ?: [];
+        } catch (Exception $e) {
+            error_log('getOpenTicketsByUser Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     /**
      * Get ticket statistics
      * 

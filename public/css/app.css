@@ -173,15 +173,16 @@ body {
 }
 
 .sidebar .nav-link.active {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    background: var(--user-theme-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%));
     color: white;
     font-weight: 600;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .sidebar .nav-link.active:hover {
-    background: linear-gradient(135deg, #5558e8 0%, #7c4fe0 100%);
+    background: var(--user-theme-gradient, linear-gradient(135deg, #5558e8 0%, #7c4fe0 100%));
     color: white;
+    filter: brightness(0.95);
 }
 
 .sidebar .nav-link i {
@@ -3272,7 +3273,7 @@ body {
     }
     
     .sidebar .nav-link.active {
-        background-color: #1f6feb !important;
+        background: var(--user-theme-gradient, #1f6feb) !important;
         color: #ffffff !important;
     }
     
@@ -4016,4 +4017,155 @@ body {
 
 .overflow-auto {
     overflow: auto !important;
+}
+
+/* ================================
+   Compact Dashboard Stats
+   ================================ */
+.compact-stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: none;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 100%;
+}
+
+.compact-stat-card.purple { background: linear-gradient(135deg, var(--card-purple) 0%, var(--card-purple-light) 100%); }
+.compact-stat-card.green { background: linear-gradient(135deg, var(--card-green) 0%, var(--card-green-light) 100%); }
+.compact-stat-card.orange { background: linear-gradient(135deg, var(--card-orange) 0%, var(--card-orange-light) 100%); }
+.compact-stat-card.blue { background: linear-gradient(135deg, var(--card-blue) 0%, var(--card-blue-light) 100%); }
+.compact-stat-card.red { background: linear-gradient(135deg, var(--card-red) 0%, var(--card-red-light) 100%); }
+
+.compact-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+}
+
+.compact-stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    backdrop-filter: blur(4px);
+}
+
+/* Remove colored variants for icon since card itself is colored */
+.compact-stat-icon.purple,
+.compact-stat-icon.green,
+.compact-stat-icon.orange,
+.compact-stat-icon.blue,
+.compact-stat-icon.red {
+    background: rgba(255,255,255,0.2);
+    color: white;
+}
+
+.compact-stat-content {
+    flex-grow: 1;
+}
+
+.compact-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1.2;
+}
+
+.compact-stat-label {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.9);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* Dark mode overrides - keep colorful look or dim slightly */
+[data-bs-theme="dark"] .compact-stat-card {
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+[data-bs-theme="dark"] .compact-stat-value {
+    color: white;
+}
+
+[data-bs-theme="dark"] .compact-stat-label {
+    color: rgba(255,255,255,0.8);
+}
+
+/* ================================================
+   User Theme: Optional Card Header Theming
+   ================================ */
+.theme-card-headers-enabled .card-header {
+    background: var(--user-theme-gradient, linear-gradient(135deg, #667eea 0%, #764ba2 100%)) !important;
+    border-bottom: none !important;
+    color: var(--user-theme-header-text-color, rgba(255, 255, 255, 0.95)) !important;
+}
+
+.theme-card-headers-enabled .card-header .text-primary,
+.theme-card-headers-enabled .card-header .text-dark,
+.theme-card-headers-enabled .card-header .text-muted,
+.theme-card-headers-enabled .card-header .text-secondary {
+    color: var(--user-theme-header-text-color, rgba(255, 255, 255, 0.95)) !important;
+}
+
+.theme-card-headers-enabled .card-header .filter-header-info,
+.theme-card-headers-enabled .card-header .filter-title,
+.theme-card-headers-enabled .card-header .filter-title i {
+    color: var(--user-theme-header-text-color, rgba(255, 255, 255, 0.95)) !important;
+}
+
+.theme-card-headers-enabled .card-header .card-title,
+.theme-card-headers-enabled .card-header .card-title i {
+    color: var(--user-theme-header-text-color, rgba(255, 255, 255, 0.95)) !important;
+}
+
+/* Project cards use a custom header class (not Bootstrap .card-header) */
+.theme-project-card-headers-enabled .project-card-header {
+    background: var(--user-theme-gradient, linear-gradient(135deg, #667eea 0%, #764ba2 100%)) !important;
+    border-bottom: none !important;
+}
+
+.theme-project-card-headers-enabled .project-card-header .card-title,
+.theme-project-card-headers-enabled .project-card-header .card-title i {
+    color: var(--user-theme-header-text-color, rgba(255, 255, 255, 0.95)) !important;
+}
+
+.theme-project-card-headers-enabled .project-card-header .action-btn {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    color: var(--user-theme-header-text-color, rgba(255, 255, 255, 0.95)) !important;
+}
+
+.theme-project-card-headers-enabled .project-card-header .action-btn:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.theme-card-headers-enabled .card-header a:not(.btn) {
+    color: var(--user-theme-header-text-color, rgba(255, 255, 255, 0.95));
+}
+
+.theme-card-headers-enabled .card-header .btn-outline-primary,
+.theme-card-headers-enabled .card-header .btn-outline-secondary,
+.theme-card-headers-enabled .card-header .btn-outline-dark {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    color: var(--user-theme-header-text-color, rgba(255, 255, 255, 0.95)) !important;
+}
+
+.theme-card-headers-enabled .card-header .btn-outline-primary:hover,
+.theme-card-headers-enabled .card-header .btn-outline-secondary:hover,
+.theme-card-headers-enabled .card-header .btn-outline-dark:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.6) !important;
+    color: #ffffff !important;
 }
