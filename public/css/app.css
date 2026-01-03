@@ -4119,7 +4119,8 @@ body {
 }
 
 .dashboard-widget-controls .dashboard-drag-handle,
-.dashboard-widget-controls .dashboard-resize-btn {
+.dashboard-widget-controls .dashboard-resize-btn,
+.dashboard-widget-controls .dashboard-hide-btn {
     width: 32px;
     height: 32px;
     border-radius: 8px;
@@ -4146,7 +4147,8 @@ body {
 }
 
 [data-bs-theme="dark"] .dashboard-widget-controls .dashboard-drag-handle,
-[data-bs-theme="dark"] .dashboard-widget-controls .dashboard-resize-btn {
+[data-bs-theme="dark"] .dashboard-widget-controls .dashboard-resize-btn,
+[data-bs-theme="dark"] .dashboard-widget-controls .dashboard-hide-btn {
     background: rgba(33, 37, 41, 0.92);
     border-color: rgba(255, 255, 255, 0.12);
     color: #adb5bd;
@@ -4163,6 +4165,10 @@ body {
 .dashboard-customize-mode .dashboard-widget {
     outline: 2px dashed rgba(13, 110, 253, 0.25);
     outline-offset: 6px;
+}
+
+.dashboard-widget-hidden {
+    display: none !important;
 }
 
 .dashboard-ghost {

@@ -280,6 +280,7 @@ class Dashboard extends Controller {
         // Read existing layout so we can merge (order + sizes)
         $existingOrder = [];
         $existingSizes = [];
+        $existingHidden = [];
         try {
             $userSettings = $this->userModel->getUserSettings($userId);
             $existingRaw = $userSettings['dashboard_layout'] ?? '';
@@ -293,20 +294,24 @@ class Dashboard extends Controller {
                     } else {
                         $existingOrder = is_array($decoded['order'] ?? null) ? $decoded['order'] : [];
                         $existingSizes = is_array($decoded['sizes'] ?? null) ? $decoded['sizes'] : [];
+                        $existingHidden = is_array($decoded['hidden'] ?? null) ? $decoded['hidden'] : [];
                     }
                 }
             }
         } catch (Exception $e) {
             $existingOrder = [];
             $existingSizes = [];
+            $existingHidden = [];
         }
 
         // Accept either {order, sizes} or {layout:{order,sizes}}
         $order = $payload['order'] ?? null;
         $sizes = $payload['sizes'] ?? null;
+        $hidden = $payload['hidden'] ?? null;
         if (isset($payload['layout']) && is_array($payload['layout'])) {
             $order = $payload['layout']['order'] ?? $order;
             $sizes = $payload['layout']['sizes'] ?? $sizes;
+            $hidden = $payload['layout']['hidden'] ?? $hidden;
         }
 
         if (!is_array($order)) {
@@ -314,6 +319,9 @@ class Dashboard extends Controller {
         }
         if (!is_array($sizes)) {
             $sizes = null; // means "keep existing"
+        }
+        if (!is_array($hidden)) {
+            $hidden = null; // means "keep existing"
         }
 
         // Filter & de-dupe order
@@ -357,10 +365,35 @@ class Dashboard extends Controller {
             }
         }
 
+        // Merge/validate hidden widgets
+        $mergedHidden = [];
+        $sourceHidden = $existingHidden;
+        if (is_array($hidden)) {
+            $sourceHidden = $hidden;
+        }
+        if (is_array($sourceHidden)) {
+            $seenHidden = [];
+            foreach ($sourceHidden as $wid) {
+                if (!is_string($wid)) {
+                    continue;
+                }
+                $wid = trim($wid);
+                if ($wid === '' || isset($seenHidden[$wid])) {
+                    continue;
+                }
+                if (!in_array($wid, $allowed, true)) {
+                    continue;
+                }
+                $seenHidden[$wid] = true;
+                $mergedHidden[] = $wid;
+            }
+        }
+
         // Store a consistent object format going forward
         $layoutToStore = [
             'order' => $filteredOrder,
-            'sizes' => $mergedSizes
+            'sizes' => $mergedSizes,
+            'hidden' => $mergedHidden
         ];
         $layoutJson = json_encode($layoutToStore);
         $ok = $this->userModel->updateUserSettings($userId, ['dashboard_layout' => $layoutJson]);

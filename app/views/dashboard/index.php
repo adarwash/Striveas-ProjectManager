@@ -23,6 +23,9 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     </div>
     <div class="d-flex align-items-center gap-2">
         <span class="badge bg-light text-dark"><?= $_SESSION['role'] ?? 'User' ?></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#dashboardWidgetsModal" id="dashboardWidgetsManage">
+            <i class="bi bi-layout-text-window-reverse me-1"></i>Widgets
+        </button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="dashboardCustomizeToggle">
             <i class="bi bi-arrows-move me-1"></i>Customize
         </button>
@@ -40,6 +43,9 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         <div class="dashboard-widget-controls">
             <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
                 <i class="bi bi-grip-vertical"></i>
+            </button>
+            <button type="button" class="dashboard-hide-btn" aria-label="Hide widget" title="Hide widget">
+                <i class="bi bi-eye-slash"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
                 <i class="bi bi-dash-lg"></i>
@@ -147,6 +153,9 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
                 <i class="bi bi-grip-vertical"></i>
             </button>
+            <button type="button" class="dashboard-hide-btn" aria-label="Hide widget" title="Hide widget">
+                <i class="bi bi-eye-slash"></i>
+            </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
                 <i class="bi bi-dash-lg"></i>
             </button>
@@ -249,6 +258,9 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
                 <i class="bi bi-grip-vertical"></i>
             </button>
+            <button type="button" class="dashboard-hide-btn" aria-label="Hide widget" title="Hide widget">
+                <i class="bi bi-eye-slash"></i>
+            </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
                 <i class="bi bi-dash-lg"></i>
             </button>
@@ -279,6 +291,9 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         <div class="dashboard-widget-controls">
             <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
                 <i class="bi bi-grip-vertical"></i>
+            </button>
+            <button type="button" class="dashboard-hide-btn" aria-label="Hide widget" title="Hide widget">
+                <i class="bi bi-eye-slash"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
                 <i class="bi bi-dash-lg"></i>
@@ -376,6 +391,9 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
                 <i class="bi bi-grip-vertical"></i>
             </button>
+            <button type="button" class="dashboard-hide-btn" aria-label="Hide widget" title="Hide widget">
+                <i class="bi bi-eye-slash"></i>
+            </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
                 <i class="bi bi-dash-lg"></i>
             </button>
@@ -448,6 +466,9 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
                 <i class="bi bi-grip-vertical"></i>
             </button>
+            <button type="button" class="dashboard-hide-btn" aria-label="Hide widget" title="Hide widget">
+                <i class="bi bi-eye-slash"></i>
+            </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
                 <i class="bi bi-dash-lg"></i>
             </button>
@@ -496,6 +517,58 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     </div>
 </div>
 
+<!-- Manage Widgets Modal (show/hide) -->
+<div class="modal fade" id="dashboardWidgetsModal" tabindex="-1" aria-labelledby="dashboardWidgetsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dashboardWidgetsModalLabel">
+                    <i class="bi bi-layout-text-window-reverse me-2"></i>Dashboard Widgets
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">Choose which widgets appear on your dashboard. You can always turn them back on later.</p>
+                <div class="list-group">
+                    <label class="list-group-item d-flex align-items-center gap-2">
+                        <input class="form-check-input m-0 dashboard-widget-toggle" type="checkbox" data-widget-id="stats">
+                        <span class="fw-semibold">Stats</span>
+                        <span class="text-muted small ms-auto">Top overview cards</span>
+                    </label>
+                    <label class="list-group-item d-flex align-items-center gap-2">
+                        <input class="form-check-input m-0 dashboard-widget-toggle" type="checkbox" data-widget-id="plan_today">
+                        <span class="fw-semibold">My Plan for Today</span>
+                        <span class="text-muted small ms-auto">Urgent tasks + tickets</span>
+                    </label>
+                    <label class="list-group-item d-flex align-items-center gap-2">
+                        <input class="form-check-input m-0 dashboard-widget-toggle" type="checkbox" data-widget-id="quick_actions">
+                        <span class="fw-semibold">Quick Actions</span>
+                        <span class="text-muted small ms-auto">Create ticket/task, time clock</span>
+                    </label>
+                    <label class="list-group-item d-flex align-items-center gap-2">
+                        <input class="form-check-input m-0 dashboard-widget-toggle" type="checkbox" data-widget-id="my_tasks">
+                        <span class="fw-semibold">My Tasks</span>
+                        <span class="text-muted small ms-auto">Your assigned tasks table</span>
+                    </label>
+                    <label class="list-group-item d-flex align-items-center gap-2">
+                        <input class="form-check-input m-0 dashboard-widget-toggle" type="checkbox" data-widget-id="recent_activity">
+                        <span class="fw-semibold">Recent Activity</span>
+                        <span class="text-muted small ms-auto">Activity feed</span>
+                    </label>
+                    <label class="list-group-item d-flex align-items-center gap-2">
+                        <input class="form-check-input m-0 dashboard-widget-toggle" type="checkbox" data-widget-id="top_clients">
+                        <span class="fw-semibold">Top Clients</span>
+                        <span class="text-muted small ms-auto">Most tickets by client</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Dashboard uses global styles from app.css -->
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -508,7 +581,7 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     const allowedSpans = [3, 4, 6, 8, 12]; // Bootstrap col-lg-*
 
     function parseSavedLayout(raw) {
-        const out = { order: null, sizes: {} };
+        const out = { order: null, sizes: {}, hidden: [] };
         if (!raw) return out;
 
         let parsed = raw;
@@ -528,6 +601,7 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         if (parsed && typeof parsed === 'object') {
             if (Array.isArray(parsed.order)) out.order = parsed.order;
             if (parsed.sizes && typeof parsed.sizes === 'object') out.sizes = parsed.sizes;
+            if (Array.isArray(parsed.hidden)) out.hidden = parsed.hidden;
         }
 
         return out;
@@ -583,6 +657,32 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         return sizes;
     }
 
+    function getCurrentHidden(container) {
+        return Array.from(container.querySelectorAll('.dashboard-widget.dashboard-widget-hidden'))
+            .map(el => el.getAttribute('data-widget-id'))
+            .filter(Boolean);
+    }
+
+    function getWidgetById(container, id) {
+        if (!id || !allowedWidgetIds.includes(id)) return null;
+        return container.querySelector('.dashboard-widget[data-widget-id="' + id + '"]');
+    }
+
+    function setWidgetHiddenById(container, id, hide) {
+        const el = getWidgetById(container, id);
+        if (!el) return;
+        if (hide) {
+            el.classList.add('dashboard-widget-hidden');
+            el.setAttribute('aria-hidden', 'true');
+            el.style.display = 'none';
+        } else {
+            el.classList.remove('dashboard-widget-hidden');
+            el.removeAttribute('aria-hidden');
+            el.style.display = '';
+        }
+        updateResizeButtonsState(el);
+    }
+
     function applyOrder(container, order) {
         if (!Array.isArray(order) || order.length === 0) return;
         const byId = {};
@@ -609,6 +709,29 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             if (!id) return;
             if (!Object.prototype.hasOwnProperty.call(sizes, id)) return;
             setLgSpan(el, sizes[id]);
+        });
+    }
+
+    function applyHidden(container, hiddenList) {
+        const hiddenSet = new Set(
+            Array.isArray(hiddenList)
+                ? hiddenList.filter(id => typeof id === 'string' && allowedWidgetIds.includes(id))
+                : []
+        );
+        container.querySelectorAll('.dashboard-widget').forEach(el => {
+            const id = el.getAttribute('data-widget-id');
+            if (!id) return;
+            setWidgetHiddenById(container, id, hiddenSet.has(id));
+        });
+    }
+
+    function syncWidgetToggles(container) {
+        const hidden = new Set(getCurrentHidden(container));
+        document.querySelectorAll('.dashboard-widget-toggle').forEach(cb => {
+            const id = cb.getAttribute('data-widget-id');
+            if (!id) return;
+            if (!allowedWidgetIds.includes(id)) return;
+            cb.checked = !hidden.has(id);
         });
     }
 
@@ -669,7 +792,7 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     }
 
     let saveTimer = null;
-    function saveLayout(order, sizes) {
+    function saveLayout(order, sizes, hidden) {
         // Filter + de-dupe client-side too (defense in depth)
         const seen = new Set();
         const filtered = [];
@@ -689,6 +812,18 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             });
         }
 
+        const hiddenPayload = [];
+        if (Array.isArray(hidden)) {
+            const seenHidden = new Set();
+            hidden.forEach(id => {
+                if (typeof id !== 'string') return;
+                if (!allowedWidgetIds.includes(id)) return;
+                if (seenHidden.has(id)) return;
+                seenHidden.add(id);
+                hiddenPayload.push(id);
+            });
+        }
+
         setStatus('Saving…');
         fetch(saveUrl, {
             method: 'POST',
@@ -696,7 +831,7 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify({ order: filtered, sizes: sizePayload, csrf_token: csrfToken })
+            body: JSON.stringify({ order: filtered, sizes: sizePayload, hidden: hiddenPayload, csrf_token: csrfToken })
         })
         .then(r => r.json().catch(() => null))
         .then(j => {
@@ -717,7 +852,7 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     function scheduleSave(container) {
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
-            saveLayout(getCurrentOrder(container), getCurrentSizes(container));
+            saveLayout(getCurrentOrder(container), getCurrentSizes(container), getCurrentHidden(container));
         }, 250);
     }
 
@@ -731,7 +866,20 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             applyOrder(container, savedLayout.order);
         }
         applySizes(container, savedLayout.sizes);
+        applyHidden(container, savedLayout.hidden);
         updateAllResizeButtonsState(container);
+        syncWidgetToggles(container);
+
+        // Show/hide toggles (modal)
+        document.querySelectorAll('.dashboard-widget-toggle').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const id = this.getAttribute('data-widget-id');
+                if (!id || !allowedWidgetIds.includes(id)) return;
+                setWidgetHiddenById(container, id, !this.checked);
+                updateAllResizeButtonsState(container);
+                scheduleSave(container);
+            });
+        });
 
         // Make compact stat cards clickable (skip while customizing)
         const clickableCards = document.querySelectorAll('.clickable-card');
@@ -770,8 +918,23 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             });
         });
 
-        // Resize buttons (only in customize mode)
+        // Resize/hide buttons (only in customize mode)
         container.addEventListener('click', function(e) {
+            const hideBtn = e.target.closest('.dashboard-hide-btn');
+            if (hideBtn) {
+                if (!window.__dashboardCustomizeMode) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const widget = hideBtn.closest('.dashboard-widget');
+                if (!widget) return;
+                const id = widget.getAttribute('data-widget-id');
+                if (!id || !allowedWidgetIds.includes(id)) return;
+                setWidgetHiddenById(container, id, true);
+                syncWidgetToggles(container);
+                scheduleSave(container);
+                return;
+            }
+
             const btn = e.target.closest('.dashboard-resize-btn');
             if (!btn) return;
             if (!window.__dashboardCustomizeMode) return;
