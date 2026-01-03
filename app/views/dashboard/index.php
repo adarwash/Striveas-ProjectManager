@@ -212,10 +212,10 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     
     <div class="col-lg-4">
         <!-- Quick Status Card -->
-        <div class="card h-100 border-0 shadow-sm bg-primary text-white mb-4">
+        <div class="card h-100 shadow-sm quick-actions-card mb-4">
             <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
-                <div class="d-grid gap-2 mt-3">
+                <h5 class="card-title mb-3"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
+                <div class="d-grid gap-2">
                     <a href="/tickets/create" class="btn btn-light text-primary fw-bold text-start">
                         <i class="bi bi-plus-circle me-2"></i> Create Ticket
                     </a>
