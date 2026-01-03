@@ -351,6 +351,51 @@ class Ticket {
     }
 
     /**
+     * Find a ticket message by Message-ID (case-sensitive).
+     *
+     * @param string $messageId
+     * @return array|false
+     */
+    public function findMessageByMessageId(?string $messageId) {
+        try {
+            if (empty($messageId)) {
+                return false;
+            }
+            $rows = $this->db->select(
+                "SELECT TOP 1 * FROM TicketMessages WHERE email_message_id COLLATE Latin1_General_100_BIN2 = :mid ORDER BY id DESC",
+                ['mid' => $messageId]
+            );
+            return $rows[0] ?? false;
+        } catch (Exception $e) {
+            error_log('findMessageByMessageId error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get outbound email queue rows for a ticket (for troubleshooting).
+     */
+    public function getEmailQueueForTicket(int $ticketId, int $limit = 10): array {
+        try {
+            $limit = max(1, min(50, (int)$limit));
+            // NOTE: TOP cannot be parameterized in SQL Server via PDO easily; inject bounded int.
+            $query = "SELECT TOP {$limit}
+                        id, to_address, cc_address, bcc_address, subject,
+                        body_text, body_html,
+                        ticket_id, message_id, template_name,
+                        status, priority, attempts, max_attempts, error_message,
+                        created_at, send_after, sent_at, last_attempt_at
+                      FROM EmailQueue
+                      WHERE ticket_id = :id
+                      ORDER BY id DESC";
+            return $this->db->select($query, ['id' => (int)$ticketId]) ?: [];
+        } catch (Exception $e) {
+            error_log('getEmailQueueForTicket error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Get all tickets with filters and pagination
      * 
      * @param array $filters Filter criteria
@@ -454,7 +499,7 @@ class Ticket {
             
             $allowedFields = [
                 'subject', 'description', 'status_id', 'priority_id', 'category_id',
-                'assigned_to', 'due_date', 'tags', 'resolved_at', 'closed_at',
+                'assigned_to', 'client_id', 'due_date', 'tags', 'resolved_at', 'closed_at',
                 'is_archived', 'archived_at'
             ];
             

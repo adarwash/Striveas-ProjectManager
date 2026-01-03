@@ -50,7 +50,7 @@
                             <div class="col-md-6 mb-3">
                                 <label for="contact_person" class="form-label">Contact Person</label>
                                 <input type="text" class="form-control" id="contact_person" 
-                                       name="contact_person" value="<?= htmlspecialchars($contact_person) ?>">
+                                       name="contact_person" value="<?= htmlspecialchars((string)($contact_person ?? '')) ?>">
                             </div>
                         </div>
                         
@@ -59,7 +59,7 @@
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">Email Address</label>
                                 <input type="email" class="form-control <?= !empty($email_err) ? 'is-invalid' : '' ?>" 
-                                       id="email" name="email" value="<?= htmlspecialchars($email) ?>">
+                                       id="email" name="email" value="<?= htmlspecialchars((string)($email ?? '')) ?>">
                                 <?php if (!empty($email_err)): ?>
                                 <div class="invalid-feedback"><?= $email_err ?></div>
                                 <?php endif; ?>
@@ -68,7 +68,7 @@
                             <!-- Phone -->
                             <div class="col-md-6 mb-3">
                                 <label for="phone" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" value="<?= htmlspecialchars($phone) ?>">
+                                <input type="tel" class="form-control" id="phone" name="phone" value="<?= htmlspecialchars((string)($phone ?? '')) ?>">
                             </div>
                         </div>
                         
@@ -105,14 +105,14 @@
                         <!-- Address -->
                         <div class="mb-3">
                             <label for="address" class="form-label">Address</label>
-                            <textarea class="form-control" id="address" name="address" rows="3"><?= htmlspecialchars($address) ?></textarea>
+                            <textarea class="form-control" id="address" name="address" rows="3"><?= htmlspecialchars((string)($address ?? '')) ?></textarea>
                         </div>
                         
                         <!-- Notes -->
                         <div class="mb-4">
                             <label for="notes" class="form-label">Notes</label>
                             <textarea class="form-control" id="notes" name="notes" rows="4" 
-                                      placeholder="Any additional notes about this client..."><?= htmlspecialchars($notes) ?></textarea>
+                                      placeholder="Any additional notes about this client..."><?= htmlspecialchars((string)($notes ?? '')) ?></textarea>
                         </div>
 
                         <!-- Visibility Controls -->

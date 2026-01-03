@@ -3,6 +3,7 @@
 class Clients extends Controller {
     private $reminderModel;
     private $clientModel;
+    private $clientContactModel;
     private $siteModel;
     private $contractModel;
     private $projectModel;
@@ -27,6 +28,7 @@ class Clients extends Controller {
         
         // Load models
         $this->clientModel = $this->model('Client');
+        $this->clientContactModel = $this->model('ClientContact');
         $this->siteModel = $this->model('Site');
         $this->contractModel = $this->model('ClientContract');
         $this->projectModel = $this->model('Project');
@@ -224,6 +226,14 @@ class Clients extends Controller {
             $domains = [];
         }
 
+        // Client contacts
+        $contacts = [];
+        try {
+            $contacts = $this->clientContactModel->listByClient((int)$id);
+        } catch (Exception $e) {
+            $contacts = [];
+        }
+
         // Client notes (top 10 recent)
         $clientNotes = [];
         try {
@@ -292,6 +302,7 @@ class Clients extends Controller {
             'sites' => $sitesWithServices,
             'all_sites' => $this->siteModel->getAllSites(),
             'domains' => $domains,
+            'contacts' => $contacts,
             'recent_visits' => $recentVisits,
             'contracts' => $contracts,
 			'projects' => $projects,
@@ -313,6 +324,201 @@ class Clients extends Controller {
         ];
         
         $this->view('clients/view', $data);
+    }
+
+    /**
+     * Add a contact to a client
+     */
+    public function addContact($clientId = null) {
+        if (!hasPermission('clients.update')) {
+            flash('client_error', 'You do not have permission to update clients', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+        $clientId = (int)$clientId;
+        if ($clientId <= 0) {
+            redirect('clients');
+            return;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('clients/viewClient/' . $clientId);
+            return;
+        }
+
+        $client = $this->clientModel->getClientById($clientId);
+        if (!$client || !$this->clientModel->canAccessClientId($clientId, $this->currentRoleId(), $this->isAdminRole())) {
+            flash('client_error', 'Client not found or access denied.', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+
+        $firstName = trim((string)($_POST['first_name'] ?? ''));
+        $lastName = trim((string)($_POST['last_name'] ?? ''));
+        $fullName = trim((string)($_POST['full_name'] ?? ''));
+        $email = trim((string)($_POST['email'] ?? ''));
+        $phone = trim((string)($_POST['phone'] ?? ''));
+        $mobile = trim((string)($_POST['mobile'] ?? ''));
+
+        if ($fullName === '' && ($firstName !== '' || $lastName !== '')) {
+            $fullName = trim($firstName . ' ' . $lastName);
+        }
+
+        if ($fullName === '' && $email === '' && $phone === '' && $mobile === '') {
+            flash('client_error', 'Please enter at least a name, email, or phone number for the contact.', 'alert-danger');
+            redirect('clients/viewClient/' . $clientId);
+            return;
+        }
+
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            flash('client_error', 'Please enter a valid email address for the contact.', 'alert-danger');
+            redirect('clients/viewClient/' . $clientId);
+            return;
+        }
+
+        // Prevent duplicates for the same client/email
+        if ($email !== '') {
+            $existing = $this->clientContactModel->getByClientAndEmail($clientId, $email);
+            if ($existing) {
+                flash('client_error', 'A contact with this email already exists for this client.', 'alert-danger');
+                redirect('clients/viewClient/' . $clientId);
+                return;
+            }
+        }
+
+        $newId = $this->clientContactModel->create($clientId, [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'full_name' => $fullName,
+            'email' => $email,
+            'phone' => $phone,
+            'mobile' => $mobile
+        ]);
+
+        if ($newId) {
+            flash('client_success', 'Contact added successfully.');
+        } else {
+            flash('client_error', 'Failed to add contact.', 'alert-danger');
+        }
+
+        redirect('clients/viewClient/' . $clientId);
+    }
+
+    /**
+     * Update an existing client contact
+     */
+    public function updateContact($contactId = null, $clientId = null) {
+        if (!hasPermission('clients.update')) {
+            flash('client_error', 'You do not have permission to update clients', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+        $contactId = (int)$contactId;
+        $clientId = (int)$clientId;
+        if ($contactId <= 0 || $clientId <= 0) {
+            redirect('clients');
+            return;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('clients/viewClient/' . $clientId);
+            return;
+        }
+
+        $client = $this->clientModel->getClientById($clientId);
+        if (!$client || !$this->clientModel->canAccessClientId($clientId, $this->currentRoleId(), $this->isAdminRole())) {
+            flash('client_error', 'Client not found or access denied.', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+
+        $contact = $this->clientContactModel->getById($contactId);
+        if (!$contact || (int)($contact['client_id'] ?? 0) !== $clientId) {
+            flash('client_error', 'Contact not found.', 'alert-danger');
+            redirect('clients/viewClient/' . $clientId);
+            return;
+        }
+
+        $firstName = trim((string)($_POST['first_name'] ?? ''));
+        $lastName = trim((string)($_POST['last_name'] ?? ''));
+        $fullName = trim((string)($_POST['full_name'] ?? ''));
+        $email = trim((string)($_POST['email'] ?? ''));
+        $phone = trim((string)($_POST['phone'] ?? ''));
+        $mobile = trim((string)($_POST['mobile'] ?? ''));
+
+        if ($fullName === '' && ($firstName !== '' || $lastName !== '')) {
+            $fullName = trim($firstName . ' ' . $lastName);
+        }
+
+        if ($fullName === '' && $email === '' && $phone === '' && $mobile === '') {
+            flash('client_error', 'Please enter at least a name, email, or phone number for the contact.', 'alert-danger');
+            redirect('clients/viewClient/' . $clientId);
+            return;
+        }
+
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            flash('client_error', 'Please enter a valid email address for the contact.', 'alert-danger');
+            redirect('clients/viewClient/' . $clientId);
+            return;
+        }
+
+        // Prevent duplicates for the same client/email (if changing)
+        if ($email !== '') {
+            $existing = $this->clientContactModel->getByClientAndEmail($clientId, $email);
+            if ($existing && (int)$existing['id'] !== $contactId) {
+                flash('client_error', 'A contact with this email already exists for this client.', 'alert-danger');
+                redirect('clients/viewClient/' . $clientId);
+                return;
+            }
+        }
+
+        $ok = $this->clientContactModel->update($contactId, $clientId, [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'full_name' => $fullName,
+            'email' => $email,
+            'phone' => $phone,
+            'mobile' => $mobile
+        ]);
+
+        if ($ok) {
+            flash('client_success', 'Contact updated.');
+        } else {
+            flash('client_error', 'Failed to update contact.', 'alert-danger');
+        }
+
+        redirect('clients/viewClient/' . $clientId);
+    }
+
+    /**
+     * Delete a client contact
+     */
+    public function deleteContact($contactId = null, $clientId = null) {
+        if (!hasPermission('clients.update')) {
+            flash('client_error', 'You do not have permission to update clients', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+        $contactId = (int)$contactId;
+        $clientId = (int)$clientId;
+        if ($contactId <= 0 || $clientId <= 0) {
+            redirect('clients');
+            return;
+        }
+
+        $client = $this->clientModel->getClientById($clientId);
+        if (!$client || !$this->clientModel->canAccessClientId($clientId, $this->currentRoleId(), $this->isAdminRole())) {
+            flash('client_error', 'Client not found or access denied.', 'alert-danger');
+            redirect('clients');
+            return;
+        }
+
+        $ok = $this->clientContactModel->delete($contactId, $clientId);
+        if ($ok) {
+            flash('client_success', 'Contact removed.');
+        } else {
+            flash('client_error', 'Failed to remove contact.', 'alert-danger');
+        }
+
+        redirect('clients/viewClient/' . $clientId);
     }
 
     /**

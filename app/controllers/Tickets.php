@@ -43,6 +43,91 @@ class Tickets extends Controller {
         $this->emailService = new EmailService();
         $this->slaService = new SLAService();
     }
+
+    /**
+     * Upload .eml/.msg and create or append to tickets.
+     */
+    public function importEmail() {
+        if (!hasPermission('tickets.create')) {
+            flash('error', 'You do not have permission to import emails.');
+            redirect('tickets');
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('tickets');
+        }
+
+        require_once APPROOT . '/app/services/EmailUploadService.php';
+        $service = new EmailUploadService();
+
+        $settingModel = $this->model('Setting');
+        $sendAck = !empty($_POST['send_ack']);
+        $ticketIdHint = isset($_POST['ticket_id']) ? (int)$_POST['ticket_id'] : null;
+
+        $maxBytes = (int)$settingModel->get('max_attachment_size', 10485760);
+        $files = $this->normalizeUploads($_FILES['email_files'] ?? []);
+
+        $results = [];
+        foreach ($files as $file) {
+            if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                $results[] = ['status' => 'error', 'message' => 'Upload failed for ' . ($file['name'] ?? 'file')];
+                continue;
+            }
+            if (!empty($file['size']) && $file['size'] > $maxBytes) {
+                $results[] = ['status' => 'error', 'message' => ($file['name'] ?? 'file') . ' exceeds size limit'];
+                continue;
+            }
+            $ext = strtolower(pathinfo($file['name'] ?? '', PATHINFO_EXTENSION));
+            if (!in_array($ext, ['eml', 'msg'], true)) {
+                $results[] = ['status' => 'error', 'message' => ($file['name'] ?? 'file') . ' must be .eml or .msg'];
+                continue;
+            }
+
+            $results[] = $service->processUploadedFile($file, [
+                'ticket_id' => $ticketIdHint,
+                'send_ack' => $sendAck
+            ]);
+        }
+
+        $created = array_filter($results, fn($r) => ($r['status'] ?? '') === 'created');
+        $appended = array_filter($results, fn($r) => ($r['status'] ?? '') === 'appended');
+        $errors = array_filter($results, fn($r) => ($r['status'] ?? '') === 'error');
+        $skipped = array_filter($results, fn($r) => ($r['status'] ?? '') === 'skipped');
+
+        $summary = [];
+        if (!empty($created)) { $summary[] = count($created) . ' created'; }
+        if (!empty($appended)) { $summary[] = count($appended) . ' appended'; }
+        if (!empty($skipped)) { $summary[] = count($skipped) . ' skipped'; }
+        if (!empty($errors)) { $summary[] = count($errors) . ' error(s)'; }
+
+        if (!empty($errors)) {
+            $messages = array_map(fn($r) => $r['message'] ?? 'Import error', $errors);
+            flash('error', 'Import finished: ' . implode(', ', $summary) . '. Details: ' . implode('; ', $messages));
+        } else {
+            flash('success', 'Import finished: ' . implode(', ', $summary));
+        }
+
+        // Redirect to ticket view if a single ticket was created/appended and ID known
+        $firstSuccess = $created[0] ?? ($appended[0] ?? null);
+        if ($firstSuccess && !empty($firstSuccess['ticket_id'])) {
+            $tid = (int)$firstSuccess['ticket_id'];
+            // If client isn't linked, prompt staff to link/create (popup)
+            try {
+                $t = $this->ticketModel->getById($tid);
+                if ($t && empty($t['client_id']) && !empty($t['inbound_email_address'])) {
+                    redirect('tickets/show/' . $tid . '?link_client=1');
+                }
+            } catch (Exception $e) {
+                // ignore
+            }
+            redirect('tickets/show/' . $tid);
+        }
+
+        // Otherwise return to list or specific ticket if hint provided
+        if (!empty($ticketIdHint)) {
+            redirect('tickets/show/' . $ticketIdHint);
+        }
+        redirect('tickets');
+    }
     
     /**
      * Ticket dashboard/listing page
@@ -164,7 +249,58 @@ class Tickets extends Controller {
                 $client = null;
             }
         }
+
+        // Suggested client match (by requester email) when ticket not linked
+        $suggestedClient = null;
+        if (empty($ticket['client_id']) && !empty($ticket['inbound_email_address']) && hasPermission('clients.read')) {
+            try {
+                $clientModel = $clientModel ?? $this->model('Client');
+                if (method_exists($clientModel, 'getClientByEmail')) {
+                    $suggestedClient = $clientModel->getClientByEmail((string)$ticket['inbound_email_address']);
+                }
+                // Fallback: domain mapping (ClientDomains)
+                if (!$suggestedClient && !class_exists('ClientDomain')) {
+                    require_once APPROOT . '/app/models/ClientDomain.php';
+                }
+                if (!$suggestedClient && class_exists('ClientDomain')) {
+                    $cd = new ClientDomain();
+                    $mappedId = $cd->getClientIdByEmail((string)$ticket['inbound_email_address']);
+                    if (!empty($mappedId)) {
+                        $suggestedClient = $clientModel->getClientById((int)$mappedId);
+                    }
+                }
+            } catch (Exception $e) {
+                $suggestedClient = null;
+            }
+        }
+
+        // Client list for link/create modal (only when needed)
+        $allClients = [];
+        if (empty($ticket['client_id']) && hasPermission('clients.read')) {
+            try {
+                $clientModel = $clientModel ?? $this->model('Client');
+                $allClients = $clientModel->getAllClients();
+                // Apply visibility restrictions if applicable
+                if (method_exists($clientModel, 'filterClientsForRole')) {
+                    $roleId = isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+                    $isAdmin = hasPermission('admin.access');
+                    $allClients = $clientModel->filterClientsForRole($allClients, $roleId, $isAdmin);
+                }
+            } catch (Exception $e) {
+                $allClients = [];
+            }
+        }
         $lookupData = $this->ticketModel->getLookupData();
+
+        // Outbound email delivery / queue (troubleshooting)
+        $emailQueue = [];
+        try {
+            if (method_exists($this->ticketModel, 'getEmailQueueForTicket')) {
+                $emailQueue = $this->ticketModel->getEmailQueueForTicket((int)$id, 10);
+            }
+        } catch (Exception $e) {
+            $emailQueue = [];
+        }
 
         // Load ticket attachments (stored directly on the ticket, not via EmailInbox)
         $attachments = [];
@@ -230,6 +366,9 @@ class Tickets extends Controller {
             'users' => $users,
             'attachments' => $attachments,
             'pending_attachments' => $pendingAttachmentCount,
+            'email_queue' => $emailQueue,
+            'all_clients' => $allClients,
+            'suggested_client' => $suggestedClient,
             'can_edit' => hasPermission('tickets.update') || $this->canEditTicket($ticket, $_SESSION['user_id']),
             'can_assign' => hasPermission('tickets.assign'),
             'can_close' => hasPermission('tickets.close') || $this->canCloseTicket($ticket, $_SESSION['user_id']),
@@ -306,11 +445,47 @@ class Tickets extends Controller {
         // Lookup data (for badges, names)
         $lookupData = $this->ticketModel->getLookupData();
 
+        // Outbound email delivery / queue
+        $emailQueue = [];
+        try {
+            if (method_exists($this->ticketModel, 'getEmailQueueForTicket')) {
+                $emailQueue = $this->ticketModel->getEmailQueueForTicket((int)$id, 10);
+            }
+        } catch (Exception $e) {
+            $emailQueue = [];
+        }
+
+        // Suggested client match (by requester email) when ticket not linked
+        $suggestedClient = null;
+        if (empty($ticket['client_id']) && !empty($ticket['inbound_email_address']) && hasPermission('clients.read')) {
+            try {
+                $clientModel = $this->model('Client');
+                if (method_exists($clientModel, 'getClientByEmail')) {
+                    $suggestedClient = $clientModel->getClientByEmail((string)$ticket['inbound_email_address']);
+                }
+                // Fallback: domain mapping (ClientDomains)
+                if (!$suggestedClient && !class_exists('ClientDomain')) {
+                    require_once APPROOT . '/app/models/ClientDomain.php';
+                }
+                if (!$suggestedClient && class_exists('ClientDomain')) {
+                    $cd = new ClientDomain();
+                    $mappedId = $cd->getClientIdByEmail((string)$ticket['inbound_email_address']);
+                    if (!empty($mappedId)) {
+                        $suggestedClient = $clientModel->getClientById((int)$mappedId);
+                    }
+                }
+            } catch (Exception $e) {
+                $suggestedClient = null;
+            }
+        }
+
         $viewData = [
             'ticket' => $ticket,
             'messages' => $messages,
             'attachments' => $attachments,
             'pending_attachments' => $pendingAttachmentCount,
+            'email_queue' => $emailQueue,
+            'suggested_client' => $suggestedClient,
             'statuses' => $lookupData['statuses'],
             'priorities' => $lookupData['priorities'],
             'categories' => $lookupData['categories'],
@@ -725,6 +900,215 @@ class Tickets extends Controller {
         
         redirect('tickets/show/' . $id);
     }
+
+    /**
+     * Resend the last ticket update email to the requester (manual troubleshooting).
+     */
+    public function resendLastUpdate($id) {
+        $id = (int)$id;
+        if ($id <= 0) {
+            redirect('tickets');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('tickets/show/' . $id);
+        }
+
+        if (!hasPermission('tickets.comment')) {
+            flash('error', 'You do not have permission to resend ticket emails.');
+            redirect('tickets/show/' . $id);
+        }
+
+        // CSRF check
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+        }
+        $posted = (string)($_POST['csrf_token'] ?? '');
+        if ($posted === '' || !hash_equals((string)$_SESSION['csrf_token'], $posted)) {
+            flash('error', 'Security check failed. Please try again.');
+            redirect('tickets/show/' . $id);
+        }
+
+        $ticket = $this->ticketModel->getById($id);
+        if (!$ticket) {
+            flash('error', 'Ticket not found.');
+            redirect('tickets');
+        }
+        if (!hasPermission('tickets.read') && !$this->canAccessTicket($ticket, $_SESSION['user_id'])) {
+            flash('error', 'You do not have permission to view this ticket.');
+            redirect('tickets');
+        }
+
+        // Get last queued ticket_updated email for this ticket
+        $rows = [];
+        if (method_exists($this->ticketModel, 'getEmailQueueForTicket')) {
+            $rows = $this->ticketModel->getEmailQueueForTicket($id, 25);
+        }
+        $last = null;
+        foreach ($rows as $r) {
+            if (!empty($r['template_name']) && (string)$r['template_name'] === 'ticket_updated') {
+                $last = $r;
+                break;
+            }
+        }
+        if (!$last && !empty($rows)) {
+            $last = $rows[0];
+        }
+
+        if (empty($last) || empty($last['to_address']) || empty($last['subject'])) {
+            flash('error', 'No previous outbound ticket update email found to resend.');
+            redirect('tickets/show/' . $id);
+        }
+
+        // Re-queue the same email (keeps message_id so attachments can re-send too)
+        $emailData = [
+            'template' => $last['template_name'] ?? 'ticket_updated',
+            'ticket_id' => $id,
+            'message_id' => $last['message_id'] ?? null,
+            'to' => (string)$last['to_address'],
+            'cc' => !empty($last['cc_address']) ? (string)$last['cc_address'] : null,
+            'bcc' => !empty($last['bcc_address']) ? (string)$last['bcc_address'] : null,
+            'subject' => (string)$last['subject'],
+            'body' => $last['body_text'] ?? null,
+            'html_body' => $last['body_html'] ?? null,
+        ];
+
+        $queueId = $this->emailService->queueEmail($emailData, 4);
+        if (!$queueId) {
+            flash('error', 'Failed to queue resend. Please try again.');
+            redirect('tickets/show/' . $id);
+        }
+
+        // Attempt immediate send
+        try {
+            $this->emailService->processEmailQueue(5);
+        } catch (Exception $e) {
+            // ignore; queue row will show error if it fails
+        }
+
+        flash('success', 'Resend queued. Check “Outbound Email Delivery” for status.');
+        redirect('tickets/show/' . $id);
+    }
+
+    /**
+     * Link a ticket to an existing client, or create a new client and link it.
+     */
+    public function linkClient($id) {
+        $id = (int)$id;
+        if ($id <= 0) {
+            redirect('tickets');
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('tickets/show/' . $id);
+        }
+
+        $ticket = $this->ticketModel->getById($id);
+        if (!$ticket) {
+            flash('error', 'Ticket not found.');
+            redirect('tickets');
+        }
+        $canEdit = hasPermission('tickets.update') || $this->canEditTicket($ticket, $_SESSION['user_id']);
+        if (!$canEdit) {
+            flash('error', 'You do not have permission to update this ticket.');
+            redirect('tickets/show/' . $id);
+        }
+
+        // CSRF
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+        }
+        $posted = (string)($_POST['csrf_token'] ?? '');
+        if ($posted === '' || !hash_equals((string)$_SESSION['csrf_token'], $posted)) {
+            flash('error', 'Security check failed. Please try again.');
+            redirect('tickets/show/' . $id);
+        }
+
+        $clientModel = $this->model('Client');
+
+        $action = (string)($_POST['client_action'] ?? 'link');
+        $clientId = null;
+
+        if ($action === 'create') {
+            if (!hasPermission('clients.create')) {
+                flash('error', 'You do not have permission to create clients.');
+                redirect('tickets/show/' . $id);
+            }
+
+            $name = trim((string)($_POST['new_client_name'] ?? ''));
+            $email = trim((string)($_POST['new_client_email'] ?? ''));
+            $contact = trim((string)($_POST['new_client_contact_person'] ?? ''));
+            $phone = trim((string)($_POST['new_client_phone'] ?? ''));
+            $address = trim((string)($_POST['new_client_address'] ?? ''));
+            $industry = trim((string)($_POST['new_client_industry'] ?? ''));
+            $status = trim((string)($_POST['new_client_status'] ?? 'Prospect'));
+            $notes = trim((string)($_POST['new_client_notes'] ?? ''));
+
+            if ($name === '') {
+                flash('error', 'Client name is required.');
+                redirect('tickets/show/' . $id . '?link_client=1');
+            }
+            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                flash('error', 'Please enter a valid client email.');
+                redirect('tickets/show/' . $id . '?link_client=1');
+            }
+
+            $newId = $clientModel->addClient([
+                'name' => $name,
+                'contact_person' => $contact ?: null,
+                'email' => $email ?: null,
+                'phone' => $phone ?: null,
+                'address' => $address ?: null,
+                'industry' => $industry ?: null,
+                'status' => in_array($status, ['Active','Inactive','Prospect'], true) ? $status : 'Prospect',
+                'notes' => $notes ?: null
+            ]);
+
+            if (!$newId) {
+                flash('error', 'Failed to create client.');
+                redirect('tickets/show/' . $id . '?link_client=1');
+            }
+            $clientId = (int)$newId;
+        } else {
+            // link existing
+            if (!hasPermission('clients.read')) {
+                flash('error', 'You do not have permission to view clients.');
+                redirect('tickets/show/' . $id);
+            }
+            $existingId = (int)($_POST['existing_client_id'] ?? 0);
+            if ($existingId <= 0) {
+                flash('error', 'Please select a client to link.');
+                redirect('tickets/show/' . $id . '?link_client=1');
+            }
+            $existing = $clientModel->getClientById($existingId);
+            if (!$existing) {
+                flash('error', 'Selected client not found.');
+                redirect('tickets/show/' . $id . '?link_client=1');
+            }
+            $clientId = $existingId;
+        }
+
+        if (!$clientId) {
+            flash('error', 'Could not link client.');
+            redirect('tickets/show/' . $id);
+        }
+
+        // Link ticket to client
+        $ok = $this->ticketModel->update($id, ['client_id' => $clientId]);
+        if (!$ok) {
+            flash('error', 'Failed to link ticket to client.');
+            redirect('tickets/show/' . $id);
+        }
+
+        flash('success', 'Ticket linked to client successfully.');
+
+        // Optionally go to client edit page
+        $redirectToClient = !empty($_POST['redirect_to_client']);
+        if ($action === 'create' && $redirectToClient && hasPermission('clients.update')) {
+            redirect('clients/edit/' . $clientId);
+        }
+
+        redirect('tickets/show/' . $id);
+    }
     
     /**
      * Assign ticket to user(s)
@@ -1009,6 +1393,31 @@ class Tickets extends Controller {
     private function canCloseTicket($ticket, $userId) {
         return $ticket['assigned_to'] == $userId ||
                hasPermission('tickets.close');
+    }
+    
+    /**
+     * Normalize $_FILES entries (supports multi-file).
+     */
+    private function normalizeUploads($files): array {
+        $normalized = [];
+        if (empty($files) || !isset($files['name'])) {
+            return $normalized;
+        }
+        if (is_array($files['name'])) {
+            $count = count($files['name']);
+            for ($i = 0; $i < $count; $i++) {
+                $normalized[] = [
+                    'name' => $files['name'][$i] ?? '',
+                    'type' => $files['type'][$i] ?? '',
+                    'tmp_name' => $files['tmp_name'][$i] ?? '',
+                    'error' => $files['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+                    'size' => $files['size'][$i] ?? 0
+                ];
+            }
+        } else {
+            $normalized[] = $files;
+        }
+        return $normalized;
     }
     
     private function sendTicketNotification($ticketId, $template, $message = null, $messageFormat = 'text', $recipientUserId = null, $ticketMessageId = null) {

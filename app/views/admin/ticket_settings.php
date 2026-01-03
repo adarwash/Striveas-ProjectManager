@@ -64,14 +64,39 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2">
-                        <span class="bg-secondary bg-opacity-10 p-2 rounded-circle me-3">
-                            <i class="bi bi-gear text-secondary fs-5"></i>
+                        <span class="bg-warning bg-opacity-10 p-2 rounded-circle me-3">
+                            <i class="bi bi-shield-check text-warning fs-5"></i>
                         </span>
                         <div>
-                            <h5 class="mb-1">More coming soon</h5>
-                            <div class="text-muted small">Escalation rules, SLA defaults, and notifications.</div>
+                            <h5 class="mb-1">Technician Email Domains</h5>
+                            <div class="text-muted small">Used to detect internal replies (case-insensitive).</div>
                         </div>
                     </div>
+                    <form method="POST" action="<?= URLROOT ?>/admin/ticketSettings">
+                        <div class="mb-3">
+                            <label for="technician_email_domains" class="form-label small text-muted">One domain per line (e.g. music.com)</label>
+                            <textarea class="form-control" id="technician_email_domains" name="technician_email_domains" rows="4" placeholder="music.com&#10;music.co.uk"><?= htmlspecialchars(implode("\n", $technician_domains ?? [])) ?></textarea>
+                            <div class="form-text">“@” optional; we normalize and store lowercase.</div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="small text-muted">
+                                <?= isset($technician_domains) ? count($technician_domains) : 0 ?> domain(s) configured
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-save me-1"></i>Save
+                            </button>
+                        </div>
+                    </form>
+                    <?php if (!empty($technician_domains)): ?>
+                        <div class="mt-3">
+                            <div class="small text-muted mb-1">Current domains</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <?php foreach ($technician_domains as $d): ?>
+                                    <span class="badge bg-light text-dark border"><?= htmlspecialchars($d) ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

@@ -1011,6 +1011,128 @@
         
         <!-- Quick Actions -->
         <div class="col-lg-4">
+            <!-- Contacts -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-person-vcard text-primary me-2"></i>
+                        Contacts
+                    </h6>
+                    <?php if (hasPermission('clients.update')): ?>
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addClientContactCollapse" aria-expanded="false" aria-controls="addClientContactCollapse">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($client['contact_person']) || !empty($client['email']) || !empty($client['phone'])): ?>
+                        <div class="alert alert-light border small mb-3">
+                            <div class="fw-semibold mb-1">Primary (Client profile)</div>
+                            <div class="text-muted">
+                                <?= !empty($client['contact_person']) ? htmlspecialchars($client['contact_person']) : '—' ?>
+                                <?php if (!empty($client['email'])): ?>
+                                    · <a href="mailto:<?= htmlspecialchars($client['email']) ?>"><?= htmlspecialchars($client['email']) ?></a>
+                                <?php endif; ?>
+                                <?php if (!empty($client['phone'])): ?>
+                                    · <a href="tel:<?= htmlspecialchars($client['phone']) ?>"><?= htmlspecialchars($client['phone']) ?></a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($contacts)): ?>
+                        <ul class="list-group list-group-flush mb-3">
+                            <?php foreach ($contacts as $ct): ?>
+                                <?php
+                                    $ctName = trim((string)($ct['full_name'] ?? ''));
+                                    if ($ctName === '') {
+                                        $ctName = trim(((string)($ct['first_name'] ?? '')) . ' ' . ((string)($ct['last_name'] ?? '')));
+                                    }
+                                    if ($ctName === '') {
+                                        $ctName = (string)($ct['email'] ?? 'Contact');
+                                    }
+                                ?>
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div class="me-2">
+                                            <div class="fw-semibold"><?= htmlspecialchars($ctName) ?></div>
+                                            <div class="small text-muted">
+                                                <?php if (!empty($ct['email'])): ?>
+                                                    <i class="bi bi-envelope me-1"></i><a href="mailto:<?= htmlspecialchars($ct['email']) ?>"><?= htmlspecialchars($ct['email']) ?></a>
+                                                <?php endif; ?>
+                                                <?php if (!empty($ct['phone'])): ?>
+                                                    <?= !empty($ct['email']) ? ' · ' : '' ?>
+                                                    <i class="bi bi-telephone me-1"></i><a href="tel:<?= htmlspecialchars($ct['phone']) ?>"><?= htmlspecialchars($ct['phone']) ?></a>
+                                                <?php endif; ?>
+                                                <?php if (!empty($ct['mobile'])): ?>
+                                                    <?= (!empty($ct['email']) || !empty($ct['phone'])) ? ' · ' : '' ?>
+                                                    <i class="bi bi-phone me-1"></i><a href="tel:<?= htmlspecialchars($ct['mobile']) ?>"><?= htmlspecialchars($ct['mobile']) ?></a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <?php if (hasPermission('clients.update')): ?>
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editContactModal<?= (int)$ct['id'] ?>">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <form action="/clients/deleteContact/<?= (int)$ct['id'] ?>/<?= (int)$client['id'] ?>" method="post" onsubmit="return confirm('Remove this contact?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </li>
+
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php else: ?>
+                        <p class="text-muted mb-3">No additional contacts added yet.</p>
+                    <?php endif; ?>
+
+                    <?php if (hasPermission('clients.update')): ?>
+                        <div class="collapse" id="addClientContactCollapse">
+                            <form action="/clients/addContact/<?= (int)$client['id'] ?>" method="post">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label">First Name</label>
+                                        <input type="text" name="first_name" class="form-control">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Last Name</label>
+                                        <input type="text" name="last_name" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" name="full_name" class="form-control" placeholder="Optional">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" name="email" class="form-control">
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label">Main number</label>
+                                        <input type="text" name="phone" class="form-control">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Mobile number</label>
+                                        <input type="text" name="mobile" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-lg"></i> Save Contact
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <!-- Client Services -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -1495,6 +1617,62 @@
         </div>
     </div>
 </div>
+
+<?php if (hasPermission('clients.update') && !empty($contacts)): ?>
+    <?php foreach ($contacts as $ct): ?>
+        <!-- Edit Contact Modal (kept outside sidebar/cards to avoid CSS transform positioning issues) -->
+        <div class="modal fade" id="editContactModal<?= (int)$ct['id'] ?>" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-person-vcard me-2"></i>Edit Contact</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="/clients/updateContact/<?= (int)$ct['id'] ?>/<?= (int)$client['id'] ?>" method="post">
+                        <div class="modal-body">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label">First Name</label>
+                                    <input type="text" name="first_name" class="form-control" value="<?= htmlspecialchars((string)($ct['first_name'] ?? '')) ?>">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Last Name</label>
+                                    <input type="text" name="last_name" class="form-control" value="<?= htmlspecialchars((string)($ct['last_name'] ?? '')) ?>">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars((string)($ct['full_name'] ?? '')) ?>">
+                                <div class="form-text">If empty, we’ll use First + Last.</div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" value="<?= htmlspecialchars((string)($ct['email'] ?? '')) ?>">
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Main number</label>
+                                    <input type="text" name="phone" class="form-control" value="<?= htmlspecialchars((string)($ct['phone'] ?? '')) ?>">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Mobile number</label>
+                                    <input type="text" name="mobile" class="form-control" value="<?= htmlspecialchars((string)($ct['mobile'] ?? '')) ?>">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>
+
 <script>
 (function(){
     window.goLogVisitFromModal = function() {

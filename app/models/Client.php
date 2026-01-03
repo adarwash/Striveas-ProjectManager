@@ -190,6 +190,22 @@ class Client {
         // Return the first row or false if no rows
         return $result ? $result[0] : false;
     }
+
+    /**
+     * Get client by primary email (case-insensitive).
+     */
+    public function getClientByEmail(string $email) {
+        try {
+            $rows = $this->db->select(
+                "SELECT TOP 1 * FROM Clients WHERE LOWER(email) = LOWER(:email)",
+                ['email' => $email]
+            );
+            return $rows[0] ?? false;
+        } catch (Exception $e) {
+            error_log('getClientByEmail error: ' . $e->getMessage());
+            return false;
+        }
+    }
     
     /**
      * Get sites assigned to a client

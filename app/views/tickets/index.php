@@ -10,6 +10,9 @@
             <a href="<?= URLROOT ?>/tickets/create" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>New Ticket
             </a>
+            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#uploadEmailModal">
+                <i class="bi bi-cloud-upload me-2"></i>Upload Email (.eml/.msg)
+            </button>
             <?php endif; ?>
         </div>
     </div>
@@ -372,6 +375,12 @@
         <?php endif; ?>
     </div>
 </div>
+
+<?php
+    // Reusable modal for uploading .eml/.msg to create/append tickets
+    $ticketIdForUpload = null;
+    require VIEWSPATH . '/tickets/partials/email_upload_modal.php';
+?>
 
 <!-- Assign Ticket Modal -->
 <div class="modal fade" id="assignTicketModal" tabindex="-1" aria-labelledby="assignTicketModalLabel" aria-hidden="true">

@@ -115,6 +115,9 @@
                 <i class="fas fa-edit me-2"></i>Edit
             </a>
             <?php endif; ?>
+            <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#uploadEmailModal">
+                <i class="bi bi-cloud-upload me-2"></i>Upload Email (.eml/.msg)
+            </button>
             <a href="<?= URLROOT ?>/tickets" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-2"></i>Back to Tickets
             </a>
@@ -628,6 +631,13 @@
             <?php endif; ?>
             </div>
 
+            <!-- Client link/create prompt -->
+            <?php require VIEWSPATH . '/tickets/partials/client_link_card.php'; ?>
+            <?php require VIEWSPATH . '/tickets/partials/client_link_modal.php'; ?>
+
+            <!-- Outbound Email Delivery (Troubleshooting) -->
+            <?php require VIEWSPATH . '/tickets/partials/outbound_email_delivery_card.php'; ?>
+
             <!-- Quick Actions -->
             <?php if ($data['can_edit']): ?>
             <div class="card border-0 shadow-sm mb-4">
@@ -855,6 +865,12 @@
     </div>
 </div>
 
+<?php
+    // Reuse upload modal, passing current ticket ID for append mode
+    $ticketIdForUpload = $data['ticket']['id'] ?? null;
+    require VIEWSPATH . '/tickets/partials/email_upload_modal.php';
+?>
+
 <!-- Quill (basic rich text editor) -->
 <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
@@ -1061,6 +1077,19 @@
     }
 })();
 </script>
+
+<?php if (isset($_GET['link_client']) && $_GET['link_client'] === '1' && empty($data['ticket']['client_id']) && !empty($data['ticket']['inbound_email_address']) && !empty($data['can_edit'])): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const el = document.getElementById('linkClientModal');
+    if (!el || typeof bootstrap === 'undefined') return;
+    try {
+        const modal = new bootstrap.Modal(el);
+        modal.show();
+    } catch (e) {}
+});
+</script>
+<?php endif; ?>
 
 <!-- Assignment Modal -->
 <?php if ($data['can_assign']): ?>

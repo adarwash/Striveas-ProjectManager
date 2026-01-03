@@ -289,7 +289,10 @@ class Setting {
             'ticket_visibility' => $this->get('ticket_visibility', 'email_match'),
             'allow_ticket_creation' => $this->get('allow_ticket_creation', false),
             'level_io_enabled' => $this->get('level_io_enabled', false),
-            'level_io_api_key' => $this->get('level_io_api_key', '')
+            'level_io_api_key' => $this->get('level_io_api_key', ''),
+            
+            // Technician/internal email domains (array)
+            'technician_email_domains' => $this->getTechnicianEmailDomains()
         ];
     }
     
@@ -364,7 +367,10 @@ class Setting {
                 'ticket_visibility',
                 'allow_ticket_creation',
                 'level_io_enabled',
-                'level_io_api_key'
+                'level_io_api_key',
+                
+                // Technician/internal email domains
+                'technician_email_domains'
             ];
             
             // Update each provided setting if it's valid
@@ -392,6 +398,11 @@ class Setting {
                         }
                     }
                     
+                    // Normalize technician domains before saving
+                    if ($key === 'technician_email_domains') {
+                        $value = $this->normalizeDomainsArray($value);
+                    }
+                    
                     // Save the setting
                     $this->set($key, $value);
                 }
@@ -402,6 +413,111 @@ class Setting {
             error_log('Update System Settings Error: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Get technician/internal email domains as a normalized array
+     *
+     * @return array
+     */
+    public function getTechnicianEmailDomains(): array {
+        $raw = $this->get('technician_email_domains', []);
+        
+        // If stored as JSON string, decode
+        if (is_string($raw) && $this->isJson($raw)) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $raw = $decoded;
+            }
+        }
+        
+        // Support comma-separated strings for backward compatibility
+        if (is_string($raw)) {
+            $raw = explode(',', $raw);
+        }
+        
+        return $this->normalizeDomainsArray($raw);
+    }
+
+    /**
+     * Save technician/internal email domains (array or comma-separated string)
+     *
+     * @param array|string $domains
+     * @return bool
+     */
+    public function setTechnicianEmailDomains($domains): bool {
+        $normalized = $this->normalizeDomainsArray($domains);
+        return $this->set('technician_email_domains', $normalized);
+    }
+
+    /**
+     * Determine if an email address is internal (technician) based on configured domains
+     *
+     * @param string $email
+     * @return bool
+     */
+    public function isInternalEmail(string $email): bool {
+        $domain = $this->extractEmailDomain($email);
+        if ($domain === '') {
+            return false;
+        }
+        $domains = $this->getTechnicianEmailDomains();
+        return in_array($domain, $domains, true);
+    }
+
+    /**
+     * Normalize a list of domains (lowercase, strip leading @, remove empties/dupes)
+     *
+     * @param array|string|null $domains
+     * @return array
+     */
+    public function normalizeDomainsArray($domains): array {
+        $list = [];
+        
+        if (is_string($domains)) {
+            // Accept comma or newline separated strings
+            $domains = preg_split('/[\r\n,]+/', $domains);
+        }
+        
+        if (!is_array($domains)) {
+            return [];
+        }
+        
+        foreach ($domains as $domain) {
+            if (!is_string($domain)) {
+                continue;
+            }
+            $d = strtolower(trim($domain));
+            if ($d === '') {
+                continue;
+            }
+            if ($d[0] === '@') {
+                $d = substr($d, 1);
+            }
+            if ($d !== '') {
+                $list[] = $d;
+            }
+        }
+        
+        // Remove duplicates while preserving order
+        $list = array_values(array_unique($list));
+        return $list;
+    }
+
+    /**
+     * Extract domain part from an email address (lowercased)
+     *
+     * @param string $email
+     * @return string
+     */
+    private function extractEmailDomain(string $email): string {
+        $email = trim($email);
+        if ($email === '' || strpos($email, '@') === false) {
+            return '';
+        }
+        $parts = explode('@', $email);
+        $domain = end($parts);
+        return strtolower(trim($domain));
     }
     
     /**

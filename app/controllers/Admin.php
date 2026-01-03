@@ -149,15 +149,35 @@ class Admin extends Controller {
             redirect('admin');
         }
 
+        $settingModel = $this->model('Setting');
+
+        // Handle technician email domains update
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $domainsInput = $_POST['technician_email_domains'] ?? '';
+            // Normalize via Setting helper (accepts comma/newline separated)
+            $domains = $settingModel->normalizeDomainsArray($domainsInput);
+
+            if ($settingModel->setTechnicianEmailDomains($domains)) {
+                $count = count($domains);
+                flash('success', "Technician email domains updated ({$count} domain" . ($count === 1 ? '' : 's') . ").");
+            } else {
+                flash('error', 'Failed to update technician email domains. Please try again.');
+            }
+
+            redirect('admin/ticketSettings');
+        }
+
         if (!class_exists('TicketCategory')) {
             require_once APPROOT . '/app/models/TicketCategory.php';
         }
         $catModel = new TicketCategory();
         $categories = $catModel->getAll();
+        $technicianDomains = $settingModel->getTechnicianEmailDomains();
 
         $this->view('admin/ticket_settings', [
             'title' => 'Ticket Management',
-            'categories' => $categories
+            'categories' => $categories,
+            'technician_domains' => $technicianDomains
         ]);
     }
     

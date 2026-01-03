@@ -1,0 +1,187 @@
+Received: from CWXP123MB3799.GBRP123.PROD.OUTLOOK.COM (2603:10a6:400:4d::13)
+ by LOBP123MB8618.GBRP123.PROD.OUTLOOK.COM with HTTPS; Sat, 3 Jan 2026
+ 20:47:46 +0000
+Received: from LO2P265CA0162.GBRP265.PROD.OUTLOOK.COM (2603:10a6:600:9::30) by
+ CWXP123MB3799.GBRP123.PROD.OUTLOOK.COM (2603:10a6:400:4d::13) with Microsoft
+ SMTP Server (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ 15.20.9478.4; Sat, 3 Jan 2026 20:47:42 +0000
+Received: from LO1PEPF000022FC.GBRP265.PROD.OUTLOOK.COM
+ (2603:10a6:600:9:cafe::18) by LO2P265CA0162.outlook.office365.com
+ (2603:10a6:600:9::30) with Microsoft SMTP Server (version=TLS1_3,
+ cipher=TLS_AES_256_GCM_SHA384) id 15.20.9478.4 via Frontend Transport; Sat, 3
+ Jan 2026 20:47:19 +0000
+Authentication-Results: spf=pass (sender IP is 2607:f8b0:4864:20::e2f)
+ smtp.mailfrom=gmail.com; dkim=pass (signature was verified)
+ header.d=gmail.com;dmarc=pass action=none header.from=gmail.com;compauth=pass
+ reason=100
+Received-SPF: Pass (protection.outlook.com: domain of gmail.com designates
+ 2607:f8b0:4864:20::e2f as permitted sender) receiver=protection.outlook.com;
+ client-ip=2607:f8b0:4864:20::e2f; helo=mail-vs1-xe2f.google.com; pr=C
+Received: from mail-vs1-xe2f.google.com (2607:f8b0:4864:20::e2f) by
+ LO1PEPF000022FC.mail.protection.outlook.com (2603:10a6:608:1::14) with
+ Microsoft SMTP Server (version=TLS1_3, cipher=TLS_AES_256_GCM_SHA384) id
+ 15.20.9499.1 via Frontend Transport; Sat, 3 Jan 2026 20:47:42 +0000
+Received: by mail-vs1-xe2f.google.com with SMTP id ada2fe7eead31-5e53441429fso9783219137.2
+        for <ali@merakitechnologies.co.uk>; Sat, 03 Jan 2026 12:47:42 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20230601; t=1767473261; x=1768078061; darn=merakitechnologies.co.uk;
+        h=to:subject:message-id:date:from:mime-version:from:to:cc:subject
+         :date:message-id:reply-to;
+        bh=sjZ2XjRyPpGkvY20YTK7+3qiX7Q3wdq3ny/Y6twA24I=;
+        b=OzXpEyNJkhVXzlQlCL8ouWEXNQOjuaMv7ROhotPgG6uXIydXHVmvz1MtSrSMU5zPty
+         W+6X+Zoej9l1uCroNEELGG2vLL9DBtUhtr9oZK1zn8oIKythfpmS4OhK7zRrvv8w4Ia+
+         7uIGYGwOJAfsP6c9+rPc0iGR5eK+EbB6G/VBnY9G2TeO4tdLt7xFUDJPx0p0AZ3yGfKs
+         mfCo7KoI7NYijBlWcji1FojqTYsiaOAJ5PCoz2iLCeRS7FqzHuTArKmWV7+gXnlAQjuB
+         olzxFJJtvwd1aDIhVZNnNfXDWYB/v5TAXqBQrkY3VNd/JHEQ1hHJtN1HT6PBEbU+A9bj
+         +yxA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1767473261; x=1768078061;
+        h=to:subject:message-id:date:from:mime-version:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
+        bh=sjZ2XjRyPpGkvY20YTK7+3qiX7Q3wdq3ny/Y6twA24I=;
+        b=siQFrBODRha+lnlFGw29A5uvL2aWP+DTwcXd8oNeoPLquuE9f53CPdiAofe67jlfV8
+         uGhnWW1zN44+YxtKXKoZhSrgVnIr7wME+6rCe1WsHgvRRaUjEzM+Qq8mareem87RkShb
+         4cy+uhvfHZxBbMN1uLIOnIRTAklYsVp+zTJD9nF8LgBulVyE09tT6i3AEMGXm42Yx/g/
+         ZWq/NlyLlxrVD4IYy2R7lXWp2wUdPPAKu/ZvlmBVRUh6nMo9p3sExJpgNG/z6ynC84tF
+         E/cv5X9AUNBX/tPtIqf8cBQd+5ykDPysuC6s7EtQXLFGTaWO709sZthG2fYyEtxXLSfR
+         JVnw==
+X-Gm-Message-State: AOJu0YxtN5ruHu9rkZr5QeyBNBlM+E7etdPWDRkvS2HOljSKyvj/b1wj
+	GwTav/YQDf3fIpqeKyOaVyPWwpNBd0F2y+I2iJqeA6e3Kn7GDlqJwpXIePDDTEpjZnHdXMHXc7K
+	msYv1s9z4sfbcRLOgo3K31YvWxzU1TnlCPoCi
+X-Gm-Gg: AY/fxX7/QiTo0ykmvrjUzcbmSIMrBxvbva1ne0KuwDtdBZdZdDPFQwWE2YfWbaSfC1h
+	YvZFHkeuF0x1VJ7kLZcufzXLeGfJRwmr5KzW7H4oASarVY+OA4IaELe+TZU2t18Z6Z0AMdmvo9W
+	bo3be8Rt3f/Bz4Bv4DstQcMPdk7dH1Zz4Jrzlk2zTjg8i1kO4+G296+261uZeDmM3l7sAU2mHWB
+	Esp4R8Qx9guXRm5Uw4VoCG0oYLbMbcbz//+ejHu32Cad3ChcnLQ83oQr63HXUuPqattdg==
+X-Google-Smtp-Source: AGHT+IGD2UtMjNEUUcXYr6oIVit12SRxr6p/y4WmoOIEFIZ+rvm3nIXLrk6Sfd/UuEQdWC4HcXW6pnucS7oKv2XIBv4=
+X-Received: by 2002:a05:6102:2c14:b0:5db:e373:f0af with SMTP id
+ ada2fe7eead31-5eb1a821471mr14466238137.31.1767473261188; Sat, 03 Jan 2026
+ 12:47:41 -0800 (PST)
+From: Ali Darwash <code2coffee@gmail.com>
+Date: Sat, 3 Jan 2026 20:47:30 +0000
+X-Gm-Features: AQt7F2pw7w_k5s51uhwadeOlWnNgyyb4NgGf4eO7_anVpN9HLN6gr3ozFneheeQ
+Message-ID: <CA+k0VJNwD9_7v7ZYefOeyg2GBVHHvEO88CHjCXV+y6=Sx1iFWA@mail.gmail.com>
+Subject: Unable to login to pc
+To: ali@merakitechnologies.co.uk
+Content-Type: multipart/alternative; boundary="000000000000e21a60064781ef88"
+Return-Path: code2coffee@gmail.com
+X-MS-Exchange-Organization-ExpirationStartTime: 03 Jan 2026 20:47:42.7933
+ (UTC)
+X-MS-Exchange-Organization-ExpirationStartTimeReason: OriginalSubmit
+X-MS-Exchange-Organization-ExpirationInterval: 1:00:00:00.0000000
+X-MS-Exchange-Organization-ExpirationIntervalReason: OriginalSubmit
+X-MS-Exchange-Organization-Network-Message-Id: b2a51718-3fe4-498b-3936-08de4b09577f
+X-EOPAttributedMessage: 0
+X-EOPTenantAttributedMessage: 39fea8e1-fa6a-44f0-ae10-240c8104b1ba:0
+X-MS-Exchange-Organization-MessageDirectionality: Incoming
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: LO1PEPF000022FC:EE_|CWXP123MB3799:EE_|LOBP123MB8618:EE_
+X-MS-Exchange-Organization-AuthSource: LO1PEPF000022FC.GBRP265.PROD.OUTLOOK.COM
+X-MS-Exchange-Organization-AuthAs: Anonymous
+X-MS-Office365-Filtering-Correlation-Id: b2a51718-3fe4-498b-3936-08de4b09577f
+X-MS-Exchange-AtpMessageProperties: SA|SL
+X-MS-Exchange-Organization-SCL: 1
+X-Microsoft-Antispam: BCL:0;ARA:13230040|7093399015|8096899003;
+X-Forefront-Antispam-Report: CIP:2607:f8b0:4864:20::e2f;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:mail-vs1-xe2f.google.com;PTR:mail-vs1-xe2f.google.com;CAT:NONE;SFS:(13230040)(7093399015)(8096899003);DIR:INB;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 03 Jan 2026 20:47:42.5825
+ (UTC)
+X-MS-Exchange-CrossTenant-Network-Message-Id: b2a51718-3fe4-498b-3936-08de4b09577f
+X-MS-Exchange-CrossTenant-Id: 39fea8e1-fa6a-44f0-ae10-240c8104b1ba
+X-MS-Exchange-CrossTenant-AuthSource: LO1PEPF000022FC.GBRP265.PROD.OUTLOOK.COM
+X-MS-Exchange-CrossTenant-AuthAs: Anonymous
+X-MS-Exchange-CrossTenant-FromEntityHeader: Internet
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CWXP123MB3799
+X-MS-Exchange-Transport-EndToEndLatency: 00:00:04.0396890
+X-MS-Exchange-Processed-By-BccFoldering: 15.20.9478.004
+X-Microsoft-Antispam-Mailbox-Delivery:
+	ucf:0;jmr:0;auth:0;dest:I;ENG:(910005)(944506478)(944626604)(4710137)(4712097)(4999163)(920097)(930201)(20251009114)(140003);
+X-Microsoft-Antispam-Message-Info:
+	=?utf-8?B?aGZxbUdKWUlxclVDRGcvYytFNGRtQzdGZFNXVUQrVnQyUk14OVdIRHIxWXBR?=
+ =?utf-8?B?Njk4ZXRhcWF1eEZYT2FkN3NxN094NHowSnJBN2lMUFExQ00vM0hFU1FRcmZu?=
+ =?utf-8?B?eVc1QU5scm1DakduTDBqTVJudzk2U1pJVmhWUHFHY0Z2TytVL3o2dHpIVUtm?=
+ =?utf-8?B?K3g1azdvWm1HU3Izd0M1dVFrVXVETCt5QVRkWUd2YlVRMWw0b0FRMXVGSHB5?=
+ =?utf-8?B?alhwMndEZEgzYnZnWFhRSHhZMzBvOGV2YXVnRDhOQlBBdy92YjdtdGFpV2t5?=
+ =?utf-8?B?L2Q1NVpLZzJTK2szOVQzSngrZnE5V0tiS0NIV0l6Ry9tK1FRT0VNNGRNaFdC?=
+ =?utf-8?B?dm1xWmErc3E0L00vYmYrYVNNSnZISkVNZnhoZHlRTUMvWVUyYlBUV1RVTTVF?=
+ =?utf-8?B?UEIxVzk5bTJOcFI2K2Q2L2ZUc2E4N3pDU0xwSlBHbzErNk1oZENvcThxMXFD?=
+ =?utf-8?B?dWtIWWZwTXpNNk1BSXFIOGFFNFdWUDZNcmtucnZkT1JjSG9QZUxIdU82Y3pE?=
+ =?utf-8?B?TU1YeU55cXhNL3FYZDhHcVdMN2gzTkJ1dnAwaFZjelMreklISndZYW5JVE5n?=
+ =?utf-8?B?cGc1ZlYvUjBFTEw1NFY3UldQNjFONVd0U05XV1J5bGhTOGwrcFdZQXVvR3d1?=
+ =?utf-8?B?UUV6WlpHMzMrcGV1UHJleFVpdlgrSjFWWlJvNmlvMTd5SDkrZnAxOHdWYnFy?=
+ =?utf-8?B?SFN2K2IwaUlEMW1kdDJCRElzTFZRVS9CZTVrMUtzb1Y5d25GaG03Z1hPZFR0?=
+ =?utf-8?B?Q2VzQ2ZJWHJMbWd0MVlrY3dpWjR2Qnd2ZFFoUXpZKzBqWVI0K2IxT0NqRUdw?=
+ =?utf-8?B?a3ZGZTdtSVNDLzd5bHhOQ0gwL2ZmN09mTTJQNmFVaUVlM0trVGZuQ05MUVUz?=
+ =?utf-8?B?RElHNG8zOGgxTUJVaG1kZXN6aTFWS0hLeTRKMHd3TlhaRk15Rm5vSjVsMlJv?=
+ =?utf-8?B?WjFvMDZNRThXT1U1NndKZFk5ZndhQkRWejVVbGFoVDN0L2FyQjZCTG1BZHlK?=
+ =?utf-8?B?SVJ1UTBUOFQyUkFxUjBJUGw1MUl3Ynhlb2kySW5vNU1PUU9ZcFVUcitUOWRZ?=
+ =?utf-8?B?RGtTVlhFZXNJUVAwNDNSTmxYc1JzZ1g4NWZRNlV5enBqMkFaeExhMEo3YU9N?=
+ =?utf-8?B?czdEMTJXbWdjbjRMNUZ5ekdtTjRiTng2alV2UFVIWjRRbTRaa01HU1lVR2Zv?=
+ =?utf-8?B?YVdoVjV0a1NqblIzblJMVzZ0WkJub0owUDlKdG1nQ2ZGT05ySExFVXBmMWZa?=
+ =?utf-8?B?SlVqbFl1UzJqd0lmaGJicExpb0ZVSlU5eGFZUUhFQ09JZUIvcTY3VUR3bnpP?=
+ =?utf-8?B?ZzYxRUlsaVA1VmM0enRCMmNUT0VrZ01KV3A3YXd5MUg2Y2wrWSs3RCtNMCsz?=
+ =?utf-8?B?MFI4NklPYjNCbFExL1QrUiswdEFydGRFRXgvYjUxeXJUR3FqN3hqekxka0Fo?=
+ =?utf-8?B?T01VS1ljbFF1cHZlZFhGVXVkb3A1YUJOUTd5Z2wzUkVNelhMY2I3SjdSM0tQ?=
+ =?utf-8?B?eWhwWUR6MXZiYzQyM0NuZVVMTzlLakpqa2p4S3YrNzZpZkQ1L213U2YvU0RL?=
+ =?utf-8?B?b25wRWlhdVdZZVdXb0tSTjVpVGt1azlIM2c3UWIzY0RNY1E1Q1pSMkVjR3Fn?=
+ =?utf-8?B?Ti9vYzY3YzhCN1lSUGJrd3dLbVBFSWJHUGhYcGFkdVRPbFNLNWpVR0p1N2hz?=
+ =?utf-8?B?QWVvSVpjbnN3aXNHUVdVWjd6Yk1SRzZpVk15WFF5SHFxRDMrRnZYeElzT2tP?=
+ =?utf-8?B?cUdJK25UNXcxeWhhcnhBckZ0Q0RNQjZwNWxtT0taTVdzVEJJNmZiYU00bkNI?=
+ =?utf-8?B?TXpIRi9zQWNJQ242d0x6OHlMdk5pWVhzbmlPZWpsS01vMWZ0WmI5WmJPL0lX?=
+ =?utf-8?B?UDl1UnlEVHp4K09kcEs5bXhIdkNqanJRS1hRVUxyZndSbXZ3YkhvTUpwYitG?=
+ =?utf-8?B?RmdMTmFUTHRCSXNwTmNjYjhkajRpVTFEdXlJQXFwNUYzOXZLdHRUYjY3WHFv?=
+ =?utf-8?B?ZGU5VlYxVEVWbUI1QkthNU1QaGozVUNqbTRJeEJhV1JaQUs5a1BXMmRtZUl5?=
+ =?utf-8?B?dHBraWxHeGszRVowYkxpRHRETytzRjJ5NW1ETXYyYm12UnVpVGwrdGhaY2hm?=
+ =?utf-8?B?ODVYbVdzSHltR0p3ak55M29Zd2JpaGkxTzhzTVVGMDFGaXcwdnQwVXdvRGlO?=
+ =?utf-8?B?bXJqdk9YektOUnpoSGlBWVFTKzJYQUFIRkw0NW0xM0I2WERIVktrYzFUVDIy?=
+ =?utf-8?B?TWxkaTVVS0lVV1U2VU5TWWlzVEY0SDNzZlF0MFNoS0lZT2lDWWJGbllEKzM3?=
+ =?utf-8?B?L1EybkRWcC8rbHhSM2E0dStSeXNTSks2SHczbUJqYVRiL3ZWYWNnREdwd01E?=
+ =?utf-8?B?aktsM00xRkVOYmRKazJKNk1PdVRaTi9oRVptbTl3Y3NraUhVcVd5N2JYVnR2?=
+ =?utf-8?B?cXdrS3d2NE8ra3RqbEZwZDN5b0lsbDVvTGVUNy83dHd2OEFaQkYvRjlndUF1?=
+ =?utf-8?B?YUczREJVWjhMM2lUMElVVHlUdjdWOXJWeVdsMENHN1dmQmpnL0xxbTVRZnVu?=
+ =?utf-8?B?QVQrZlNNckRpUHpha2JldHNJT0JiMmVWVkJQYnlGRGlHMkt4MXhuSm5PVjRy?=
+ =?utf-8?B?N2krU0NEVXVjeUN1WGd1NjV4S0lHdVl0TzB1NER4a3JPUXZXNkk5V3hkUk1m?=
+ =?utf-8?B?eWlwemFWVXVRN0pDcmxpRnBiVDEvdGc4M0dtbTladmJqdXB2dkxXZW8xbGhx?=
+ =?utf-8?B?VFRQcll1cHFvRTBPQVhVd0F0aG5hdjdZZ1czTGx3emVqUUJBZEloQVJ1SnZj?=
+ =?utf-8?B?Wll3TmpqUXJtR0xMVnhFaEZYN002OFA2K1A3aXp1K2h0RGU3Tk5LbnRWNEJt?=
+ =?utf-8?B?QnMzVmdmcW94U29NR1F2WlNXMkJJM3YxblBDdER3UE41TXFid09mZW5FeFR6?=
+ =?utf-8?B?U0R4T3lnS2w4WG5SRkhyKzJKZzBITjNWTDZvdDd5QU1scURlRVQzd0wxVzJ6?=
+ =?utf-8?B?UUtzbTNhY3gyenNvdmVRSVZ5ZjNFQjR5TXVpZktTbGFIVXdUTEYvai90eUhX?=
+ =?utf-8?B?d2JhYXgxQkdxWXlKaUhIblNGdFR5c29VTEJhOHBmYTNjN0hHYUlLZXN0K2I5?=
+ =?utf-8?B?bERNYzdIT0hLOEVxMXAwNGZHZ2R6QXVsZlBZMzZhaGJ2M2tMSWpOMzFwOFlW?=
+ =?utf-8?B?N2lSMEx4aXRDK01Zb04wQnZLSnRjUG8zS25IWU9hR0VWVzZCZk4wZXZxYy93?=
+ =?utf-8?B?djVHU2txemhFK1V1RHp4U2hNYmFYZVJrZll0T1dMMmx3UnZKeGp2M0hDRS92?=
+ =?utf-8?B?VFVpV25FUWVxYWNQZHFKelpSOEFFTVNrVUI4NzIyb2RocnVrOXJqNkJZalps?=
+ =?utf-8?B?c290M2R0SmxGVmd1bWliY2x6MjNWdFJpNTVyYXdxaENwdlNYRFkwYTlYQlNa?=
+ =?utf-8?B?SWZrWElmQTlFTCs4Rm1QZ2pPNHZnL1B1cWZPdUJCRXhCeUo4akw5NVRrSVpS?=
+ =?utf-8?B?S1EzaDZiRW5zam9ZR1JFcHVZUWRTenpVT3JVcko5ZnZOR0hVcmVaRTNSbHZS?=
+ =?utf-8?B?SGRUQ1hIZHdGMEx6UjhNVCs5QlZQbXhoOW1rampTK3pLdGR2emN6Zzl2bUVU?=
+ =?utf-8?Q?P12nn+uKPPhg=3D?=
+MIME-Version: 1.0
+
+--000000000000e21a60064781ef88
+Content-Type: text/plain; charset="UTF-8"
+
+Dear good afternoon,
+
+I am writing to report that I am currently unable to log in to my PC.
+
+Could you please provide assistance or let me know the next steps to
+resolve this issue? Please let me know if you need any specific details
+regarding the error or my machine.
+
+Thank you,
+
+Ali Darwash
+
+--000000000000e21a60064781ef88
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8"><d=
+iv dir=3D"ltr"><div>Dear good afternoon,</div><div><br></div><div>I am writ=
+ing to report that I am currently unable to log in to my PC.</div><div><br>=
+</div><div>Could you please provide assistance or let me know the next step=
+s to resolve this issue? Please let me know if you need any specific detail=
+s regarding the error or my machine.</div><div><br></div><div>Thank you,</d=
+iv><div><br></div><div>Ali Darwash</div><br></div>
+
+--000000000000e21a60064781ef88--

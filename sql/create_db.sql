@@ -778,6 +778,28 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+/****** Object:  Table [dbo].[ClientContacts]    Script Date: 24/09/2025 14:29:11 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ClientContacts](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[client_id] [int] NOT NULL,
+	[first_name] [nvarchar](100) NULL,
+	[last_name] [nvarchar](100) NULL,
+	[full_name] [nvarchar](200) NULL,
+	[email] [nvarchar](255) NULL,
+	[phone] [nvarchar](50) NULL,
+	[mobile] [nvarchar](50) NULL,
+	[created_at] [datetime] NULL,
+	[updated_at] [datetime] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 /****** Object:  Table [dbo].[ContextualPermissions]    Script Date: 24/09/2025 14:29:11 ******/
 SET ANSI_NULLS ON
 GO
@@ -1598,6 +1620,8 @@ ALTER TABLE [dbo].[ClientDomains] ADD  DEFAULT ((0)) FOR [is_primary]
 GO
 ALTER TABLE [dbo].[ClientDomains] ADD  DEFAULT (getdate()) FOR [created_at]
 GO
+ALTER TABLE [dbo].[ClientContacts] ADD  DEFAULT (getdate()) FOR [created_at]
+GO
 ALTER TABLE [dbo].[ClientEmailDomains] ADD  DEFAULT ('exact') FOR [domain_type]
 GO
 ALTER TABLE [dbo].[ClientEmailDomains] ADD  DEFAULT ((1)) FOR [priority]
@@ -1909,6 +1933,12 @@ REFERENCES [dbo].[Clients] ([id])
 ON DELETE CASCADE
 GO
 ALTER TABLE [dbo].[ClientDomains] CHECK CONSTRAINT [FK_ClientDomains_Clients]
+GO
+ALTER TABLE [dbo].[ClientContacts]  WITH CHECK ADD  CONSTRAINT [FK_ClientContacts_Clients] FOREIGN KEY([client_id])
+REFERENCES [dbo].[Clients] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[ClientContacts] CHECK CONSTRAINT [FK_ClientContacts_Clients]
 GO
 ALTER TABLE [dbo].[ClientEmailDomains]  WITH CHECK ADD  CONSTRAINT [FK_ClientEmailDomains_Category] FOREIGN KEY([auto_assign_category_id])
 REFERENCES [dbo].[TicketCategories] ([id])

@@ -81,3 +81,7 @@ $downloadableAttachments = array_filter($data['attachments'] ?? [], function($a)
     </div>
 <?php endif; ?>
 </div>
+
+<?php require VIEWSPATH . '/tickets/partials/client_link_card.php'; ?>
+
+<?php require VIEWSPATH . '/tickets/partials/outbound_email_delivery_card.php'; ?>
