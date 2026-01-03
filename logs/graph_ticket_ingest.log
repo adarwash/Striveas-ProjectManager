@@ -10424,3 +10424,135 @@ Graph API token obtained: Yes (1958 chars)
 Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
 processEmailsToTickets: Retrieved 0 emails
 Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1955 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1966 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1963 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1960 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1962 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1958 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1956 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk
+processEmailsToTickets: Starting for itcrmtest@merakitechnologies.co.uk
+Graph API getEmails called for: itcrmtest@merakitechnologies.co.uk
+Graph API token obtained: Yes (1964 chars)
+Graph API URL: https://graph.microsoft.com/v1.0/users/itcrmtest%40merakitechnologies.co.uk/messages?$top=25&$orderby=receivedDateTime+desc&$select=id%2CconversationId%2Csubject%2Cfrom%2CtoRecipients%2CreceivedDateTime%2Cbody%2CbodyPreview%2CisRead%2ChasAttachments&$filter=isRead+eq+false
+processEmailsToTickets: Retrieved 0 emails
+Processed 0 email(s) from itcrmtest@merakitechnologies.co.uk

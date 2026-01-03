@@ -107,6 +107,15 @@ class Dashboard extends Controller {
         // Get user ID from session
         $userId = $_SESSION['user_id'];
 
+        // CSRF token for dashboard layout save (AJAX)
+        if (!isset($_SESSION['csrf_token'])) {
+            try {
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+            } catch (Exception $e) {
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(8));
+            }
+        }
+
         // Auto follow-ups for prospect clients (admin-configurable)
         $this->ensureProspectFollowups();
         
@@ -170,6 +179,15 @@ class Dashboard extends Controller {
         
         // Get active user data for personalized greeting
         $user = $this->userModel->getUserById($userId);
+
+        // Per-user dashboard layout (widget order)
+        $dashboardLayout = '';
+        try {
+            $userSettings = $this->userModel->getUserSettings((int)$userId);
+            $dashboardLayout = $userSettings['dashboard_layout'] ?? '';
+        } catch (Exception $e) {
+            $dashboardLayout = '';
+        }
         
         $data = [
             'title' => 'Dashboard',
@@ -184,10 +202,178 @@ class Dashboard extends Controller {
             'user_projects' => $userProjects,
             'stats' => $dashboardStats,
             'top_clients' => $topClients,
-            'top_client_range' => $range
+            'top_client_range' => $range,
+            'dashboard_layout' => $dashboardLayout
         ];
         
         $this->view('dashboard/index', $data);
+    }
+
+    /**
+     * Save per-user dashboard widget order/layout (AJAX)
+     */
+    public function saveLayout() {
+        // AJAX JSON response
+        $isAjax = (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
+        if ($isAjax) {
+            header('Content-Type: application/json');
+        }
+
+        if (!isLoggedIn()) {
+            if ($isAjax) {
+                echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+                exit;
+            }
+            redirect('users/login');
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            if ($isAjax) {
+                echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+                exit;
+            }
+            redirect('dashboard');
+            return;
+        }
+
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true);
+        if (!is_array($payload)) {
+            $payload = $_POST ?? [];
+        }
+
+        $csrf = (string)($payload['csrf_token'] ?? '');
+        $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
+        if ($sessionToken !== '' && $csrf !== $sessionToken) {
+            if ($isAjax) {
+                echo json_encode(['success' => false, 'message' => 'CSRF validation failed']);
+                exit;
+            }
+            flash('client_error', 'Security check failed', 'alert-danger');
+            redirect('dashboard');
+            return;
+        }
+
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $action = strtolower(trim((string)($payload['action'] ?? 'save')));
+
+        if ($action === 'reset') {
+            $ok = $this->userModel->updateUserSettings($userId, ['dashboard_layout' => null]);
+            if ($isAjax) {
+                echo json_encode(['success' => (bool)$ok]);
+                exit;
+            }
+            redirect('dashboard');
+            return;
+        }
+
+        $allowed = [
+            'stats',
+            'plan_today',
+            'quick_actions',
+            'my_tasks',
+            'recent_activity',
+            'top_clients'
+        ];
+
+        // Read existing layout so we can merge (order + sizes)
+        $existingOrder = [];
+        $existingSizes = [];
+        try {
+            $userSettings = $this->userModel->getUserSettings($userId);
+            $existingRaw = $userSettings['dashboard_layout'] ?? '';
+            if (is_string($existingRaw) && trim($existingRaw) !== '') {
+                $decoded = json_decode($existingRaw, true);
+                if (is_array($decoded)) {
+                    // Old format: JSON array of ids
+                    $isList = array_keys($decoded) === range(0, count($decoded) - 1);
+                    if ($isList) {
+                        $existingOrder = $decoded;
+                    } else {
+                        $existingOrder = is_array($decoded['order'] ?? null) ? $decoded['order'] : [];
+                        $existingSizes = is_array($decoded['sizes'] ?? null) ? $decoded['sizes'] : [];
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            $existingOrder = [];
+            $existingSizes = [];
+        }
+
+        // Accept either {order, sizes} or {layout:{order,sizes}}
+        $order = $payload['order'] ?? null;
+        $sizes = $payload['sizes'] ?? null;
+        if (isset($payload['layout']) && is_array($payload['layout'])) {
+            $order = $payload['layout']['order'] ?? $order;
+            $sizes = $payload['layout']['sizes'] ?? $sizes;
+        }
+
+        if (!is_array($order)) {
+            $order = null; // means "keep existing"
+        }
+        if (!is_array($sizes)) {
+            $sizes = null; // means "keep existing"
+        }
+
+        // Filter & de-dupe order
+        $filteredOrder = $existingOrder;
+        if (is_array($order)) {
+            $seen = [];
+            $filteredOrder = [];
+            foreach ($order as $id) {
+                if (!is_string($id)) {
+                    continue;
+                }
+                $id = trim($id);
+                if ($id === '' || isset($seen[$id])) {
+                    continue;
+                }
+                if (!in_array($id, $allowed, true)) {
+                    continue;
+                }
+                $seen[$id] = true;
+                $filteredOrder[] = $id;
+            }
+        }
+
+        // Merge/validate sizes (Bootstrap 12-col on lg breakpoint)
+        $allowedSpans = [3, 4, 6, 8, 12];
+        $mergedSizes = is_array($existingSizes) ? $existingSizes : [];
+        if (is_array($sizes)) {
+            foreach ($sizes as $wid => $span) {
+                if (!is_string($wid)) {
+                    continue;
+                }
+                $wid = trim($wid);
+                if ($wid === '' || !in_array($wid, $allowed, true)) {
+                    continue;
+                }
+                $spanInt = (int)$span;
+                if (!in_array($spanInt, $allowedSpans, true)) {
+                    continue;
+                }
+                $mergedSizes[$wid] = $spanInt;
+            }
+        }
+
+        // Store a consistent object format going forward
+        $layoutToStore = [
+            'order' => $filteredOrder,
+            'sizes' => $mergedSizes
+        ];
+        $layoutJson = json_encode($layoutToStore);
+        $ok = $this->userModel->updateUserSettings($userId, ['dashboard_layout' => $layoutJson]);
+
+        if ($isAjax) {
+            echo json_encode([
+                'success' => (bool)$ok,
+                'layout' => $layoutToStore
+            ]);
+            exit;
+        }
+
+        redirect('dashboard');
     }
     
     /**

@@ -105,6 +105,27 @@ class User {
             error_log('ensureUserSettingsThemeProjectCardHeadersColumn Error: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Ensure the UserSettings table has a dashboard_layout column (JSON string).
+     * Stores the per-user dashboard widget order/layout.
+     */
+    private function ensureUserSettingsDashboardLayoutColumn(): void {
+        try {
+            if ($this->userSettingsHasColumn('dashboard_layout')) {
+                return;
+            }
+
+            $this->db->query("
+                IF COL_LENGTH('dbo.UserSettings','dashboard_layout') IS NULL
+                BEGIN
+                    ALTER TABLE [dbo].[UserSettings] ADD [dashboard_layout] NVARCHAR(MAX) NULL;
+                END
+            ");
+        } catch (Exception $e) {
+            error_log('ensureUserSettingsDashboardLayoutColumn Error: ' . $e->getMessage());
+        }
+    }
     
     /**
      * Verify a submitted password against a stored value.
@@ -1034,6 +1055,7 @@ class User {
                     'theme_card_headers' => 0,
                     'theme_header_text_color' => '',
                     'theme_project_card_headers' => 1,
+                    'dashboard_layout' => '',
                     'email_new_tickets' => true,
                     'email_ticket_updates' => true,
                     'email_comments' => true,
@@ -1112,6 +1134,10 @@ class User {
             // Legacy schema: ensure theme_project_card_headers column exists (toggle)
             if (array_key_exists('theme_project_card_headers', $settings)) {
                 $this->ensureUserSettingsThemeProjectCardHeadersColumn();
+            }
+            // Legacy schema: ensure dashboard_layout column exists (user dashboard layout)
+            if (array_key_exists('dashboard_layout', $settings)) {
+                $this->ensureUserSettingsDashboardLayoutColumn();
             }
             
             // Ensure a row exists for this user

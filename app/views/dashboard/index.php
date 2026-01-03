@@ -21,106 +21,139 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         ?>
         <p class="text-muted mb-0"><?= $greeting ?>, <?= htmlspecialchars($firstName) ?>! Here's your plan for today.</p>
     </div>
-    <div>
+    <div class="d-flex align-items-center gap-2">
         <span class="badge bg-light text-dark"><?= $_SESSION['role'] ?? 'User' ?></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="dashboardCustomizeToggle">
+            <i class="bi bi-arrows-move me-1"></i>Customize
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger d-none" id="dashboardResetLayout">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+        </button>
+        <span class="small text-muted d-none" id="dashboardLayoutStatus"></span>
     </div>
 </div>
 
-<!-- Compact Stats Overview -->
-<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
-    <div class="col">
-        <div class="compact-stat-card purple clickable-card" data-href="/clients">
-            <div class="compact-stat-icon">
-                <i class="fas fa-building"></i>
+<!-- Dashboard Widgets (user-customizable layout) -->
+<div id="dashboardWidgets" class="row g-4 dashboard-widgets">
+    <!-- Stats -->
+    <div class="col-12 dashboard-widget" data-widget-id="stats">
+        <div class="dashboard-widget-controls">
+            <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
+                <i class="bi bi-grip-vertical"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
+                <i class="bi bi-dash-lg"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
+        <!-- Compact Stats Overview -->
+        <div class="row row-cols-2 row-cols-md-4 g-3">
+            <div class="col">
+                <div class="compact-stat-card purple clickable-card" data-href="/clients">
+                    <div class="compact-stat-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="compact-stat-content">
+                        <div class="compact-stat-value"><?= $stats['active_clients'] ?? 0 ?></div>
+                        <div class="compact-stat-label">Clients</div>
+                    </div>
+                </div>
             </div>
-            <div class="compact-stat-content">
-                <div class="compact-stat-value"><?= $stats['active_clients'] ?? 0 ?></div>
-                <div class="compact-stat-label">Clients</div>
+            <div class="col">
+                <div class="compact-stat-card green clickable-card" data-href="/users">
+                    <div class="compact-stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="compact-stat-content">
+                        <div class="compact-stat-value"><?= $stats['total_users'] ?? 0 ?></div>
+                        <div class="compact-stat-label">Users</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="compact-stat-card orange clickable-card" data-href="/users?role=technician">
+                    <div class="compact-stat-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="compact-stat-content">
+                        <div class="compact-stat-value"><?= $stats['technicians'] ?? 0 ?></div>
+                        <div class="compact-stat-label">Techs</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="compact-stat-card blue clickable-card" data-href="/sites">
+                    <div class="compact-stat-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="compact-stat-content">
+                        <div class="compact-stat-value"><?= $stats['active_sites'] ?? 0 ?></div>
+                        <div class="compact-stat-label">Sites</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="compact-stat-card purple clickable-card" data-href="/clients?status=Prospect">
+                    <div class="compact-stat-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="compact-stat-content">
+                        <div class="compact-stat-value"><?= $stats['prospect_clients'] ?? 0 ?></div>
+                        <div class="compact-stat-label">Prospects</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="compact-stat-card red clickable-card" data-href="/tickets?status=open">
+                    <div class="compact-stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="compact-stat-content">
+                        <div class="compact-stat-value"><?= $stats['open_tickets'] ?? 0 ?></div>
+                        <div class="compact-stat-label">Tickets</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="compact-stat-card orange clickable-card" data-href="/tasks?status=open">
+                    <div class="compact-stat-icon">
+                        <i class="fas fa-list-ul"></i>
+                    </div>
+                    <div class="compact-stat-content">
+                        <div class="compact-stat-value"><?= $stats['open_tasks'] ?? 0 ?></div>
+                        <div class="compact-stat-label">Tasks</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="compact-stat-card green clickable-card" data-href="/time/dashboard">
+                    <div class="compact-stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="compact-stat-content">
+                        <div class="compact-stat-value"><?= $stats['currently_working'] ?? 0 ?></div>
+                        <div class="compact-stat-label">Working</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col">
-        <div class="compact-stat-card green clickable-card" data-href="/users">
-            <div class="compact-stat-icon">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="compact-stat-content">
-                <div class="compact-stat-value"><?= $stats['total_users'] ?? 0 ?></div>
-                <div class="compact-stat-label">Users</div>
-            </div>
+
+    <!-- Plan for Today -->
+    <div class="col-12 col-lg-8 dashboard-widget" data-widget-id="plan_today">
+        <div class="dashboard-widget-controls">
+            <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
+                <i class="bi bi-grip-vertical"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
+                <i class="bi bi-dash-lg"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
+                <i class="bi bi-plus-lg"></i>
+            </button>
         </div>
-    </div>
-    <div class="col">
-        <div class="compact-stat-card orange clickable-card" data-href="/users?role=technician">
-            <div class="compact-stat-icon">
-                <i class="fas fa-tools"></i>
-            </div>
-            <div class="compact-stat-content">
-                <div class="compact-stat-value"><?= $stats['technicians'] ?? 0 ?></div>
-                <div class="compact-stat-label">Techs</div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="compact-stat-card blue clickable-card" data-href="/sites">
-            <div class="compact-stat-icon">
-                <i class="fas fa-map-marker-alt"></i>
-            </div>
-            <div class="compact-stat-content">
-                <div class="compact-stat-value"><?= $stats['active_sites'] ?? 0 ?></div>
-                <div class="compact-stat-label">Sites</div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="compact-stat-card purple clickable-card" data-href="/clients?status=Prospect">
-            <div class="compact-stat-icon">
-                <i class="fas fa-user-tie"></i>
-            </div>
-            <div class="compact-stat-content">
-                <div class="compact-stat-value"><?= $stats['prospect_clients'] ?? 0 ?></div>
-                <div class="compact-stat-label">Prospects</div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="compact-stat-card red clickable-card" data-href="/tickets?status=open">
-            <div class="compact-stat-icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="compact-stat-content">
-                <div class="compact-stat-value"><?= $stats['open_tickets'] ?? 0 ?></div>
-                <div class="compact-stat-label">Tickets</div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="compact-stat-card orange clickable-card" data-href="/tasks?status=open">
-            <div class="compact-stat-icon">
-                <i class="fas fa-list-ul"></i>
-            </div>
-            <div class="compact-stat-content">
-                <div class="compact-stat-value"><?= $stats['open_tasks'] ?? 0 ?></div>
-                <div class="compact-stat-label">Tasks</div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="compact-stat-card green clickable-card" data-href="/time/dashboard">
-            <div class="compact-stat-icon">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div class="compact-stat-content">
-                <div class="compact-stat-value"><?= $stats['currently_working'] ?? 0 ?></div>
-                <div class="compact-stat-label">Working</div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Removed redundant compact stats block -->
-<!-- Plan for the Day Row -->
-<div class="row g-4 mb-4">
-    <div class="col-lg-8">
         <div class="card h-100 border-0 shadow-sm">
             <div class="card-header bg-white">
                 <h5 class="mb-0 text-primary"><i class="bi bi-calendar-day me-2"></i>My Plan for Today</h5>
@@ -209,10 +242,21 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             </div>
         </div>
     </div>
-    
-    <div class="col-lg-4">
-        <!-- Quick Status Card -->
-        <div class="card h-100 shadow-sm quick-actions-card mb-4">
+
+    <!-- Quick Actions -->
+    <div class="col-12 col-lg-4 dashboard-widget" data-widget-id="quick_actions">
+        <div class="dashboard-widget-controls">
+            <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
+                <i class="bi bi-grip-vertical"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
+                <i class="bi bi-dash-lg"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
+        <div class="card h-100 shadow-sm quick-actions-card">
             <div class="card-body">
                 <h5 class="card-title mb-3"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
                 <div class="d-grid gap-2">
@@ -229,94 +273,116 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             </div>
         </div>
     </div>
-</div>
 
-<!-- My Tasks -->
-<div class="card mb-5">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>My Tasks</h5>
-        <a href="/tasks" class="btn btn-sm btn-outline-primary">View All</a>
-    </div>
-    <div class="card-body">
-        <?php if (empty($assigned_tasks)) : ?>
-            <div class="text-center py-4">
-                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
-                <p class="text-muted mb-0">You have no tasks assigned.</p>
+    <!-- My Tasks -->
+    <div class="col-12 dashboard-widget" data-widget-id="my_tasks">
+        <div class="dashboard-widget-controls">
+            <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
+                <i class="bi bi-grip-vertical"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
+                <i class="bi bi-dash-lg"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>My Tasks</h5>
+                <a href="/tasks" class="btn btn-sm btn-outline-primary">View All</a>
             </div>
-        <?php else : ?>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th class="d-none d-md-table-cell">Project</th>
-                            <th>Status</th>
-                            <th>Due</th>
-                            <th class="d-none d-md-table-cell">Priority</th>
-                            <th class="text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($assigned_tasks as $task) : ?>
-                            <?php
-                                $statusClass = 'badge bg-secondary';
-                                if ($task->status === 'In Progress') $statusClass = 'badge bg-info';
-                                if ($task->status === 'Completed') $statusClass = 'badge bg-success';
-                                if ($task->status === 'Blocked') $statusClass = 'badge bg-danger';
-                                if ($task->status === 'Testing') $statusClass = 'badge bg-primary';
-                                
-                                $priorityClass = 'badge bg-light text-dark';
-                                if ($task->priority === 'High' || $task->priority === 'Critical') $priorityClass = 'badge bg-danger';
-                                if ($task->priority === 'Medium') $priorityClass = 'badge bg-warning text-dark';
-                                if ($task->priority === 'Low') $priorityClass = 'badge bg-success';
-                                
-                                $dueText = 'No due date';
-                                $dueClass = 'text-muted';
-                                if (!empty($task->due_date)) {
-                                    $dueTs = strtotime($task->due_date);
-                                    if ($dueTs) {
-                                        $now = time();
-                                        $daysDiff = floor(($dueTs - $now) / 86400);
-                                        $dueText = date('M j', $dueTs);
-                                        if ($daysDiff < 0) {
-                                            $dueText = 'Overdue (' . date('M j', $dueTs) . ')';
-                                            $dueClass = 'text-danger fw-semibold';
-                                        } elseif ($daysDiff <= 2) {
-                                            $dueClass = 'text-warning fw-semibold';
-                                        } else {
-                                            $dueClass = 'text-muted';
+            <div class="card-body">
+                <?php if (empty($assigned_tasks)) : ?>
+                    <div class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">You have no tasks assigned.</p>
+                    </div>
+                <?php else : ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th class="d-none d-md-table-cell">Project</th>
+                                    <th>Status</th>
+                                    <th>Due</th>
+                                    <th class="d-none d-md-table-cell">Priority</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($assigned_tasks as $task) : ?>
+                                    <?php
+                                        $statusClass = 'badge bg-secondary';
+                                        if ($task->status === 'In Progress') $statusClass = 'badge bg-info';
+                                        if ($task->status === 'Completed') $statusClass = 'badge bg-success';
+                                        if ($task->status === 'Blocked') $statusClass = 'badge bg-danger';
+                                        if ($task->status === 'Testing') $statusClass = 'badge bg-primary';
+                                        
+                                        $priorityClass = 'badge bg-light text-dark';
+                                        if ($task->priority === 'High' || $task->priority === 'Critical') $priorityClass = 'badge bg-danger';
+                                        if ($task->priority === 'Medium') $priorityClass = 'badge bg-warning text-dark';
+                                        if ($task->priority === 'Low') $priorityClass = 'badge bg-success';
+                                        
+                                        $dueText = 'No due date';
+                                        $dueClass = 'text-muted';
+                                        if (!empty($task->due_date)) {
+                                            $dueTs = strtotime($task->due_date);
+                                            if ($dueTs) {
+                                                $now = time();
+                                                $daysDiff = floor(($dueTs - $now) / 86400);
+                                                $dueText = date('M j', $dueTs);
+                                                if ($daysDiff < 0) {
+                                                    $dueText = 'Overdue (' . date('M j', $dueTs) . ')';
+                                                    $dueClass = 'text-danger fw-semibold';
+                                                } elseif ($daysDiff <= 2) {
+                                                    $dueClass = 'text-warning fw-semibold';
+                                                } else {
+                                                    $dueClass = 'text-muted';
+                                                }
+                                            }
                                         }
-                                    }
-                                }
-                            ?>
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold mb-1"><?= htmlspecialchars($task->title) ?></div>
-                                    <div class="small text-muted d-md-none">
-                                        <?= !empty($task->project_title) ? htmlspecialchars($task->project_title) : 'No project' ?>
-                                    </div>
-                                </td>
-                                <td class="d-none d-md-table-cell text-muted">
-                                    <?= !empty($task->project_title) ? htmlspecialchars($task->project_title) : 'No project' ?>
-                                </td>
-                                <td><span class="<?= $statusClass ?>"><?= htmlspecialchars($task->status ?? 'Pending') ?></span></td>
-                                <td class="<?= $dueClass ?>"><?= $dueText ?></td>
-                                <td class="d-none d-md-table-cell"><span class="<?= $priorityClass ?>"><?= htmlspecialchars($task->priority ?? 'Normal') ?></span></td>
-                                <td class="text-end">
-                                    <a href="/tasks/show/<?= (int)$task->id ?>" class="btn btn-sm btn-outline-primary">Open</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold mb-1"><?= htmlspecialchars($task->title) ?></div>
+                                            <div class="small text-muted d-md-none">
+                                                <?= !empty($task->project_title) ? htmlspecialchars($task->project_title) : 'No project' ?>
+                                            </div>
+                                        </td>
+                                        <td class="d-none d-md-table-cell text-muted">
+                                            <?= !empty($task->project_title) ? htmlspecialchars($task->project_title) : 'No project' ?>
+                                        </td>
+                                        <td><span class="<?= $statusClass ?>"><?= htmlspecialchars($task->status ?? 'Pending') ?></span></td>
+                                        <td class="<?= $dueClass ?>"><?= $dueText ?></td>
+                                        <td class="d-none d-md-table-cell"><span class="<?= $priorityClass ?>"><?= htmlspecialchars($task->priority ?? 'Normal') ?></span></td>
+                                        <td class="text-end">
+                                            <a href="/tasks/show/<?= (int)$task->id ?>" class="btn btn-sm btn-outline-primary">Open</a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
             </div>
-        <?php endif; ?>
+        </div>
     </div>
-</div>
 
-<!-- Recent Activity and Top Clients Section -->
-<div class="row g-4">
-    <div class="col-lg-8">
+    <!-- Recent Activity -->
+    <div class="col-12 col-lg-8 dashboard-widget" data-widget-id="recent_activity">
+        <div class="dashboard-widget-controls">
+            <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
+                <i class="bi bi-grip-vertical"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
+                <i class="bi bi-dash-lg"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Activity</h5>
@@ -372,11 +438,23 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                         </div>
                     </div>
                 <?php endif; ?>
+            </div>
         </div>
     </div>
-</div>
 
-    <div class="col-lg-4">
+    <!-- Top Clients -->
+    <div class="col-12 col-lg-4 dashboard-widget" data-widget-id="top_clients">
+        <div class="dashboard-widget-controls">
+            <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
+                <i class="bi bi-grip-vertical"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
+                <i class="bi bi-dash-lg"></i>
+            </button>
+            <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-star me-2"></i>Top Clients</h5>
@@ -420,46 +498,363 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
 
 <!-- Dashboard uses global styles from app.css -->
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Make cards clickable
-    const clickableCards = document.querySelectorAll('.clickable-card');
-    
-    clickableCards.forEach(card => {
-        card.addEventListener('click', function() {
-            const href = this.getAttribute('data-href');
-            if (href) {
-                // Add a subtle animation before navigation
-                this.style.transform = 'scale(0.98)';
-                setTimeout(() => {
-                    window.location.href = href;
-                }, 100);
+(function(){
+    const savedLayoutRaw = <?= json_encode($data['dashboard_layout'] ?? '') ?>;
+    const csrfToken = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;
+    const saveUrl = '/dashboard/saveLayout';
+    const allowedWidgetIds = ['stats','plan_today','quick_actions','my_tasks','recent_activity','top_clients'];
+    const allowedSpans = [3, 4, 6, 8, 12]; // Bootstrap col-lg-*
+
+    function parseSavedLayout(raw) {
+        const out = { order: null, sizes: {} };
+        if (!raw) return out;
+
+        let parsed = raw;
+        if (typeof raw === 'string') {
+            try {
+                parsed = JSON.parse(raw);
+            } catch (e) {
+                parsed = null;
+            }
+        }
+
+        if (Array.isArray(parsed)) {
+            out.order = parsed;
+            return out;
+        }
+
+        if (parsed && typeof parsed === 'object') {
+            if (Array.isArray(parsed.order)) out.order = parsed.order;
+            if (parsed.sizes && typeof parsed.sizes === 'object') out.sizes = parsed.sizes;
+        }
+
+        return out;
+    }
+
+    function getCurrentOrder(container) {
+        return Array.from(container.querySelectorAll('.dashboard-widget'))
+            .map(el => el.getAttribute('data-widget-id'))
+            .filter(Boolean);
+    }
+
+    function getLgSpan(el) {
+        const cls = Array.from(el.classList).find(c => /^col-lg-\d+$/.test(c));
+        if (!cls) return 12;
+        const n = parseInt(cls.replace('col-lg-', ''), 10);
+        return Number.isFinite(n) ? n : 12;
+    }
+
+    function normalizeSpan(span) {
+        const n = parseInt(String(span), 10);
+        if (!Number.isFinite(n)) return 12;
+        if (allowedSpans.includes(n)) return n;
+        // Snap to nearest allowed span
+        let best = allowedSpans[allowedSpans.length - 1];
+        let bestDist = Infinity;
+        allowedSpans.forEach(s => {
+            const dist = Math.abs(s - n);
+            if (dist < bestDist) {
+                best = s;
+                bestDist = dist;
             }
         });
-        
-        // Add keyboard accessibility
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('role', 'button');
-        
-        card.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                this.click();
+        return best;
+    }
+
+    function setLgSpan(el, span) {
+        const normalized = normalizeSpan(span);
+        // remove any existing col-lg-* classes
+        Array.from(el.classList).forEach(c => {
+            if (/^col-lg-\d+$/.test(c)) el.classList.remove(c);
+        });
+        el.classList.add('col-lg-' + normalized);
+        el.setAttribute('data-lg-span', String(normalized));
+    }
+
+    function getCurrentSizes(container) {
+        const sizes = {};
+        container.querySelectorAll('.dashboard-widget').forEach(el => {
+            const id = el.getAttribute('data-widget-id');
+            if (!id) return;
+            sizes[id] = normalizeSpan(getLgSpan(el));
+        });
+        return sizes;
+    }
+
+    function applyOrder(container, order) {
+        if (!Array.isArray(order) || order.length === 0) return;
+        const byId = {};
+        container.querySelectorAll('.dashboard-widget').forEach(el => {
+            const id = el.getAttribute('data-widget-id');
+            if (id) byId[id] = el;
+        });
+
+        order.forEach(id => {
+            if (byId[id]) {
+                container.appendChild(byId[id]);
+                delete byId[id];
             }
         });
-        
-        // Add hover effect for keyboard focus
-        card.addEventListener('focus', function() {
-            this.style.transform = 'translateY(-5px)';
-            this.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+
+        // Append any new widgets not in saved order
+        Object.keys(byId).forEach(id => container.appendChild(byId[id]));
+    }
+
+    function applySizes(container, sizes) {
+        if (!sizes || typeof sizes !== 'object') return;
+        container.querySelectorAll('.dashboard-widget').forEach(el => {
+            const id = el.getAttribute('data-widget-id');
+            if (!id) return;
+            if (!Object.prototype.hasOwnProperty.call(sizes, id)) return;
+            setLgSpan(el, sizes[id]);
         });
-        
-        card.addEventListener('blur', function() {
-            this.style.transform = '';
-            this.style.boxShadow = '';
+    }
+
+    function updateResizeButtonsState(widget) {
+        const span = normalizeSpan(getLgSpan(widget));
+        const idx = allowedSpans.indexOf(span);
+        const smallerBtn = widget.querySelector('.dashboard-resize-btn[data-resize="smaller"]');
+        const biggerBtn = widget.querySelector('.dashboard-resize-btn[data-resize="bigger"]');
+        if (smallerBtn) {
+            smallerBtn.disabled = idx <= 0;
+            smallerBtn.title = 'Make smaller (currently ' + span + '/12)';
+        }
+        if (biggerBtn) {
+            biggerBtn.disabled = idx < 0 || idx >= allowedSpans.length - 1;
+            biggerBtn.title = 'Make bigger (currently ' + span + '/12)';
+        }
+        const dragBtn = widget.querySelector('.dashboard-drag-handle');
+        if (dragBtn) {
+            dragBtn.title = 'Drag to move (width ' + span + '/12)';
+        }
+    }
+
+    function updateAllResizeButtonsState(container) {
+        container.querySelectorAll('.dashboard-widget').forEach(el => updateResizeButtonsState(el));
+    }
+
+    function setCustomizeMode(enabled, sortable) {
+        window.__dashboardCustomizeMode = !!enabled;
+        document.body.classList.toggle('dashboard-customize-mode', !!enabled);
+        const resetBtn = document.getElementById('dashboardResetLayout');
+        if (resetBtn) resetBtn.classList.toggle('d-none', !enabled);
+        if (sortable) sortable.option('disabled', !enabled);
+
+        const toggleBtn = document.getElementById('dashboardCustomizeToggle');
+        if (toggleBtn) {
+            if (enabled) {
+                toggleBtn.classList.remove('btn-outline-secondary');
+                toggleBtn.classList.add('btn-primary');
+                toggleBtn.innerHTML = '<i class="bi bi-check2 me-1"></i>Done';
+            } else {
+                toggleBtn.classList.add('btn-outline-secondary');
+                toggleBtn.classList.remove('btn-primary');
+                toggleBtn.innerHTML = '<i class="bi bi-arrows-move me-1"></i>Customize';
+            }
+        }
+    }
+
+    function setStatus(text) {
+        const el = document.getElementById('dashboardLayoutStatus');
+        if (!el) return;
+        if (!text) {
+            el.classList.add('d-none');
+            el.textContent = '';
+            return;
+        }
+        el.textContent = text;
+        el.classList.remove('d-none');
+    }
+
+    let saveTimer = null;
+    function saveLayout(order, sizes) {
+        // Filter + de-dupe client-side too (defense in depth)
+        const seen = new Set();
+        const filtered = [];
+        (order || []).forEach(id => {
+            if (typeof id !== 'string') return;
+            if (!allowedWidgetIds.includes(id)) return;
+            if (seen.has(id)) return;
+            seen.add(id);
+            filtered.push(id);
         });
+
+        const sizePayload = {};
+        if (sizes && typeof sizes === 'object') {
+            Object.keys(sizes).forEach(id => {
+                if (!allowedWidgetIds.includes(id)) return;
+                sizePayload[id] = normalizeSpan(sizes[id]);
+            });
+        }
+
+        setStatus('Saving…');
+        fetch(saveUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ order: filtered, sizes: sizePayload, csrf_token: csrfToken })
+        })
+        .then(r => r.json().catch(() => null))
+        .then(j => {
+            if (j && j.success) {
+                setStatus('Saved');
+                setTimeout(() => setStatus(''), 1200);
+            } else {
+                setStatus('Save failed');
+                setTimeout(() => setStatus(''), 2500);
+            }
+        })
+        .catch(() => {
+            setStatus('Save failed');
+            setTimeout(() => setStatus(''), 2500);
+        });
+    }
+
+    function scheduleSave(container) {
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+            saveLayout(getCurrentOrder(container), getCurrentSizes(container));
+        }, 250);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('dashboardWidgets');
+        if (!container) return;
+
+        // Apply saved order + sizes before wiring interactions
+        const savedLayout = parseSavedLayout(savedLayoutRaw);
+        if (savedLayout.order) {
+            applyOrder(container, savedLayout.order);
+        }
+        applySizes(container, savedLayout.sizes);
+        updateAllResizeButtonsState(container);
+
+        // Make compact stat cards clickable (skip while customizing)
+        const clickableCards = document.querySelectorAll('.clickable-card');
+        clickableCards.forEach(card => {
+            card.addEventListener('click', function() {
+                if (window.__dashboardCustomizeMode) return;
+                const href = this.getAttribute('data-href');
+                if (href) {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        window.location.href = href;
+                    }, 100);
+                }
+            });
+
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('role', 'button');
+
+            card.addEventListener('keydown', function(e) {
+                if (window.__dashboardCustomizeMode) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.click();
+                }
+            });
+
+            card.addEventListener('focus', function() {
+                if (window.__dashboardCustomizeMode) return;
+                this.style.transform = 'translateY(-5px)';
+                this.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+            });
+
+            card.addEventListener('blur', function() {
+                this.style.transform = '';
+                this.style.boxShadow = '';
+            });
+        });
+
+        // Resize buttons (only in customize mode)
+        container.addEventListener('click', function(e) {
+            const btn = e.target.closest('.dashboard-resize-btn');
+            if (!btn) return;
+            if (!window.__dashboardCustomizeMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            const widget = btn.closest('.dashboard-widget');
+            if (!widget) return;
+
+            const dir = btn.getAttribute('data-resize');
+            const current = normalizeSpan(getLgSpan(widget));
+            const idx = Math.max(0, allowedSpans.indexOf(current));
+            let next = current;
+            if (dir === 'smaller') {
+                next = allowedSpans[Math.max(0, idx - 1)];
+            } else if (dir === 'bigger') {
+                next = allowedSpans[Math.min(allowedSpans.length - 1, idx + 1)];
+            }
+
+            setLgSpan(widget, next);
+            updateResizeButtonsState(widget);
+            scheduleSave(container);
+        });
+
+        // Sortable widgets (disabled by default until Customize is clicked)
+        let sortable = null;
+        if (typeof Sortable !== 'undefined') {
+            sortable = new Sortable(container, {
+                animation: 150,
+                handle: '.dashboard-drag-handle',
+                draggable: '.dashboard-widget',
+                ghostClass: 'dashboard-ghost',
+                chosenClass: 'dashboard-chosen',
+                onEnd: function() {
+                    if (!window.__dashboardCustomizeMode) return;
+                    scheduleSave(container);
+                }
+            });
+            sortable.option('disabled', true);
+        }
+
+        const toggleBtn = document.getElementById('dashboardCustomizeToggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function() {
+                const enabled = !document.body.classList.contains('dashboard-customize-mode');
+                setCustomizeMode(enabled, sortable);
+                updateAllResizeButtonsState(container);
+            });
+        }
+
+        const resetBtn = document.getElementById('dashboardResetLayout');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                if (!confirm('Reset your dashboard layout back to default?')) return;
+                setStatus('Resetting…');
+                fetch(saveUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ action: 'reset', csrf_token: csrfToken })
+                })
+                .then(r => r.json().catch(() => null))
+                .then(j => {
+                    if (j && j.success) {
+                        window.location.reload();
+                    } else {
+                        setStatus('Reset failed');
+                        setTimeout(() => setStatus(''), 2500);
+                    }
+                })
+                .catch(() => {
+                    setStatus('Reset failed');
+                    setTimeout(() => setStatus(''), 2500);
+                });
+            });
+        }
+
+        // Ensure customize starts off
+        setCustomizeMode(false, sortable);
     });
-});
+})();
 </script>
 
 <?php require VIEWSPATH . '/partials/footer.php'; ?> 

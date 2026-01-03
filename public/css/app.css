@@ -4102,6 +4102,77 @@ body {
     color: rgba(255,255,255,0.8);
 }
 
+/* ================================
+   Dashboard: Customizable Layout
+   ================================ */
+.dashboard-widgets .dashboard-widget {
+    position: relative;
+}
+
+.dashboard-widget-controls {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 5;
+    gap: 6px;
+}
+
+.dashboard-widget-controls .dashboard-drag-handle,
+.dashboard-widget-controls .dashboard-resize-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: #6c757d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+}
+
+.dashboard-widget-controls .dashboard-drag-handle {
+    cursor: grab;
+}
+
+.dashboard-widget-controls .dashboard-resize-btn {
+    cursor: pointer;
+}
+
+.dashboard-widget-controls button:hover {
+    background: rgba(255, 255, 255, 1);
+}
+
+[data-bs-theme="dark"] .dashboard-widget-controls .dashboard-drag-handle,
+[data-bs-theme="dark"] .dashboard-widget-controls .dashboard-resize-btn {
+    background: rgba(33, 37, 41, 0.92);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .dashboard-widget-controls button:hover {
+    background: rgba(33, 37, 41, 1);
+}
+
+.dashboard-customize-mode .dashboard-widget-controls {
+    display: inline-flex;
+}
+
+.dashboard-customize-mode .dashboard-widget {
+    outline: 2px dashed rgba(13, 110, 253, 0.25);
+    outline-offset: 6px;
+}
+
+.dashboard-ghost {
+    opacity: 0.65;
+}
+
+.dashboard-chosen {
+    outline-color: rgba(13, 110, 253, 0.55);
+}
+
 /* ================================================
    User Theme: Optional Card Header Theming
    ================================ */
