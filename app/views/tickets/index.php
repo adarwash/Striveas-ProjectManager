@@ -87,6 +87,21 @@
         </div>
     </div>
 
+    <!-- Pinnable Card: My Open Tickets -->
+    <?php if (!empty($data['pinnable_cards']['tickets.my_open'])): ?>
+        <?php
+            $pc = $data['pinnable_cards']['tickets.my_open'];
+            $cardId = (string)($pc['card_id'] ?? 'tickets.my_open');
+            $widgetId = (string)($pc['widget_id'] ?? ('card:' . $cardId));
+            $isPinned = !empty($pc['is_pinned']);
+            $cardTitle = (string)($pc['title'] ?? 'My Open Tickets');
+            $tickets = is_array($pc['tickets'] ?? null) ? $pc['tickets'] : [];
+            $context = 'tickets';
+            require VIEWSPATH . '/tickets/partials/pinnable_my_open_tickets.php';
+        ?>
+        <div class="mb-4"></div>
+    <?php endif; ?>
+
     <!-- Filters and Search -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white">

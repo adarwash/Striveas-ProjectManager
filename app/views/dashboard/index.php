@@ -29,6 +29,12 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         <button type="button" class="btn btn-sm btn-outline-secondary" id="dashboardCustomizeToggle">
             <i class="bi bi-arrows-move me-1"></i>Customize
         </button>
+        <button type="button" class="btn btn-sm btn-outline-primary d-none" id="dashboardAddDivider">
+            <i class="bi bi-hr me-1"></i>Add Divider
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-primary d-none" id="dashboardAddTitle">
+            <i class="bi bi-type-h1 me-1"></i>Add Title
+        </button>
         <button type="button" class="btn btn-sm btn-outline-danger d-none" id="dashboardResetLayout">
             <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
         </button>
@@ -48,10 +54,16 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 <i class="bi bi-eye-slash"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
-                <i class="bi bi-dash-lg"></i>
+                <i class="bi bi-arrow-left-short"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
-                <i class="bi bi-plus-lg"></i>
+                <i class="bi bi-arrow-right-short"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="shorter" aria-label="Make shorter" title="Make shorter">
+                <i class="bi bi-arrows-collapse"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="taller" aria-label="Make taller" title="Make taller">
+                <i class="bi bi-arrows-expand"></i>
             </button>
         </div>
         <!-- Compact Stats Overview -->
@@ -157,10 +169,16 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 <i class="bi bi-eye-slash"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
-                <i class="bi bi-dash-lg"></i>
+                <i class="bi bi-arrow-left-short"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
-                <i class="bi bi-plus-lg"></i>
+                <i class="bi bi-arrow-right-short"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="shorter" aria-label="Make shorter" title="Make shorter">
+                <i class="bi bi-arrows-collapse"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="taller" aria-label="Make taller" title="Make taller">
+                <i class="bi bi-arrows-expand"></i>
             </button>
         </div>
         <div class="card h-100 border-0 shadow-sm">
@@ -262,10 +280,16 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 <i class="bi bi-eye-slash"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
-                <i class="bi bi-dash-lg"></i>
+                <i class="bi bi-arrow-left-short"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
-                <i class="bi bi-plus-lg"></i>
+                <i class="bi bi-arrow-right-short"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="shorter" aria-label="Make shorter" title="Make shorter">
+                <i class="bi bi-arrows-collapse"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="taller" aria-label="Make taller" title="Make taller">
+                <i class="bi bi-arrows-expand"></i>
             </button>
         </div>
         <div class="card h-100 shadow-sm quick-actions-card">
@@ -296,10 +320,16 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 <i class="bi bi-eye-slash"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
-                <i class="bi bi-dash-lg"></i>
+                <i class="bi bi-arrow-left-short"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
-                <i class="bi bi-plus-lg"></i>
+                <i class="bi bi-arrow-right-short"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="shorter" aria-label="Make shorter" title="Make shorter">
+                <i class="bi bi-arrows-collapse"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="taller" aria-label="Make taller" title="Make taller">
+                <i class="bi bi-arrows-expand"></i>
             </button>
         </div>
         <div class="card">
@@ -395,10 +425,16 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 <i class="bi bi-eye-slash"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
-                <i class="bi bi-dash-lg"></i>
+                <i class="bi bi-arrow-left-short"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
-                <i class="bi bi-plus-lg"></i>
+                <i class="bi bi-arrow-right-short"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="shorter" aria-label="Make shorter" title="Make shorter">
+                <i class="bi bi-arrows-collapse"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="taller" aria-label="Make taller" title="Make taller">
+                <i class="bi bi-arrows-expand"></i>
             </button>
         </div>
         <div class="card">
@@ -470,10 +506,16 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 <i class="bi bi-eye-slash"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
-                <i class="bi bi-dash-lg"></i>
+                <i class="bi bi-arrow-left-short"></i>
             </button>
             <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
-                <i class="bi bi-plus-lg"></i>
+                <i class="bi bi-arrow-right-short"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="shorter" aria-label="Make shorter" title="Make shorter">
+                <i class="bi bi-arrows-collapse"></i>
+            </button>
+            <button type="button" class="dashboard-height-btn" data-height="taller" aria-label="Make taller" title="Make taller">
+                <i class="bi bi-arrows-expand"></i>
             </button>
         </div>
         <div class="card">
@@ -515,6 +557,62 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             </div>
         </div>
     </div>
+
+    <!-- Pinned Cards (from other modules) -->
+    <?php if (!empty($data['pinned_cards'])): ?>
+        <?php foreach ($data['pinned_cards'] as $pc): ?>
+            <?php
+                $pcWidgetId = (string)($pc['widget_id'] ?? '');
+                $pcCardId = (string)($pc['card_id'] ?? '');
+                $pcView = (string)($pc['view'] ?? '');
+                $pcTitle = (string)($pc['title'] ?? $pcCardId);
+                $pcData = is_array($pc['data'] ?? null) ? $pc['data'] : [];
+                $pcDefaultSpan = (int)($pc['default_span_lg'] ?? 6);
+                if ($pcDefaultSpan <= 0) { $pcDefaultSpan = 6; }
+            ?>
+            <div class="col-12 col-lg-<?= (int)$pcDefaultSpan ?> dashboard-widget" data-widget-id="<?= htmlspecialchars($pcWidgetId) ?>">
+                <div class="dashboard-widget-controls">
+                    <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
+                        <i class="bi bi-grip-vertical"></i>
+                    </button>
+                    <button type="button" class="dashboard-hide-btn" aria-label="Hide widget" title="Hide widget">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                    <button type="button" class="dashboard-resize-btn" data-resize="smaller" aria-label="Make smaller" title="Make smaller">
+                        <i class="bi bi-arrow-left-short"></i>
+                    </button>
+                    <button type="button" class="dashboard-resize-btn" data-resize="bigger" aria-label="Make bigger" title="Make bigger">
+                        <i class="bi bi-arrow-right-short"></i>
+                    </button>
+                    <button type="button" class="dashboard-height-btn" data-height="shorter" aria-label="Make shorter" title="Make shorter">
+                        <i class="bi bi-arrows-collapse"></i>
+                    </button>
+                    <button type="button" class="dashboard-height-btn" data-height="taller" aria-label="Make taller" title="Make taller">
+                        <i class="bi bi-arrows-expand"></i>
+                    </button>
+                </div>
+                <?php
+                    // Render using the existing module card partial
+                    $cardId = $pcCardId;
+                    $widgetId = $pcWidgetId;
+                    $isPinned = true;
+                    $context = 'dashboard';
+                    $cardTitle = $pcTitle;
+                    // Provide variables from card data (e.g. $tickets)
+                    if (is_array($pcData)) {
+                        // IMPORTANT: pinned card partials rely on their data variables (e.g. $client).
+                        // Using EXTR_SKIP can leave stale variables from other dashboard sections (e.g. Top Clients).
+                        extract($pcData, EXTR_OVERWRITE);
+                    }
+                    if (!empty($pcView) && file_exists(VIEWSPATH . '/' . $pcView . '.php')) {
+                        require VIEWSPATH . '/' . $pcView . '.php';
+                    } else {
+                        echo '<div class="card border-0 shadow-sm"><div class="card-body text-muted">Pinned card unavailable.</div></div>';
+                    }
+                ?>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
 </div>
 
 <!-- Manage Widgets Modal (show/hide) -->
@@ -560,6 +658,24 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                         <span class="fw-semibold">Top Clients</span>
                         <span class="text-muted small ms-auto">Most tickets by client</span>
                     </label>
+
+                    <?php if (!empty($data['pinned_cards'])): ?>
+                        <div class="list-group-item bg-light small text-muted fw-semibold text-uppercase">
+                            Pinned Cards
+                        </div>
+                        <?php foreach ($data['pinned_cards'] as $pc): ?>
+                            <?php
+                                $pcWidgetId = (string)($pc['widget_id'] ?? '');
+                                $pcTitle = (string)($pc['title'] ?? ($pc['card_id'] ?? 'Pinned card'));
+                                $pcDesc = (string)($pc['description'] ?? '');
+                            ?>
+                            <label class="list-group-item d-flex align-items-center gap-2">
+                                <input class="form-check-input m-0 dashboard-widget-toggle" type="checkbox" data-widget-id="<?= htmlspecialchars($pcWidgetId) ?>">
+                                <span class="fw-semibold"><?= htmlspecialchars($pcTitle) ?></span>
+                                <span class="text-muted small ms-auto"><?= htmlspecialchars($pcDesc) ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="modal-footer">
@@ -569,19 +685,59 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     </div>
 </div>
 
+<!-- Dashboard Title Editor Modal -->
+<div class="modal fade" id="dashboardTitleModal" tabindex="-1" aria-labelledby="dashboardTitleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dashboardTitleModalLabel">Title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger d-none" id="dashboardTitleModalError"></div>
+                <div id="dashboardTitleEditor" style="height: 160px;"></div>
+                <div class="small text-muted mt-2">Formatting like bold/italic/underline and links is supported.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="dashboardTitleModalSave">Save Title</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Dashboard uses global styles from app.css -->
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 <script>
 (function(){
     const savedLayoutRaw = <?= json_encode($data['dashboard_layout'] ?? '') ?>;
     const csrfToken = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;
     const saveUrl = '/dashboard/saveLayout';
-    const allowedWidgetIds = ['stats','plan_today','quick_actions','my_tasks','recent_activity','top_clients'];
+    let allowedWidgetIds = ['stats','plan_today','quick_actions','my_tasks','recent_activity','top_clients'];
     const allowedSpans = [3, 4, 6, 8, 12]; // Bootstrap col-lg-*
+    const allowedHeights = { min: 160, max: 2000, step: 120 };
+    // Grouping/stacking (no masonry resizing/positioning)
+
+    // Helper functions for divider/title widgets (must be in outer scope for saveLayout)
+    function isDividerWidget(id) {
+        return typeof id === 'string' && id.startsWith('divider-');
+    }
+
+    function isTitleWidget(id) {
+        return typeof id === 'string' && id.startsWith('title-');
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
 
     function parseSavedLayout(raw) {
-        const out = { order: null, sizes: {}, hidden: [] };
+        const out = { order: null, sizes: {}, hidden: [], heights: {}, titles: {}, divider_thickness: {}, title_size: {} };
         if (!raw) return out;
 
         let parsed = raw;
@@ -602,15 +758,115 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             if (Array.isArray(parsed.order)) out.order = parsed.order;
             if (parsed.sizes && typeof parsed.sizes === 'object') out.sizes = parsed.sizes;
             if (Array.isArray(parsed.hidden)) out.hidden = parsed.hidden;
+            if (parsed.heights && typeof parsed.heights === 'object') out.heights = parsed.heights;
+            if (parsed.titles && typeof parsed.titles === 'object') out.titles = parsed.titles;
+            if (parsed.divider_thickness && typeof parsed.divider_thickness === 'object') out.divider_thickness = parsed.divider_thickness;
+            if (parsed.title_size && typeof parsed.title_size === 'object') out.title_size = parsed.title_size;
         }
 
         return out;
     }
 
+    function setSpanVar(el, span) {
+        const n = normalizeSpan(span);
+        el.style.setProperty('--dashboard-span', String(n));
+    }
+
+    function applySpanVars(container) {
+        container.querySelectorAll('.dashboard-widget').forEach(el => {
+            setSpanVar(el, getLgSpan(el));
+        });
+    }
+
+    function getWidgetHeightPx(widget) {
+        const raw = widget.getAttribute('data-height-px') || '';
+        const n = parseInt(raw, 10);
+        return Number.isFinite(n) ? n : 0;
+    }
+
+    function setWidgetHeightPx(widget, heightPx) {
+        const n = parseInt(String(heightPx), 10);
+        if (!Number.isFinite(n) || n <= 0) {
+            widget.removeAttribute('data-height-px');
+            widget.classList.remove('dashboard-widget-fixed-height');
+            widget.style.height = '';
+            return;
+        }
+        const bounded = Math.max(allowedHeights.min, Math.min(allowedHeights.max, n));
+        widget.setAttribute('data-height-px', String(bounded));
+        widget.classList.add('dashboard-widget-fixed-height');
+        widget.style.height = bounded + 'px';
+    }
+
+
+    function getCurrentHeights(container) {
+        const heights = {};
+        container.querySelectorAll('.dashboard-widget').forEach(el => {
+            const id = el.getAttribute('data-widget-id');
+            if (!id) return;
+            const h = getWidgetHeightPx(el);
+            if (h > 0) heights[id] = h;
+        });
+        return heights;
+    }
+
+    function applyHeights(container, heights) {
+        if (!heights || typeof heights !== 'object') return;
+        container.querySelectorAll('.dashboard-widget').forEach(el => {
+            const id = el.getAttribute('data-widget-id');
+            if (!id) return;
+            if (!Object.prototype.hasOwnProperty.call(heights, id)) return;
+            const h = parseInt(String(heights[id]), 10);
+            if (!Number.isFinite(h) || h <= 0) {
+                setWidgetHeightPx(el, 0);
+                return;
+            }
+            setWidgetHeightPx(el, h);
+        });
+    }
+
+    // Masonry positioning not used.
+
     function getCurrentOrder(container) {
         return Array.from(container.querySelectorAll('.dashboard-widget'))
             .map(el => el.getAttribute('data-widget-id'))
             .filter(Boolean);
+    }
+
+    function getCurrentTitles(container) {
+        const titles = {};
+        container.querySelectorAll('.dashboard-title-widget').forEach(w => {
+            const id = w.getAttribute('data-widget-id');
+            const textEl = w.querySelector('.dashboard-title-text');
+            if (id && textEl) {
+                titles[id] = (textEl.innerHTML || '').trim() || 'Section Title';
+            }
+        });
+        return titles;
+    }
+
+    function getCurrentDividerThickness(container) {
+        const out = {};
+        container.querySelectorAll('.dashboard-divider-widget').forEach(w => {
+            const id = w.getAttribute('data-widget-id');
+            if (!id) return;
+            let t = parseInt(w.getAttribute('data-divider-thickness') || '1', 10);
+            if (![1, 2, 3].includes(t)) t = 1;
+            out[id] = t;
+        });
+        return out;
+    }
+
+    function getCurrentTitleSizes(container) {
+        const out = {};
+        container.querySelectorAll('.dashboard-title-widget').forEach(w => {
+            const id = w.getAttribute('data-widget-id');
+            if (!id) return;
+            let s = parseInt(w.getAttribute('data-title-size') || '2', 10);
+            if (![1, 2, 3].includes(s)) s = 2;
+            out[id] = s;
+        });
+        return out;
     }
 
     function getLgSpan(el) {
@@ -645,6 +901,7 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         });
         el.classList.add('col-lg-' + normalized);
         el.setAttribute('data-lg-span', String(normalized));
+        setSpanVar(el, normalized);
     }
 
     function getCurrentSizes(container) {
@@ -686,7 +943,7 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     function applyOrder(container, order) {
         if (!Array.isArray(order) || order.length === 0) return;
         const byId = {};
-        container.querySelectorAll('.dashboard-widget').forEach(el => {
+        container.querySelectorAll(':scope > .dashboard-widget').forEach(el => {
             const id = el.getAttribute('data-widget-id');
             if (id) byId[id] = el;
         });
@@ -740,6 +997,9 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         const idx = allowedSpans.indexOf(span);
         const smallerBtn = widget.querySelector('.dashboard-resize-btn[data-resize="smaller"]');
         const biggerBtn = widget.querySelector('.dashboard-resize-btn[data-resize="bigger"]');
+        const shorterBtn = widget.querySelector('.dashboard-height-btn[data-height="shorter"]');
+        const tallerBtn = widget.querySelector('.dashboard-height-btn[data-height="taller"]');
+        const heightPx = getWidgetHeightPx(widget); // 0 = auto
         if (smallerBtn) {
             smallerBtn.disabled = idx <= 0;
             smallerBtn.title = 'Make smaller (currently ' + span + '/12)';
@@ -748,9 +1008,17 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             biggerBtn.disabled = idx < 0 || idx >= allowedSpans.length - 1;
             biggerBtn.title = 'Make bigger (currently ' + span + '/12)';
         }
+        if (shorterBtn) {
+            shorterBtn.disabled = heightPx > 0 && heightPx <= allowedHeights.min;
+            shorterBtn.title = 'Make shorter (height ' + (heightPx > 0 ? (heightPx + 'px') : 'auto') + ')';
+        }
+        if (tallerBtn) {
+            tallerBtn.disabled = heightPx > 0 && heightPx >= allowedHeights.max;
+            tallerBtn.title = 'Make taller (height ' + (heightPx > 0 ? (heightPx + 'px') : 'auto') + ')';
+        }
         const dragBtn = widget.querySelector('.dashboard-drag-handle');
         if (dragBtn) {
-            dragBtn.title = 'Drag to move (width ' + span + '/12)';
+            dragBtn.title = 'Drag to move (width ' + span + '/12' + (heightPx > 0 ? (', height ' + heightPx + 'px') : '') + ')';
         }
     }
 
@@ -792,7 +1060,7 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     }
 
     let saveTimer = null;
-    function saveLayout(order, sizes, hidden) {
+    function saveLayout(order, sizes, hidden, heights, titles, dividerThickness, titleSizes) {
         // Filter + de-dupe client-side too (defense in depth)
         const seen = new Set();
         const filtered = [];
@@ -824,6 +1092,51 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             });
         }
 
+        const heightPayload = {};
+        if (heights && typeof heights === 'object') {
+            Object.keys(heights).forEach(id => {
+                if (!allowedWidgetIds.includes(id)) return;
+                const h = parseInt(String(heights[id]), 10);
+                if (!Number.isFinite(h) || h <= 0) return;
+                if (h < allowedHeights.min || h > allowedHeights.max) return;
+                heightPayload[id] = h;
+            });
+        }
+
+        // Title text for title widgets
+        const titlesPayload = {};
+        if (titles && typeof titles === 'object') {
+            Object.keys(titles).forEach(id => {
+                if (!allowedWidgetIds.includes(id)) return;
+                if (!isTitleWidget(id)) return;
+                titlesPayload[id] = String(titles[id]).substring(0, 4000); // limit length (rich HTML)
+            });
+        }
+
+        // Divider thickness for divider widgets (1/2/3)
+        const dividerThicknessPayload = {};
+        if (dividerThickness && typeof dividerThickness === 'object') {
+            Object.keys(dividerThickness).forEach(id => {
+                if (!allowedWidgetIds.includes(id)) return;
+                if (!isDividerWidget(id)) return;
+                const t = parseInt(String(dividerThickness[id]), 10);
+                if (![1, 2, 3].includes(t)) return;
+                dividerThicknessPayload[id] = t;
+            });
+        }
+
+        // Title sizes (1/2/3)
+        const titleSizesPayload = {};
+        if (titleSizes && typeof titleSizes === 'object') {
+            Object.keys(titleSizes).forEach(id => {
+                if (!allowedWidgetIds.includes(id)) return;
+                if (!isTitleWidget(id)) return;
+                const s = parseInt(String(titleSizes[id]), 10);
+                if (![1, 2, 3].includes(s)) return;
+                titleSizesPayload[id] = s;
+            });
+        }
+
         setStatus('Saving…');
         fetch(saveUrl, {
             method: 'POST',
@@ -831,7 +1144,16 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify({ order: filtered, sizes: sizePayload, hidden: hiddenPayload, csrf_token: csrfToken })
+            body: JSON.stringify({
+                order: filtered,
+                sizes: sizePayload,
+                hidden: hiddenPayload,
+                heights: heightPayload,
+                titles: titlesPayload,
+                divider_thickness: dividerThicknessPayload,
+                title_size: titleSizesPayload,
+                csrf_token: csrfToken
+            })
         })
         .then(r => r.json().catch(() => null))
         .then(j => {
@@ -852,7 +1174,15 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
     function scheduleSave(container) {
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
-            saveLayout(getCurrentOrder(container), getCurrentSizes(container), getCurrentHidden(container));
+            saveLayout(
+                getCurrentOrder(container),
+                getCurrentSizes(container),
+                getCurrentHidden(container),
+                getCurrentHeights(container),
+                getCurrentTitles(container),
+                getCurrentDividerThickness(container),
+                getCurrentTitleSizes(container)
+            );
         }, 250);
     }
 
@@ -860,12 +1190,311 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         const container = document.getElementById('dashboardWidgets');
         if (!container) return;
 
+        // Allow whatever widgets are actually rendered (base widgets + pinned cards)
+        allowedWidgetIds = Array.from(container.querySelectorAll('.dashboard-widget'))
+            .map(el => el.getAttribute('data-widget-id'))
+            .filter(id => typeof id === 'string' && id.trim() !== '');
+
+        // Generate unique ID for dividers
+        let dividerCounter = Date.now();
+        function generateDividerId() {
+            return 'divider-' + (dividerCounter++);
+        }
+
+        // isDividerWidget is defined in outer scope
+
+        // Create a divider widget element
+        function createDividerWidget(id) {
+            id = id || generateDividerId();
+            const div = document.createElement('div');
+            div.className = 'col-12 dashboard-widget dashboard-divider-widget';
+            div.setAttribute('data-widget-id', id);
+            div.innerHTML = `
+                <div class="dashboard-widget-controls">
+                    <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
+                        <i class="bi bi-grip-vertical"></i>
+                    </button>
+                    <button type="button" class="dashboard-divider-thickness-btn" data-thickness="1" aria-label="Divider thickness 1" title="Thickness 1">1</button>
+                    <button type="button" class="dashboard-divider-thickness-btn" data-thickness="2" aria-label="Divider thickness 2" title="Thickness 2">2</button>
+                    <button type="button" class="dashboard-divider-thickness-btn" data-thickness="3" aria-label="Divider thickness 3" title="Thickness 3">3</button>
+                    <button type="button" class="dashboard-delete-divider-btn" aria-label="Delete divider" title="Delete divider">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <div class="dashboard-divider-line">
+                    <hr>
+                </div>
+            `;
+            return div;
+        }
+
+        function setDividerThickness(widgetEl, thickness) {
+            let t = parseInt(String(thickness), 10);
+            if (![1, 2, 3].includes(t)) t = 1;
+            widgetEl.setAttribute('data-divider-thickness', String(t));
+            widgetEl.querySelectorAll('.dashboard-divider-thickness-btn').forEach(btn => {
+                const bt = parseInt(btn.getAttribute('data-thickness') || '0', 10);
+                btn.classList.toggle('active', bt === t);
+            });
+        }
+
+        // Add a new divider at the end
+        function addDivider() {
+            const id = generateDividerId();
+            const dividerEl = createDividerWidget(id);
+            setDividerThickness(dividerEl, 1);
+            container.appendChild(dividerEl);
+            allowedWidgetIds.push(id);
+            updateAllResizeButtonsState(container);
+            scheduleSave(container);
+        }
+
+        // Delete a divider
+        function deleteDivider(widgetEl) {
+            const id = widgetEl.getAttribute('data-widget-id');
+            if (!id || !isDividerWidget(id)) return;
+            widgetEl.remove();
+            // Remove from allowedWidgetIds
+            const idx = allowedWidgetIds.indexOf(id);
+            if (idx > -1) allowedWidgetIds.splice(idx, 1);
+            scheduleSave(container);
+        }
+
+        // Restore dividers from saved layout
+        function restoreDividers(order, thicknessMap) {
+            if (!Array.isArray(order)) return;
+            thicknessMap = thicknessMap || {};
+            order.forEach(id => {
+                if (isDividerWidget(id)) {
+                    // Only create if not already present
+                    if (!container.querySelector('[data-widget-id="' + id + '"]')) {
+                        const dividerEl = createDividerWidget(id);
+                        setDividerThickness(dividerEl, thicknessMap[id] || 1);
+                        container.appendChild(dividerEl);
+                        if (!allowedWidgetIds.includes(id)) {
+                            allowedWidgetIds.push(id);
+                        }
+                    } else {
+                        const existing = container.querySelector('[data-widget-id="' + id + '"]');
+                        if (existing) {
+                            setDividerThickness(existing, thicknessMap[id] || 1);
+                        }
+                    }
+                }
+            });
+        }
+
+        // ========== TITLE WIDGETS ==========
+        let titleCounter = Date.now();
+        function generateTitleId() {
+            return 'title-' + (titleCounter++);
+        }
+
+        // isTitleWidget is defined in outer scope
+
+        function createTitleWidget(id, text) {
+            id = id || generateTitleId();
+            const div = document.createElement('div');
+            div.className = 'col-12 dashboard-widget dashboard-title-widget';
+            div.setAttribute('data-widget-id', id);
+            div.innerHTML = `
+                <div class="dashboard-widget-controls">
+                    <button type="button" class="dashboard-drag-handle" aria-label="Drag to move" title="Drag to move">
+                        <i class="bi bi-grip-vertical"></i>
+                    </button>
+                    <button type="button" class="dashboard-title-size-btn" data-size="1" aria-label="Title size 1" title="Title size 1">1</button>
+                    <button type="button" class="dashboard-title-size-btn" data-size="2" aria-label="Title size 2" title="Title size 2">2</button>
+                    <button type="button" class="dashboard-title-size-btn" data-size="3" aria-label="Title size 3" title="Title size 3">3</button>
+                    <button type="button" class="dashboard-edit-title-btn" aria-label="Edit title" title="Edit title">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="dashboard-delete-title-btn" aria-label="Delete title" title="Delete title">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <div class="card dashboard-title-card">
+                    <div class="card-body py-3">
+                        <div class="dashboard-title-text"></div>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        // escapeHtml is defined in outer scope
+
+        function setTitleSize(widgetEl, size) {
+            let s = parseInt(String(size), 10);
+            if (![1, 2, 3].includes(s)) s = 2;
+            widgetEl.setAttribute('data-title-size', String(s));
+            widgetEl.querySelectorAll('.dashboard-title-size-btn').forEach(btn => {
+                const bs = parseInt(btn.getAttribute('data-size') || '0', 10);
+                btn.classList.toggle('active', bs === s);
+            });
+        }
+
+        function setTitleHtml(widgetEl, html) {
+            const el = widgetEl.querySelector('.dashboard-title-text');
+            if (!el) return;
+            el.innerHTML = (html || '').trim();
+        }
+
+        function insertNewTitleWidget(html) {
+            const id = generateTitleId();
+            const titleEl = createTitleWidget(id);
+            setTitleSize(titleEl, 2);
+            setTitleHtml(titleEl, html || '');
+            container.appendChild(titleEl);
+            allowedWidgetIds.push(id);
+            updateAllResizeButtonsState(container);
+            scheduleSave(container);
+            return titleEl;
+        }
+
+        function deleteTitle(widgetEl) {
+            const id = widgetEl.getAttribute('data-widget-id');
+            if (!id || !isTitleWidget(id)) return;
+            widgetEl.remove();
+            const idx = allowedWidgetIds.indexOf(id);
+            if (idx > -1) allowedWidgetIds.splice(idx, 1);
+            scheduleSave(container);
+        }
+
+        function restoreTitles(order, titles, sizeMap) {
+            if (!Array.isArray(order)) return;
+            titles = titles || {};
+            sizeMap = sizeMap || {};
+            order.forEach(id => {
+                if (isTitleWidget(id)) {
+                    if (!container.querySelector('[data-widget-id="' + id + '"]')) {
+                        const html = titles[id] || 'Section Title';
+                        const titleEl = createTitleWidget(id);
+                        setTitleSize(titleEl, sizeMap[id] || 2);
+                        setTitleHtml(titleEl, html);
+                        container.appendChild(titleEl);
+                        if (!allowedWidgetIds.includes(id)) {
+                            allowedWidgetIds.push(id);
+                        }
+                    } else {
+                        const existing = container.querySelector('[data-widget-id="' + id + '"]');
+                        if (existing) {
+                            setTitleSize(existing, sizeMap[id] || 2);
+                            setTitleHtml(existing, titles[id] || 'Section Title');
+                        }
+                    }
+                }
+            });
+        }
+
+        // Title rich editor modal (Quill)
+        const titleModalEl = document.getElementById('dashboardTitleModal');
+        const titleModalLabelEl = document.getElementById('dashboardTitleModalLabel');
+        const titleEditorEl = document.getElementById('dashboardTitleEditor');
+        const titleSaveBtnEl = document.getElementById('dashboardTitleModalSave');
+        const titleErrorEl = document.getElementById('dashboardTitleModalError');
+        let titleModal = null;
+        let titleQuill = null;
+        let titleEditingWidget = null;
+        let titleCreateMode = false;
+
+        function hideTitleError() {
+            if (!titleErrorEl) return;
+            titleErrorEl.classList.add('d-none');
+            titleErrorEl.textContent = '';
+        }
+
+        function showTitleError(msg) {
+            if (!titleErrorEl) return;
+            titleErrorEl.textContent = String(msg || 'Please enter a title.');
+            titleErrorEl.classList.remove('d-none');
+        }
+
+        function ensureTitleQuill() {
+            if (!titleEditorEl || !window.Quill) return null;
+            if (titleQuill) return titleQuill;
+            titleQuill = new Quill(titleEditorEl, {
+                theme: 'snow',
+                placeholder: 'Enter title…',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['link'],
+                        ['clean']
+                    ]
+                }
+            });
+            return titleQuill;
+        }
+
+        function openTitleModalForCreate() {
+            if (!titleModalEl || !window.bootstrap) return;
+            const q = ensureTitleQuill();
+            if (!q) return;
+            hideTitleError();
+            titleCreateMode = true;
+            titleEditingWidget = null;
+            if (titleModalLabelEl) titleModalLabelEl.textContent = 'Create Title';
+            q.setText('');
+            titleModal = bootstrap.Modal.getOrCreateInstance(titleModalEl);
+            titleModal.show();
+            setTimeout(() => q.focus(), 150);
+        }
+
+        function openTitleModalForEdit(widgetEl) {
+            if (!titleModalEl || !window.bootstrap) return;
+            const q = ensureTitleQuill();
+            if (!q) return;
+            hideTitleError();
+            titleCreateMode = false;
+            titleEditingWidget = widgetEl || null;
+            if (titleModalLabelEl) titleModalLabelEl.textContent = 'Edit Title';
+            const existingHtml = widgetEl ? (widgetEl.querySelector('.dashboard-title-text')?.innerHTML || '') : '';
+            q.setText('');
+            q.clipboard.dangerouslyPasteHTML(existingHtml || '');
+            titleModal = bootstrap.Modal.getOrCreateInstance(titleModalEl);
+            titleModal.show();
+            setTimeout(() => q.focus(), 150);
+        }
+
+        if (titleSaveBtnEl) {
+            titleSaveBtnEl.addEventListener('click', function() {
+                const q = ensureTitleQuill();
+                if (!q) return;
+                const plain = (q.getText() || '').trim();
+                if (!plain) {
+                    showTitleError('Title content is required.');
+                    return;
+                }
+                hideTitleError();
+                const html = q.root.innerHTML || '';
+                if (titleCreateMode) {
+                    insertNewTitleWidget(html);
+                } else if (titleEditingWidget) {
+                    setTitleHtml(titleEditingWidget, html);
+                    scheduleSave(container);
+                }
+                if (titleModal) titleModal.hide();
+            });
+        }
+
+        if (titleModalEl) {
+            titleModalEl.addEventListener('hidden.bs.modal', function() {
+                hideTitleError();
+                titleEditingWidget = null;
+                titleCreateMode = false;
+            });
+        }
+
         // Apply saved order + sizes before wiring interactions
         const savedLayout = parseSavedLayout(savedLayoutRaw);
+        // Restore any dividers and titles from saved layout first
         if (savedLayout.order) {
+            restoreDividers(savedLayout.order, savedLayout.divider_thickness);
+            restoreTitles(savedLayout.order, savedLayout.titles, savedLayout.title_size);
             applyOrder(container, savedLayout.order);
         }
         applySizes(container, savedLayout.sizes);
+        applyHeights(container, savedLayout.heights);
         applyHidden(container, savedLayout.hidden);
         updateAllResizeButtonsState(container);
         syncWidgetToggles(container);
@@ -918,8 +1547,75 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
             });
         });
 
-        // Resize/hide buttons (only in customize mode)
+        // Resize/hide/delete buttons (only in customize mode)
         container.addEventListener('click', function(e) {
+            // Divider thickness buttons (1/2/3)
+            const thicknessBtn = e.target.closest('.dashboard-divider-thickness-btn');
+            if (thicknessBtn) {
+                if (!window.__dashboardCustomizeMode) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const widget = thicknessBtn.closest('.dashboard-divider-widget');
+                if (!widget) return;
+                const t = parseInt(thicknessBtn.getAttribute('data-thickness') || '1', 10);
+                setDividerThickness(widget, t);
+                scheduleSave(container);
+                return;
+            }
+
+            // Title size buttons (1/2/3)
+            const titleSizeBtn = e.target.closest('.dashboard-title-size-btn');
+            if (titleSizeBtn) {
+                if (!window.__dashboardCustomizeMode) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const widget = titleSizeBtn.closest('.dashboard-title-widget');
+                if (!widget) return;
+                const s = parseInt(titleSizeBtn.getAttribute('data-size') || '2', 10);
+                setTitleSize(widget, s);
+                scheduleSave(container);
+                return;
+            }
+
+            // Delete divider button
+            const deleteDividerBtn = e.target.closest('.dashboard-delete-divider-btn');
+            if (deleteDividerBtn) {
+                if (!window.__dashboardCustomizeMode) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const widget = deleteDividerBtn.closest('.dashboard-widget');
+                if (widget) {
+                    deleteDivider(widget);
+                }
+                return;
+            }
+
+            // Delete title button
+            const deleteTitleBtn = e.target.closest('.dashboard-delete-title-btn');
+            if (deleteTitleBtn) {
+                if (!window.__dashboardCustomizeMode) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const widget = deleteTitleBtn.closest('.dashboard-widget');
+                if (widget) {
+                    deleteTitle(widget);
+                }
+                return;
+            }
+
+            // Edit title button
+            const editTitleBtn = e.target.closest('.dashboard-edit-title-btn');
+            if (editTitleBtn) {
+                if (!window.__dashboardCustomizeMode) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const widget = editTitleBtn.closest('.dashboard-widget');
+                if (widget) {
+                    openTitleModalForEdit(widget);
+                }
+                return;
+            }
+
             const hideBtn = e.target.closest('.dashboard-hide-btn');
             if (hideBtn) {
                 if (!window.__dashboardCustomizeMode) return;
@@ -931,6 +1627,45 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 if (!id || !allowedWidgetIds.includes(id)) return;
                 setWidgetHiddenById(container, id, true);
                 syncWidgetToggles(container);
+                scheduleSave(container);
+                return;
+            }
+
+            const heightBtn = e.target.closest('.dashboard-height-btn');
+            if (heightBtn) {
+                if (!window.__dashboardCustomizeMode) return;
+                e.preventDefault();
+                e.stopPropagation();
+
+                const widget = heightBtn.closest('.dashboard-widget');
+                if (!widget) return;
+                const id = widget.getAttribute('data-widget-id');
+                if (!id || !allowedWidgetIds.includes(id)) return;
+
+                const dir = heightBtn.getAttribute('data-height');
+                const explicit = getWidgetHeightPx(widget); // 0 = auto
+                const currentAuto = widget.getBoundingClientRect().height;
+                const base = explicit > 0
+                    ? explicit
+                    : Math.max(allowedHeights.min, Math.round(currentAuto / allowedHeights.step) * allowedHeights.step);
+
+                let next = base;
+                if (dir === 'taller') {
+                    next = base + allowedHeights.step;
+                    next = Math.min(allowedHeights.max, next);
+                    setWidgetHeightPx(widget, next);
+                } else if (dir === 'shorter') {
+                    next = base - allowedHeights.step;
+                    if (explicit > 0 && next < allowedHeights.min) {
+                        // allow returning to auto height by shrinking below minimum
+                        setWidgetHeightPx(widget, 0);
+                    } else {
+                        next = Math.max(allowedHeights.min, next);
+                        setWidgetHeightPx(widget, next);
+                    }
+                }
+
+                updateResizeButtonsState(widget);
                 scheduleSave(container);
                 return;
             }
@@ -966,6 +1701,7 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
                 animation: 150,
                 handle: '.dashboard-drag-handle',
                 draggable: '.dashboard-widget',
+                group: { name: 'dashboard-layout', pull: true, put: true },
                 ghostClass: 'dashboard-ghost',
                 chosenClass: 'dashboard-chosen',
                 onEnd: function() {
@@ -977,11 +1713,36 @@ $title = 'Dashboard - ' . DEFAULT_TITLE;
         }
 
         const toggleBtn = document.getElementById('dashboardCustomizeToggle');
+        const addDividerBtn = document.getElementById('dashboardAddDivider');
+        const addTitleBtn = document.getElementById('dashboardAddTitle');
         if (toggleBtn) {
             toggleBtn.addEventListener('click', function() {
                 const enabled = !document.body.classList.contains('dashboard-customize-mode');
                 setCustomizeMode(enabled, sortable);
                 updateAllResizeButtonsState(container);
+                // Show/hide Add Divider and Add Title buttons
+                if (addDividerBtn) {
+                    addDividerBtn.classList.toggle('d-none', !enabled);
+                }
+                if (addTitleBtn) {
+                    addTitleBtn.classList.toggle('d-none', !enabled);
+                }
+            });
+        }
+
+        // Add Divider button
+        if (addDividerBtn) {
+            addDividerBtn.addEventListener('click', function() {
+                if (!window.__dashboardCustomizeMode) return;
+                addDivider();
+            });
+        }
+
+        // Add Title button
+        if (addTitleBtn) {
+            addTitleBtn.addEventListener('click', function() {
+                if (!window.__dashboardCustomizeMode) return;
+                openTitleModalForCreate();
             });
         }
 

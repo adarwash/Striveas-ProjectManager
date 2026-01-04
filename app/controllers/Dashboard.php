@@ -188,6 +188,81 @@ class Dashboard extends Controller {
         } catch (Exception $e) {
             $dashboardLayout = '';
         }
+
+        // Pinned cards (cross-module dashboard cards)
+        $pinnedCards = [];
+        $seenPinned = [];
+        try {
+            require_once APPROOT . '/app/services/DashboardCardService.php';
+            require_once APPROOT . '/app/services/DashboardLayoutService.php';
+            $cardService = new DashboardCardService();
+            $layoutService = new DashboardLayoutService($this->userModel);
+            $layout = $layoutService->getLayoutForUser((int)$userId);
+            $order = $layout['order'] ?? [];
+            if (is_array($order)) {
+                $roleIdCtx = isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+                $isAdminCtx = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+                foreach ($order as $wid) {
+                    if (!is_string($wid) || !str_starts_with($wid, 'card:')) {
+                        continue;
+                    }
+                    $parsed = $cardService->parseWidgetId($wid);
+                    if (empty($parsed) || empty($parsed['card_id'])) {
+                        continue;
+                    }
+                    $cardId = (string)$parsed['card_id'];
+                    $params = is_array($parsed['params'] ?? null) ? $parsed['params'] : [];
+                    if ($cardId === '' || !$cardService->isSupported($cardId)) {
+                        continue;
+                    }
+                    if (isset($seenPinned[$wid])) {
+                        continue;
+                    }
+                    $seenPinned[$wid] = true;
+                    $def = $cardService->getDefinition($cardId);
+                    if (empty($def)) {
+                        continue;
+                    }
+                    // Permission check (best-effort)
+                    $perms = $def['permissions'] ?? [];
+                    if (is_array($perms) && !empty($perms)) {
+                        foreach ($perms as $p) {
+                            if (!hasPermission((string)$p)) {
+                                continue 2;
+                            }
+                        }
+                    }
+
+                    $cardLimit = 10;
+                    if ($cardId === 'clients.all') {
+                        $cardLimit = 50;
+                    }
+
+                    $cardData = $cardService->fetchData($cardId, (int)$userId, [
+                        'limit' => $cardLimit,
+                        'role_id' => $roleIdCtx,
+                        'is_admin' => $isAdminCtx,
+                        'params' => $params
+                    ]);
+                    // Dynamic title for parameterized cards
+                    $title = $def['title'] ?? $cardId;
+                    if ($cardId === 'clients.client' && !empty($cardData['client']['name'])) {
+                        $title = (string)$cardData['client']['name'];
+                    }
+                    $pinnedCards[] = [
+                        'card_id' => $cardId,
+                        'widget_id' => $wid,
+                        'title' => $title,
+                        'description' => $def['description'] ?? '',
+                        'view' => $def['view'] ?? '',
+                        'default_span_lg' => (int)($def['default_span_lg'] ?? 6),
+                        'data' => $cardData,
+                    ];
+                }
+            }
+        } catch (Exception $e) {
+            $pinnedCards = [];
+        }
         
         $data = [
             'title' => 'Dashboard',
@@ -203,10 +278,176 @@ class Dashboard extends Controller {
             'stats' => $dashboardStats,
             'top_clients' => $topClients,
             'top_client_range' => $range,
-            'dashboard_layout' => $dashboardLayout
+            'dashboard_layout' => $dashboardLayout,
+            'pinned_cards' => $pinnedCards
         ];
         
         $this->view('dashboard/index', $data);
+    }
+
+    /**
+     * Toggle pin/unpin for a supported dashboard card (AJAX or form POST).
+     * POST JSON: { card_id: "tickets.my_open", csrf_token: "..." }
+     */
+    public function togglePinCard() {
+        $isAjax = (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
+        if ($isAjax) {
+            header('Content-Type: application/json');
+        }
+
+        if (!isLoggedIn()) {
+            if ($isAjax) {
+                echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+                exit;
+            }
+            redirect('users/login');
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            if ($isAjax) {
+                echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+                exit;
+            }
+            redirect('dashboard');
+            return;
+        }
+
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true);
+        if (!is_array($payload)) {
+            $payload = $_POST ?? [];
+        }
+
+        // Ensure CSRF token exists
+        if (!isset($_SESSION['csrf_token'])) {
+            try {
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+            } catch (Exception $e) {
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(8));
+            }
+        }
+
+        $posted = (string)($payload['csrf_token'] ?? '');
+        if ($posted === '' || !hash_equals((string)$_SESSION['csrf_token'], $posted)) {
+            if ($isAjax) {
+                echo json_encode(['success' => false, 'message' => 'CSRF validation failed']);
+                exit;
+            }
+            flash('error', 'Security check failed');
+            redirect('dashboard');
+            return;
+        }
+
+        $cardId = trim((string)($payload['card_id'] ?? ''));
+        if ($cardId === '' || strlen($cardId) > 120) {
+            if ($isAjax) {
+                echo json_encode(['success' => false, 'message' => 'Invalid card']);
+                exit;
+            }
+            redirect('dashboard');
+            return;
+        }
+
+        require_once APPROOT . '/app/services/DashboardCardService.php';
+        require_once APPROOT . '/app/services/DashboardLayoutService.php';
+        $cardService = new DashboardCardService();
+        if (!$cardService->isSupported($cardId)) {
+            if ($isAjax) {
+                echo json_encode(['success' => false, 'message' => 'Card not supported']);
+                exit;
+            }
+            redirect('dashboard');
+            return;
+        }
+
+        $def = $cardService->getDefinition($cardId);
+        $perms = $def['permissions'] ?? [];
+        if (is_array($perms) && !empty($perms)) {
+            foreach ($perms as $p) {
+                if (!hasPermission((string)$p)) {
+                    if ($isAjax) {
+                        echo json_encode(['success' => false, 'message' => 'Permission denied']);
+                        exit;
+                    }
+                    flash('error', 'Permission denied');
+                    redirect('dashboard');
+                    return;
+                }
+            }
+        }
+
+        // Parameters for cards that need them (e.g. specific client)
+        $params = [];
+        if ($cardId === 'clients.client') {
+            $params['client_id'] = isset($payload['client_id']) ? (int)$payload['client_id'] : 0;
+            if ((int)$params['client_id'] <= 0) {
+                if ($isAjax) {
+                    echo json_encode(['success' => false, 'message' => 'Client is required']);
+                    exit;
+                }
+                flash('error', 'Client is required');
+                redirect('clients');
+                return;
+            }
+
+            // Ensure the user can access this client
+            try {
+                $clientModel = $this->model('Client');
+                $roleId = isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+                $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+                if (method_exists($clientModel, 'canAccessClientId') && !$clientModel->canAccessClientId((int)$params['client_id'], $roleId, $isAdmin)) {
+                    if ($isAjax) {
+                        echo json_encode(['success' => false, 'message' => 'Permission denied']);
+                        exit;
+                    }
+                    flash('error', 'Permission denied');
+                    redirect('clients');
+                    return;
+                }
+            } catch (Exception $e) {
+                // ignore; fall through
+            }
+        }
+
+        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $layoutService = new DashboardLayoutService($this->userModel);
+        $widgetId = $cardService->buildWidgetId($cardId, $params);
+
+        $currentlyPinned = $layoutService->isWidgetPinned($userId, $widgetId);
+        $ok = false;
+        $pinned = $currentlyPinned;
+        if ($currentlyPinned) {
+            $ok = $layoutService->unpinWidget($userId, $widgetId);
+            $pinned = false;
+        } else {
+            $ok = $layoutService->pinWidget($userId, $widgetId, $cardService->getDefaultSpanLg($cardId));
+            $pinned = true;
+        }
+
+        if ($isAjax) {
+            echo json_encode([
+                'success' => (bool)$ok,
+                'pinned' => (bool)$pinned,
+                'card_id' => $cardId,
+                'widget_id' => $widgetId
+            ]);
+            exit;
+        }
+
+        if ($ok) {
+            flash('success', $pinned ? 'Pinned to dashboard.' : 'Unpinned from dashboard.');
+        } else {
+            flash('error', 'Failed to update pin.');
+        }
+
+        // Redirect back if possible
+        $back = $_SERVER['HTTP_REFERER'] ?? '';
+        if (!empty($back)) {
+            header('Location: ' . $back);
+            exit;
+        }
+        redirect('dashboard');
     }
 
     /**
@@ -268,19 +509,16 @@ class Dashboard extends Controller {
             return;
         }
 
-        $allowed = [
-            'stats',
-            'plan_today',
-            'quick_actions',
-            'my_tasks',
-            'recent_activity',
-            'top_clients'
-        ];
-
         // Read existing layout so we can merge (order + sizes)
         $existingOrder = [];
         $existingSizes = [];
         $existingHidden = [];
+        $existingMode = 'grid';
+        $existingHeights = [];
+        $existingGroups = [];
+        $existingTitles = [];
+        $existingDividerThickness = [];
+        $existingTitleSizes = [];
         try {
             $userSettings = $this->userModel->getUserSettings($userId);
             $existingRaw = $userSettings['dashboard_layout'] ?? '';
@@ -295,6 +533,12 @@ class Dashboard extends Controller {
                         $existingOrder = is_array($decoded['order'] ?? null) ? $decoded['order'] : [];
                         $existingSizes = is_array($decoded['sizes'] ?? null) ? $decoded['sizes'] : [];
                         $existingHidden = is_array($decoded['hidden'] ?? null) ? $decoded['hidden'] : [];
+                        $existingMode = is_string($decoded['mode'] ?? null) ? (string)$decoded['mode'] : 'grid';
+                        $existingHeights = is_array($decoded['heights'] ?? null) ? $decoded['heights'] : [];
+                        $existingGroups = is_array($decoded['groups'] ?? null) ? $decoded['groups'] : [];
+                        $existingTitles = is_array($decoded['titles'] ?? null) ? $decoded['titles'] : [];
+                        $existingDividerThickness = is_array($decoded['divider_thickness'] ?? null) ? $decoded['divider_thickness'] : [];
+                        $existingTitleSizes = is_array($decoded['title_size'] ?? null) ? $decoded['title_size'] : [];
                     }
                 }
             }
@@ -302,16 +546,84 @@ class Dashboard extends Controller {
             $existingOrder = [];
             $existingSizes = [];
             $existingHidden = [];
+            $existingMode = 'grid';
+            $existingHeights = [];
+            $existingGroups = [];
+            $existingTitles = [];
+            $existingDividerThickness = [];
+            $existingTitleSizes = [];
         }
+
+        $baseAllowed = [
+            'stats',
+            'plan_today',
+            'quick_actions',
+            'my_tasks',
+            'recent_activity',
+            'top_clients'
+        ];
+
+        // Allow pinned card widgets already present in the saved layout (validated against registry)
+        $allowedWidgets = $baseAllowed;
+        try {
+            require_once APPROOT . '/app/services/DashboardCardService.php';
+            $cardSvc = new DashboardCardService();
+            foreach ($existingOrder as $wid) {
+                if (!is_string($wid)) {
+                    continue;
+                }
+                // Allow pinned cards
+                if (str_starts_with($wid, 'card:')) {
+                    $parsed = $cardSvc->parseWidgetId($wid);
+                    $cid = (string)($parsed['card_id'] ?? '');
+                    if ($cid !== '' && $cardSvc->isSupported($cid)) {
+                        $allowedWidgets[] = $wid;
+                    }
+                }
+                // Allow dividers and titles from existing order
+                if (str_starts_with($wid, 'divider-') || str_starts_with($wid, 'title-')) {
+                    $allowedWidgets[] = $wid;
+                }
+            }
+        } catch (Exception $e) {
+            // ignore
+        }
+        
+        // Also allow any new dividers/titles from the incoming payload
+        $incomingOrder = $payload['order'] ?? ($payload['layout']['order'] ?? null);
+        if (is_array($incomingOrder)) {
+            foreach ($incomingOrder as $wid) {
+                if (!is_string($wid)) {
+                    continue;
+                }
+                if (str_starts_with($wid, 'divider-') || str_starts_with($wid, 'title-')) {
+                    $allowedWidgets[] = $wid;
+                }
+            }
+        }
+        
+        $allowedWidgets = array_values(array_unique($allowedWidgets));
 
         // Accept either {order, sizes} or {layout:{order,sizes}}
         $order = $payload['order'] ?? null;
         $sizes = $payload['sizes'] ?? null;
         $hidden = $payload['hidden'] ?? null;
+        $mode = $payload['mode'] ?? null;
+        $heights = $payload['heights'] ?? null;
+        $groups = $payload['groups'] ?? null;
+        $titles = $payload['titles'] ?? null;
+        $dividerThickness = $payload['divider_thickness'] ?? null;
+        $titleSizes = $payload['title_size'] ?? null;
         if (isset($payload['layout']) && is_array($payload['layout'])) {
             $order = $payload['layout']['order'] ?? $order;
             $sizes = $payload['layout']['sizes'] ?? $sizes;
             $hidden = $payload['layout']['hidden'] ?? $hidden;
+            $mode = $payload['layout']['mode'] ?? $mode;
+            $heights = $payload['layout']['heights'] ?? $heights;
+            $groups = $payload['layout']['groups'] ?? $groups;
+            $titles = $payload['layout']['titles'] ?? $titles;
+            $dividerThickness = $payload['layout']['divider_thickness'] ?? $dividerThickness;
+            $titleSizes = $payload['layout']['title_size'] ?? $titleSizes;
         }
 
         if (!is_array($order)) {
@@ -322,6 +634,85 @@ class Dashboard extends Controller {
         }
         if (!is_array($hidden)) {
             $hidden = null; // means "keep existing"
+        }
+
+        // Merge/validate groups (parent widget id -> list of child widget ids)
+        $mergedGroups = is_array($existingGroups ?? null) ? $existingGroups : [];
+        if (is_array($groups)) {
+            $mergedGroups = [];
+            $usedChildren = [];
+            foreach ($groups as $parentId => $childList) {
+                if (!is_string($parentId)) {
+                    continue;
+                }
+                $parentId = trim($parentId);
+                if ($parentId === '' || !in_array($parentId, $allowedWidgets, true)) {
+                    continue;
+                }
+                if (!is_array($childList)) {
+                    continue;
+                }
+                $clean = [];
+                foreach ($childList as $childId) {
+                    if (!is_string($childId)) {
+                        continue;
+                    }
+                    $childId = trim($childId);
+                    if ($childId === '' || $childId === $parentId) {
+                        continue;
+                    }
+                    if (!in_array($childId, $allowedWidgets, true)) {
+                        continue;
+                    }
+                    if (isset($usedChildren[$childId])) {
+                        continue;
+                    }
+                    $usedChildren[$childId] = true;
+                    $clean[] = $childId;
+                }
+                if (!empty($clean)) {
+                    $mergedGroups[$parentId] = $clean;
+                }
+            }
+        }
+
+        // Validate mode ("grid" or "masonry")
+        $modeToStore = $existingMode ?? 'grid';
+        if (is_string($mode)) {
+            $m = strtolower(trim($mode));
+            if (in_array($m, ['grid', 'masonry'], true)) {
+                $modeToStore = $m;
+            }
+        }
+
+        // Merge/validate heights (px)
+        $mergedHeights = is_array($existingHeights ?? null) ? $existingHeights : [];
+        if (is_array($heights)) {
+            foreach ($heights as $wid => $h) {
+                if (!is_string($wid)) {
+                    continue;
+                }
+                $wid = trim($wid);
+                if ($wid === '' || !in_array($wid, $allowedWidgets, true)) {
+                    continue;
+                }
+
+                // allow 0/null to clear
+                if ($h === null || $h === '' || (is_string($h) && trim($h) === '')) {
+                    unset($mergedHeights[$wid]);
+                    continue;
+                }
+                $hInt = (int)$h;
+                if ($hInt <= 0) {
+                    unset($mergedHeights[$wid]);
+                    continue;
+                }
+                // bounds
+                if ($hInt < 160 || $hInt > 2000) {
+                    continue;
+                }
+                $mergedHeights[$wid] = $hInt;
+            }
         }
 
         // Filter & de-dupe order
@@ -337,7 +728,7 @@ class Dashboard extends Controller {
                 if ($id === '' || isset($seen[$id])) {
                     continue;
                 }
-                if (!in_array($id, $allowed, true)) {
+                if (!in_array($id, $allowedWidgets, true)) {
                     continue;
                 }
                 $seen[$id] = true;
@@ -354,7 +745,7 @@ class Dashboard extends Controller {
                     continue;
                 }
                 $wid = trim($wid);
-                if ($wid === '' || !in_array($wid, $allowed, true)) {
+                if ($wid === '' || !in_array($wid, $allowedWidgets, true)) {
                     continue;
                 }
                 $spanInt = (int)$span;
@@ -381,7 +772,7 @@ class Dashboard extends Controller {
                 if ($wid === '' || isset($seenHidden[$wid])) {
                     continue;
                 }
-                if (!in_array($wid, $allowed, true)) {
+                if (!in_array($wid, $allowedWidgets, true)) {
                     continue;
                 }
                 $seenHidden[$wid] = true;
@@ -389,11 +780,117 @@ class Dashboard extends Controller {
             }
         }
 
+        // Merge/validate title text
+        $mergedTitles = is_array($existingTitles ?? null) ? $existingTitles : [];
+        if (is_array($titles)) {
+            foreach ($titles as $wid => $text) {
+                if (!is_string($wid)) {
+                    continue;
+                }
+                $wid = trim($wid);
+                // Only allow title widgets
+                if (!str_starts_with($wid, 'title-')) {
+                    continue;
+                }
+                if (!in_array($wid, $allowedWidgets, true)) {
+                    continue;
+                }
+                $raw = is_string($text) ? (string)$text : '';
+                $raw = trim($raw);
+
+                // Sanitize rich HTML (Quill output) for safe display.
+                if ($raw !== '' && function_exists('sanitize_rich_text_html')) {
+                    $cleanHtml = sanitize_rich_text_html($raw);
+                } else {
+                    // Fallback: strip to a safe subset (no attributes)
+                    $allowed = '<p><br><div><span><strong><b><em><i><u><s><ul><ol><li><blockquote><pre><code><h1><h2><h3><h4><h5><h6><hr><a>';
+                    $cleanHtml = strip_tags($raw, $allowed);
+                }
+
+                $cleanHtml = trim((string)$cleanHtml);
+                $plain = trim(html_entity_decode(strip_tags($cleanHtml), ENT_QUOTES, 'UTF-8'));
+                if ($plain === '') {
+                    $cleanHtml = 'Section Title';
+                }
+
+                // Cap to prevent bloating dashboard_layout
+                if (mb_strlen($cleanHtml) > 4000) {
+                    $cleanHtml = mb_substr($cleanHtml, 0, 4000);
+                }
+
+                $mergedTitles[$wid] = $cleanHtml;
+            }
+        }
+        // Clean up titles for removed title widgets
+        $mergedTitles = array_filter($mergedTitles, function($k) use ($filteredOrder) {
+            return in_array($k, $filteredOrder, true);
+        }, ARRAY_FILTER_USE_KEY);
+
+        // Merge/validate title size (1/2/3)
+        $mergedTitleSizes = is_array($existingTitleSizes ?? null) ? $existingTitleSizes : [];
+        if (is_array($titleSizes)) {
+            foreach ($titleSizes as $wid => $s) {
+                if (!is_string($wid)) {
+                    continue;
+                }
+                $wid = trim($wid);
+                // Only allow title widgets
+                if (!str_starts_with($wid, 'title-')) {
+                    continue;
+                }
+                if (!in_array($wid, $allowedWidgets, true)) {
+                    continue;
+                }
+                $sInt = (int)$s;
+                if (!in_array($sInt, [1, 2, 3], true)) {
+                    continue;
+                }
+                $mergedTitleSizes[$wid] = $sInt;
+            }
+        }
+        // Clean up title sizes for removed title widgets
+        $mergedTitleSizes = array_filter($mergedTitleSizes, function($k) use ($filteredOrder) {
+            return in_array($k, $filteredOrder, true);
+        }, ARRAY_FILTER_USE_KEY);
+
+        // Merge/validate divider thickness (1/2/3)
+        $mergedDividerThickness = is_array($existingDividerThickness ?? null) ? $existingDividerThickness : [];
+        if (is_array($dividerThickness)) {
+            foreach ($dividerThickness as $wid => $t) {
+                if (!is_string($wid)) {
+                    continue;
+                }
+                $wid = trim($wid);
+                // Only allow divider widgets
+                if (!str_starts_with($wid, 'divider-')) {
+                    continue;
+                }
+                if (!in_array($wid, $allowedWidgets, true)) {
+                    continue;
+                }
+                $tInt = (int)$t;
+                if (!in_array($tInt, [1, 2, 3], true)) {
+                    continue;
+                }
+                $mergedDividerThickness[$wid] = $tInt;
+            }
+        }
+        // Clean up divider thickness for removed divider widgets
+        $mergedDividerThickness = array_filter($mergedDividerThickness, function($k) use ($filteredOrder) {
+            return in_array($k, $filteredOrder, true);
+        }, ARRAY_FILTER_USE_KEY);
+
         // Store a consistent object format going forward
         $layoutToStore = [
             'order' => $filteredOrder,
             'sizes' => $mergedSizes,
-            'hidden' => $mergedHidden
+            'hidden' => $mergedHidden,
+            'mode' => $modeToStore,
+            'heights' => $mergedHeights,
+            'groups' => $mergedGroups,
+            'titles' => $mergedTitles,
+            'divider_thickness' => $mergedDividerThickness,
+            'title_size' => $mergedTitleSizes
         ];
         $layoutJson = json_encode($layoutToStore);
         $ok = $this->userModel->updateUserSettings($userId, ['dashboard_layout' => $layoutJson]);

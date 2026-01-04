@@ -1,3 +1,13 @@
+<?php
+// Ensure CSRF token exists for pin/unpin actions
+if (!isset($_SESSION['csrf_token'])) {
+    try {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+    } catch (Exception $e) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(8));
+    }
+}
+?>
 <div class="container-fluid">
     <!-- Page Header -->
     <div class="rounded-3 p-4 mb-4 client-header-solid">
@@ -67,6 +77,19 @@
                     <span>Edit Client</span>
                 </a>
                 <?php endif; ?>
+                <button
+                    type="button"
+                    class="btn <?= !empty($client_is_pinned) ? 'btn-primary' : 'btn-outline-secondary' ?> d-inline-flex align-items-center gap-2 dashboard-pin-toggle"
+                    data-card-id="clients.client"
+                    data-client-id="<?= (int)$client['id'] ?>"
+                    data-widget-id="<?= htmlspecialchars('card:clients.client:' . (int)$client['id']) ?>"
+                    data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"
+                    aria-pressed="<?= !empty($client_is_pinned) ? 'true' : 'false' ?>"
+                    title="<?= !empty($client_is_pinned) ? 'Unpin client from dashboard' : 'Pin client to dashboard' ?>"
+                >
+                    <i class="bi <?= !empty($client_is_pinned) ? 'bi-pin-fill' : 'bi-pin-angle' ?>"></i>
+                    <span><?= !empty($client_is_pinned) ? 'Pinned' : 'Pin' ?></span>
+                </button>
                 <a href="/clients" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
                     <i class="bi bi-arrow-left"></i>
                     <span>Back to Clients</span>

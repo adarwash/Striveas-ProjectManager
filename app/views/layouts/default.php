@@ -918,6 +918,84 @@
                 document.querySelectorAll(selector).forEach(ensureButtonReadable);
             };
         })();
+
+        // ==========================================================
+        // Dashboard Pins (Cross-module)
+        // Handles .dashboard-pin-toggle buttons everywhere
+        // ==========================================================
+        (function dashboardPinToggleInit(){
+            if (window.__dashboardPinInit) return;
+            window.__dashboardPinInit = true;
+
+            function updateButton(btn, pinned) {
+                btn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
+                btn.classList.toggle('btn-primary', pinned);
+                btn.classList.toggle('btn-outline-secondary', !pinned);
+
+                const icon = btn.querySelector('i.bi');
+                if (icon) {
+                    icon.classList.toggle('bi-pin-fill', pinned);
+                    icon.classList.toggle('bi-pin-angle', !pinned);
+                }
+
+                const text = btn.querySelector('span');
+                if (text) {
+                    text.textContent = pinned ? 'Pinned' : 'Pin';
+                }
+
+                btn.title = pinned ? 'Unpin from dashboard' : 'Pin to dashboard';
+            }
+
+            async function togglePin(btn) {
+                const cardId = btn.getAttribute('data-card-id') || '';
+                const csrf = btn.getAttribute('data-csrf-token') || '';
+                if (!cardId || !csrf) return;
+
+                const payload = { card_id: cardId, csrf_token: csrf };
+
+                const clientId = btn.getAttribute('data-client-id');
+                if (clientId) {
+                    const n = parseInt(clientId, 10);
+                    if (!Number.isNaN(n) && n > 0) payload.client_id = n;
+                }
+
+                btn.disabled = true;
+                try {
+                    const res = await fetch('/dashboard/togglePinCard', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    const json = await res.json().catch(() => null);
+                    if (!json || !json.success) {
+                        return;
+                    }
+
+                    updateButton(btn, !!json.pinned);
+
+                    // If unpinned on dashboard, remove the widget to avoid dead space
+                    const isDashboard = window.location.pathname === '/dashboard' || window.location.pathname === '/dashboard/';
+                    if (isDashboard && !json.pinned) {
+                        const widget = btn.closest('.dashboard-widget');
+                        if (widget) {
+                            widget.remove();
+                        }
+                    }
+                } finally {
+                    btn.disabled = false;
+                }
+            }
+
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.dashboard-pin-toggle');
+                if (!btn) return;
+                e.preventDefault();
+                togglePin(btn);
+            });
+        })();
     </script>
 </body>
 </html> 

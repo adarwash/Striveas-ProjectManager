@@ -73,10 +73,51 @@ class Clients extends Controller {
             $this->currentRoleId(),
             $this->isAdminRole()
         );
+
+        // Dashboard pinning support (clients.all + clients.client:<id>)
+        $clientsAllPinned = false;
+        $pinnedClientIds = [];
+        try {
+            require_once APPROOT . '/app/services/DashboardCardService.php';
+            require_once APPROOT . '/app/services/DashboardLayoutService.php';
+            $cardService = new DashboardCardService();
+            $userModel = $this->model('User');
+            $layoutService = new DashboardLayoutService($userModel);
+            $layout = $layoutService->getLayoutForUser((int)($_SESSION['user_id'] ?? 0));
+            $order = is_array($layout['order'] ?? null) ? $layout['order'] : [];
+
+            $orderSet = [];
+            foreach ($order as $wid) {
+                if (is_string($wid)) {
+                    $orderSet[$wid] = true;
+                }
+            }
+
+            $clientsAllPinned = isset($orderSet[$cardService->getWidgetId('clients.all')]);
+
+            foreach ($order as $wid) {
+                if (!is_string($wid) || !str_starts_with($wid, 'card:')) {
+                    continue;
+                }
+                $parsed = $cardService->parseWidgetId($wid);
+                if (empty($parsed) || ($parsed['card_id'] ?? '') !== 'clients.client') {
+                    continue;
+                }
+                $cid = (int)($parsed['params']['client_id'] ?? 0);
+                if ($cid > 0) {
+                    $pinnedClientIds[$cid] = true;
+                }
+            }
+        } catch (Exception $e) {
+            $clientsAllPinned = false;
+            $pinnedClientIds = [];
+        }
         
         $data = [
             'title' => 'Clients',
-            'clients' => $clients
+            'clients' => $clients,
+            'clients_all_pinned' => $clientsAllPinned,
+            'pinned_client_ids' => array_keys($pinnedClientIds)
         ];
         
         $this->view('clients/index', $data);
@@ -296,6 +337,20 @@ class Clients extends Controller {
             $allowedRoleNames = [];
         }
 
+        // Dashboard pin state for this client (clients.client:<id>)
+        $clientIsPinned = false;
+        try {
+            require_once APPROOT . '/app/services/DashboardCardService.php';
+            require_once APPROOT . '/app/services/DashboardLayoutService.php';
+            $cardService = new DashboardCardService();
+            $userModel = $this->model('User');
+            $layoutService = new DashboardLayoutService($userModel);
+            $widgetId = $cardService->buildWidgetId('clients.client', ['client_id' => (int)$id]);
+            $clientIsPinned = $layoutService->isWidgetPinned((int)($_SESSION['user_id'] ?? 0), $widgetId);
+        } catch (Exception $e) {
+            $clientIsPinned = false;
+        }
+
         $data = [
             'title' => $client['name'],
             'client' => $client,
@@ -320,7 +375,8 @@ class Clients extends Controller {
             'allowed_role_ids' => $allowedRoleIds,
             'client_services' => $clientServices,
             'status_history' => $statusHistory,
-            'client_age' => $clientAge
+            'client_age' => $clientAge,
+            'client_is_pinned' => $clientIsPinned
         ];
         
         $this->view('clients/view', $data);

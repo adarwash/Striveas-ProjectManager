@@ -204,6 +204,32 @@ class Tickets extends Controller {
             'display_timezone' => $displayTz,
             'db_timezone' => $dbTz
         ];
+
+        // Pinnable card (start with Support Tickets module)
+        try {
+            require_once APPROOT . '/app/services/DashboardCardService.php';
+            require_once APPROOT . '/app/services/DashboardLayoutService.php';
+            $cardService = new DashboardCardService();
+            $layoutService = new DashboardLayoutService($userModel);
+
+            $cardId = 'tickets.my_open';
+            if ($cardService->isSupported($cardId)) {
+                $widgetId = $cardService->getWidgetId($cardId);
+                $isPinned = $layoutService->isWidgetPinned((int)$_SESSION['user_id'], $widgetId);
+                $cardData = $cardService->fetchData($cardId, (int)$_SESSION['user_id'], ['limit' => 10]);
+
+                $viewData['pinnable_cards'] = [
+                    $cardId => array_merge([
+                        'card_id' => $cardId,
+                        'widget_id' => $widgetId,
+                        'is_pinned' => $isPinned,
+                        'title' => ($cardService->getDefinition($cardId)['title'] ?? 'My Open Tickets')
+                    ], $cardData)
+                ];
+            }
+        } catch (Exception $e) {
+            // ignore
+        }
         
         $this->view('tickets/index', $viewData);
     }

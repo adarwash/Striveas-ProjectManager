@@ -1,5 +1,16 @@
 <?php require VIEWSPATH . '/partials/header.php'; ?>
 
+<?php
+// Ensure CSRF token exists for pin/unpin actions
+if (!isset($_SESSION['csrf_token'])) {
+    try {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+    } catch (Exception $e) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(8));
+    }
+}
+?>
+
 <!-- Modern Page Header -->
 <div class="page-header">
     <div>
@@ -103,6 +114,18 @@
                     <i class="fas fa-search"></i>
                     <input type="text" class="form-control" placeholder="Search clients..." id="clientSearch">
                 </div>
+                <button
+                    type="button"
+                    class="btn btn-sm <?= !empty($clients_all_pinned) ? 'btn-primary' : 'btn-outline-secondary' ?> dashboard-pin-toggle"
+                    data-card-id="clients.all"
+                    data-widget-id="card:clients.all"
+                    data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"
+                    aria-pressed="<?= !empty($clients_all_pinned) ? 'true' : 'false' ?>"
+                    title="<?= !empty($clients_all_pinned) ? 'Unpin from dashboard' : 'Pin to dashboard' ?>"
+                >
+                    <i class="bi <?= !empty($clients_all_pinned) ? 'bi-pin-fill' : 'bi-pin-angle' ?>"></i>
+                    <span class="d-none d-md-inline ms-1"><?= !empty($clients_all_pinned) ? 'Pinned' : 'Pin' ?></span>
+                </button>
                 <?php if (hasPermission('clients.create')): ?>
                 <a href="/clients/create" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i>Add Client
@@ -127,6 +150,11 @@
                 </thead>
                     <tbody>
                         <?php foreach ($clients as $client): ?>
+                        <?php
+                            $pinnedIds = isset($pinned_client_ids) && is_array($pinned_client_ids) ? $pinned_client_ids : [];
+                            $isClientPinned = in_array((int)$client['id'], $pinnedIds, true);
+                            $clientWidgetId = 'card:clients.client:' . (int)$client['id'];
+                        ?>
                         <tr>
                             <td class="ps-4">
                                 <div class="d-flex align-items-center">
@@ -217,6 +245,18 @@
                             </td>
                             <td class="pe-4">
                                 <div class="d-flex justify-content-end gap-2">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm <?= $isClientPinned ? 'btn-primary' : 'btn-outline-secondary' ?> dashboard-pin-toggle"
+                                        data-card-id="clients.client"
+                                        data-client-id="<?= (int)$client['id'] ?>"
+                                        data-widget-id="<?= htmlspecialchars($clientWidgetId) ?>"
+                                        data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>"
+                                        aria-pressed="<?= $isClientPinned ? 'true' : 'false' ?>"
+                                        title="<?= $isClientPinned ? 'Unpin client from dashboard' : 'Pin client to dashboard' ?>"
+                                    >
+                                        <i class="bi <?= $isClientPinned ? 'bi-pin-fill' : 'bi-pin-angle' ?>"></i>
+                                    </button>
                                     <a href="/clients/viewClient/<?= $client['id'] ?>" class="btn btn-sm btn-outline-primary" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
