@@ -559,6 +559,30 @@ document.getElementById('new_password').addEventListener('input', function() {
                         $customStart = '#667eea';
                         $customEnd = '#764ba2';
                         $customAngle = 135;
+
+                        // If the user has saved a custom theme, use it to prefill the pickers (even if current theme is a preset)
+                        $savedCustomThemeRaw = (string)($user_settings['saved_custom_theme'] ?? '');
+                        if ($savedCustomThemeRaw !== '') {
+                            $decoded = json_decode($savedCustomThemeRaw, true);
+                            if (is_array($decoded)) {
+                                $s = strtoupper(trim((string)($decoded['start'] ?? '')));
+                                $e = strtoupper(trim((string)($decoded['end'] ?? '')));
+                                $a = (int)($decoded['angle'] ?? 135);
+                                if (preg_match('/^#[0-9A-F]{6}$/', $s) && preg_match('/^#[0-9A-F]{6}$/', $e) && $a >= 0 && $a <= 360) {
+                                    $customStart = $s;
+                                    $customEnd = $e;
+                                    $customAngle = $a;
+                                }
+                            } elseif (is_string($savedCustomThemeRaw)) {
+                                // Backwards-compatible: allow a raw gradient string
+                                if (preg_match('/linear-gradient\\(\\s*(\\d{1,3})deg\\s*,\\s*(#[0-9a-fA-F]{6})\\s*0%\\s*,\\s*(#[0-9a-fA-F]{6})\\s*100%\\s*\\)/', $savedCustomThemeRaw, $m)) {
+                                    $a = max(0, min(360, (int)$m[1]));
+                                    $customStart = strtoupper($m[2]);
+                                    $customEnd = strtoupper($m[3]);
+                                    $customAngle = $a;
+                                }
+                            }
+                        }
                         
                         // If current saved value looks like a custom gradient we generated, parse it back into pickers
                         if ($isCustom && is_string($currentNavBackground)) {
@@ -696,13 +720,17 @@ document.getElementById('new_password').addEventListener('input', function() {
                                 </div>
                                 
                                 <div class="form-text mt-2">Changing colours/angle will automatically select “Custom”.</div>
+                                <div class="form-text">Tip: use <strong>Save Custom Theme</strong> to store this custom gradient without applying it yet.</div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Apply Theme</button>
+                    <button type="submit" class="btn btn-outline-primary" name="theme_action" value="save_custom">
+                        <i class="bi bi-bookmark-plus me-1"></i>Save Custom Theme
+                    </button>
+                    <button type="submit" class="btn btn-primary" name="theme_action" value="apply">Apply Theme</button>
                 </div>
             </form>
         </div>

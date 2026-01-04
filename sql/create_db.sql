@@ -1547,6 +1547,7 @@ CREATE TABLE [dbo].[UserSettings](
 	[theme_card_headers] [bit] NOT NULL CONSTRAINT [DF_UserSettings_theme_card_headers] DEFAULT ((0)),
 	[theme_project_card_headers] [bit] NOT NULL CONSTRAINT [DF_UserSettings_theme_project_card_headers] DEFAULT ((1)),
 	[theme_header_text_color] [nvarchar](20) NULL,
+	[saved_custom_theme] [nvarchar](max) NULL,
 	[dashboard_layout] [nvarchar](max) NULL,
 	[created_at] [datetime] NULL,
 	[updated_at] [datetime] NULL,

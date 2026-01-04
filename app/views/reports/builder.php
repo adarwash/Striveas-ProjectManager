@@ -49,8 +49,15 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Linked Data Sources</label>
+                        <div class="list-group" id="rbLinksList"></div>
+                        <div class="form-text">Optional: add fields from related modules (safe joins). You can select multiple.</div>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Columns</label>
-                        <select class="form-select" id="rbColumns" multiple size="10" disabled></select>
+                        <input type="text" class="form-control form-control-sm mb-2" id="rbColumnsSearch" placeholder="Search columns…" disabled>
+                        <div class="list-group" id="rbColumnsList" style="max-height: 320px; overflow:auto;"></div>
                         <div class="form-text">Select fields to display.</div>
                     </div>
 
@@ -69,7 +76,9 @@
 
                     <div class="mb-3">
                         <label class="form-label">Grouping (Group By)</label>
-                        <select class="form-select" id="rbGroupBy" multiple size="6" disabled></select>
+                        <input type="text" class="form-control form-control-sm mb-2" id="rbGroupBySearch" placeholder="Search group by…" disabled>
+                        <div class="list-group" id="rbGroupByList" style="max-height: 220px; overflow:auto;"></div>
+                        <div class="form-text">Select fields to group by.</div>
                     </div>
 
                     <div class="mb-3">
@@ -216,10 +225,13 @@
         alert: document.getElementById('rbAlert'),
         dataset: document.getElementById('rbDataset'),
         datasetDesc: document.getElementById('rbDatasetDesc'),
-        columns: document.getElementById('rbColumns'),
+        linksList: document.getElementById('rbLinksList'),
+        columnsSearch: document.getElementById('rbColumnsSearch'),
+        columnsList: document.getElementById('rbColumnsList'),
         addFilter: document.getElementById('rbAddFilter'),
         filters: document.getElementById('rbFilters'),
-        groupBy: document.getElementById('rbGroupBy'),
+        groupBySearch: document.getElementById('rbGroupBySearch'),
+        groupByList: document.getElementById('rbGroupByList'),
         aggregates: document.getElementById('rbAggregates'),
         addAgg: document.getElementById('rbAddAgg'),
         sort: document.getElementById('rbSort'),
@@ -262,6 +274,7 @@
         dataset: '',
         fields: [],
         fieldsByKey: {},
+        availableLinks: [],
         page: 1,
         lastPreviewOk: false,
     };
@@ -285,8 +298,10 @@
     }
 
     function setBuilderEnabled(on) {
-        els.columns.disabled = !on;
-        els.groupBy.disabled = !on;
+        if (els.columnsSearch) els.columnsSearch.disabled = !on;
+        if (els.groupBySearch) els.groupBySearch.disabled = !on;
+        setCheckboxListDisabled(els.columnsList, !on);
+        setCheckboxListDisabled(els.groupByList, !on);
         els.addFilter.disabled = !on;
         els.addAgg.disabled = !on;
         els.addSort.disabled = !on;
@@ -327,6 +342,83 @@
 
     function getSelectedValues(el) {
         return Array.from(el.selectedOptions || []).map(o => o.value);
+    }
+
+    function setCheckboxListDisabled(container, disabled) {
+        if (!container) return;
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.disabled = !!disabled;
+        });
+    }
+
+    function renderCheckboxList(container, options, selectedValues) {
+        if (!container) return;
+        const selected = new Set(Array.isArray(selectedValues) ? selectedValues.map(String) : []);
+        container.innerHTML = '';
+
+        if (!options || !options.length) {
+            const empty = document.createElement('div');
+            empty.className = 'text-muted small p-2';
+            empty.textContent = 'No fields available.';
+            container.appendChild(empty);
+            return;
+        }
+
+        options.forEach(opt => {
+            const value = String(opt.value ?? '');
+            const label = String(opt.label ?? value);
+            const id = 'rb_cb_' + value.replace(/[^A-Za-z0-9_:-]/g, '_');
+
+            const item = document.createElement('label');
+            item.className = 'list-group-item d-flex align-items-center gap-2';
+            item.setAttribute('data-filter-text', (label + ' ' + value).toLowerCase());
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'form-check-input m-0';
+            cb.value = value;
+            cb.id = id;
+            cb.checked = selected.has(value);
+
+            const span = document.createElement('span');
+            span.className = 'fw-medium';
+            span.textContent = label;
+
+            const code = document.createElement('span');
+            code.className = 'ms-auto small text-muted';
+            code.textContent = value;
+
+            item.appendChild(cb);
+            item.appendChild(span);
+            item.appendChild(code);
+            container.appendChild(item);
+        });
+    }
+
+    function getCheckedValues(container) {
+        if (!container) return [];
+        return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    }
+
+    function setCheckedValues(container, values) {
+        if (!container) return;
+        const set = new Set(Array.isArray(values) ? values.map(String) : []);
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.checked = set.has(cb.value);
+        });
+    }
+
+    function filterCheckboxList(container, query) {
+        if (!container) return;
+        const q = String(query || '').trim().toLowerCase();
+        container.querySelectorAll('.list-group-item').forEach(item => {
+            if (!q) {
+                item.classList.remove('d-none');
+                return;
+            }
+            const hay = String(item.getAttribute('data-filter-text') || '').toLowerCase();
+            item.classList.toggle('d-none', !hay.includes(q));
+        });
     }
 
     function buildFilterRow(initial) {
@@ -571,8 +663,8 @@
     }
 
     function currentSortOptions() {
-        const cols = getSelectedValues(els.columns);
-        const group = getSelectedValues(els.groupBy);
+        const cols = getCheckedValues(els.columnsList);
+        const group = getCheckedValues(els.groupByList);
         const aggs = currentAggregates();
         const isAgg = group.length > 0 || aggs.length > 0;
 
@@ -612,8 +704,9 @@
 
     function buildDefinitionPayload() {
         const dataset = els.dataset.value;
-        const columns = getSelectedValues(els.columns);
-        const groupBy = getSelectedValues(els.groupBy);
+        const links = getCheckedValues(els.linksList);
+        const columns = getCheckedValues(els.columnsList);
+        const groupBy = getCheckedValues(els.groupByList);
 
         const filters = Array.from(els.filters.children).map(row => {
             const selects = row.querySelectorAll('select');
@@ -675,6 +768,7 @@
 
         return {
             dataset,
+            links,
             columns,
             filters,
             group_by: groupBy,
@@ -685,18 +779,121 @@
     }
 
     async function fetchFields(dataset) {
-        const url = RB.endpoints.fields + '?dataset=' + encodeURIComponent(dataset);
+        const links = getCheckedValues(els.linksList);
+        const url = RB.endpoints.fields
+            + '?dataset=' + encodeURIComponent(dataset)
+            + (links.length ? ('&links=' + encodeURIComponent(links.join(','))) : '');
         const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         const j = await res.json().catch(() => null);
         if (!j || !j.success) {
             throw new Error((j && j.message) ? j.message : 'Failed to load fields');
         }
-        return j.fields || [];
+        return {
+            fields: j.fields || [],
+            availableLinks: j.available_links || []
+        };
+    }
+
+    function renderLinkList(links, selected) {
+        if (!els.linksList) return;
+        const selectedSet = new Set(Array.isArray(selected) ? selected.map(String) : []);
+        els.linksList.innerHTML = '';
+
+        if (!Array.isArray(links) || links.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'text-muted small p-2 border rounded';
+            empty.textContent = 'No linked data sources available for this dataset yet.';
+            els.linksList.appendChild(empty);
+            return;
+        }
+
+        links.forEach(l => {
+            const key = String(l.key || '');
+            const label = String(l.label || key);
+            const desc = String(l.description || '');
+            if (!key) return;
+
+            const item = document.createElement('label');
+            item.className = 'list-group-item d-flex align-items-start gap-2';
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'form-check-input mt-1';
+            cb.value = key;
+            cb.checked = selectedSet.has(key);
+
+            const wrap = document.createElement('div');
+            const title = document.createElement('div');
+            title.className = 'fw-semibold';
+            title.textContent = label;
+            const small = document.createElement('div');
+            small.className = 'small text-muted';
+            small.textContent = desc;
+
+            wrap.appendChild(title);
+            if (desc) wrap.appendChild(small);
+
+            item.appendChild(cb);
+            item.appendChild(wrap);
+            els.linksList.appendChild(item);
+        });
+    }
+
+    function buildSnapshotDefinition() {
+        const def = buildDefinitionPayload();
+        // include links
+        def.links = getCheckedValues(els.linksList);
+        return def;
+    }
+
+    function applySnapshotDefinition(def) {
+        if (!def || typeof def !== 'object') return;
+        // columns & group-by intersection
+        const valid = (arr) => (Array.isArray(arr) ? arr.filter(k => state.fieldsByKey[String(k)]) : []);
+        setCheckedValues(els.columnsList, valid(def.columns));
+        setCheckedValues(els.groupByList, valid(def.group_by));
+
+        // filters
+        els.filters.innerHTML = '';
+        if (Array.isArray(def.filters)) {
+            def.filters
+                .filter(f => f && typeof f === 'object' && state.fieldsByKey[String(f.field || '')])
+                .forEach(f => els.filters.appendChild(buildFilterRow(f)));
+        }
+
+        // aggregates
+        els.aggregates.innerHTML = '';
+        if (Array.isArray(def.aggregates)) {
+            def.aggregates.forEach(a => {
+                els.aggregates.appendChild(buildAggRow({ fn: a.fn, field: a.field, label: a.label }));
+            });
+        }
+
+        // sort
+        els.sort.innerHTML = '';
+        if (Array.isArray(def.sort)) {
+            def.sort.forEach(s => {
+                const r = buildSortRow({ dir: s.dir, field: s.field });
+                els.sort.appendChild(r);
+            });
+        }
+        if (els.sort.children.length === 0) {
+            els.sort.appendChild(buildSortRow());
+        }
+
+        // limit
+        if (typeof def.limit === 'number') {
+            els.limit.value = String(def.limit);
+        }
+
+        refreshSortOptions();
     }
 
     function resetBuilderUI() {
-        els.columns.innerHTML = '';
-        els.groupBy.innerHTML = '';
+        if (els.columnsSearch) els.columnsSearch.value = '';
+        if (els.groupBySearch) els.groupBySearch.value = '';
+        if (els.columnsList) els.columnsList.innerHTML = '';
+        if (els.groupByList) els.groupByList.innerHTML = '';
         els.filters.innerHTML = '';
         els.aggregates.innerHTML = '';
         els.sort.innerHTML = '';
@@ -712,10 +909,10 @@
 
     function populateFieldsUI() {
         const all = state.fields.map(f => ({ value: f.key, label: f.label }));
-        populateMultiSelect(els.columns, all);
+        renderCheckboxList(els.columnsList, all);
 
         const groupable = state.fields.filter(f => f.groupable).map(f => ({ value: f.key, label: f.label }));
-        populateMultiSelect(els.groupBy, groupable);
+        renderCheckboxList(els.groupByList, groupable);
     }
 
     async function onDatasetChange() {
@@ -724,6 +921,9 @@
         if (!dataset) {
             setBuilderEnabled(false);
             els.datasetDesc.textContent = '';
+            if (els.linksList) {
+                els.linksList.innerHTML = '';
+            }
             return;
         }
         const info = datasetInfo(dataset);
@@ -731,7 +931,27 @@
 
         setBuilderEnabled(false);
         try {
-            const fields = await fetchFields(dataset);
+            // If editing, preselect links before loading fields
+            const initialLinks = (!appliedExisting && RB.existingDefinition && Array.isArray(RB.existingDefinition.links))
+                ? RB.existingDefinition.links
+                : [];
+            // Render available links after first load; then apply initial selection and reload if needed
+            renderLinkList([], []); // placeholder
+            // Temporarily render with initial selection once we know available links
+            const meta0 = await (async () => {
+                // load base with no links first to discover available links (server ignores unknown)
+                // We'll temporarily set links list empty for this call
+                const old = els.linksList ? els.linksList.innerHTML : '';
+                if (els.linksList) els.linksList.innerHTML = '';
+                return await fetchFields(dataset);
+            })();
+
+            state.availableLinks = meta0.availableLinks || [];
+            renderLinkList(state.availableLinks, initialLinks);
+
+            // Now load fields with selected links
+            const meta = await fetchFields(dataset);
+            const fields = meta.fields || [];
             state.fields = fields;
             state.fieldsByKey = {};
             fields.forEach(f => { state.fieldsByKey[f.key] = f; });
@@ -763,11 +983,11 @@
         const def = RB.existingDefinition || {};
         // columns
         if (Array.isArray(def.columns)) {
-            Array.from(els.columns.options).forEach(o => { o.selected = def.columns.includes(o.value); });
+            setCheckedValues(els.columnsList, def.columns);
         }
         // group_by
         if (Array.isArray(def.group_by)) {
-            Array.from(els.groupBy.options).forEach(o => { o.selected = def.group_by.includes(o.value); });
+            setCheckedValues(els.groupByList, def.group_by);
         }
         // filters
         if (Array.isArray(def.filters)) {
@@ -990,6 +1210,39 @@
 
     // Events
     els.dataset.addEventListener('change', onDatasetChange);
+    if (els.linksList) {
+        els.linksList.addEventListener('change', async () => {
+            const dataset = els.dataset.value;
+            if (!dataset) return;
+
+            // Snapshot current builder state (filters/aggs/sort/etc.) and re-apply after field reload
+            const snap = buildSnapshotDefinition();
+
+            // Clear preview (it may no longer be valid)
+            state.page = 1;
+            state.lastPreviewOk = false;
+            els.exportBtn.disabled = true;
+            els.previewInfo.textContent = '';
+            els.pageInfo.textContent = '';
+            els.previewEmpty.classList.remove('d-none');
+            els.previewTableWrap.classList.add('d-none');
+
+            setBuilderEnabled(false);
+            try {
+                const meta = await fetchFields(dataset);
+                const fields = meta.fields || [];
+                state.fields = fields;
+                state.fieldsByKey = {};
+                fields.forEach(f => { state.fieldsByKey[f.key] = f; });
+                populateFieldsUI();
+                setBuilderEnabled(true);
+                applySnapshotDefinition(snap);
+            } catch (e) {
+                showAlert('danger', e.message || 'Failed to reload fields');
+                setBuilderEnabled(true);
+            }
+        });
+    }
     els.addFilter.addEventListener('click', () => {
         els.filters.appendChild(buildFilterRow());
     });
@@ -1002,8 +1255,18 @@
         els.sort.appendChild(r);
         refreshSortOptions();
     });
-    els.columns.addEventListener('change', () => refreshSortOptions());
-    els.groupBy.addEventListener('change', () => refreshSortOptions());
+    if (els.columnsList) {
+        els.columnsList.addEventListener('change', () => refreshSortOptions());
+    }
+    if (els.groupByList) {
+        els.groupByList.addEventListener('change', () => refreshSortOptions());
+    }
+    if (els.columnsSearch) {
+        els.columnsSearch.addEventListener('input', () => filterCheckboxList(els.columnsList, els.columnsSearch.value));
+    }
+    if (els.groupBySearch) {
+        els.groupBySearch.addEventListener('input', () => filterCheckboxList(els.groupByList, els.groupBySearch.value));
+    }
 
     els.previewBtn.addEventListener('click', () => preview(1));
     els.prevPage.addEventListener('click', () => preview(Math.max(1, state.page - 1)));

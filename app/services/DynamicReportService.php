@@ -53,6 +53,50 @@ class DynamicReportService {
                     'due_date' => ['label' => 'Due Date', 'type' => 'datetime', 'expr' => 't.due_date', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                     'source' => ['label' => 'Source', 'type' => 'string', 'expr' => 't.source', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                 ],
+                'links' => [
+                    // Safe 1:many -> many:1 joins from ticket rows
+                    'projects' => [
+                        'label' => 'Projects',
+                        'description' => 'Include project details linked on Tickets.project_id',
+                        'join' => "
+                            LEFT JOIN projects p ON p.id = t.project_id
+                            LEFT JOIN departments pd ON pd.id = p.department_id
+                            LEFT JOIN Users pu ON pu.id = p.user_id
+                            LEFT JOIN Clients pc ON pc.id = p.client_id
+                        ",
+                        'fields' => [
+                            'project_id' => ['label' => 'Project ID', 'type' => 'number', 'expr' => 'p.id', 'groupable' => true, 'sortable' => true, 'filterable' => true, 'numeric' => true],
+                            'project_title' => ['label' => 'Project Title', 'type' => 'string', 'expr' => 'p.title', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_status' => ['label' => 'Project Status', 'type' => 'string', 'expr' => 'p.status', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_budget' => ['label' => 'Project Budget', 'type' => 'number', 'expr' => 'p.budget', 'groupable' => true, 'sortable' => true, 'filterable' => true, 'numeric' => true],
+                            'project_start_date' => ['label' => 'Project Start Date', 'type' => 'date', 'expr' => 'p.start_date', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_end_date' => ['label' => 'Project End Date', 'type' => 'date', 'expr' => 'p.end_date', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_department' => ['label' => 'Project Department', 'type' => 'string', 'expr' => 'pd.name', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_owner' => ['label' => 'Project Owner', 'type' => 'string', 'expr' => 'COALESCE(pu.full_name, pu.username)', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_client_name' => ['label' => 'Project Client', 'type' => 'string', 'expr' => 'pc.name', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                        ],
+                    ],
+                    'tasks' => [
+                        'label' => 'Tasks',
+                        'description' => 'Include task details linked on Tickets.task_id',
+                        'join' => "
+                            LEFT JOIN tasks tt ON tt.id = t.task_id
+                            LEFT JOIN users tu ON tu.id = tt.assigned_to
+                            LEFT JOIN users tcu ON tcu.id = tt.created_by
+                        ",
+                        'fields' => [
+                            'task_id' => ['label' => 'Task ID', 'type' => 'number', 'expr' => 'tt.id', 'groupable' => true, 'sortable' => true, 'filterable' => true, 'numeric' => true],
+                            'task_title' => ['label' => 'Task Title', 'type' => 'string', 'expr' => 'tt.title', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'task_status' => ['label' => 'Task Status', 'type' => 'string', 'expr' => 'tt.status', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'task_priority' => ['label' => 'Task Priority', 'type' => 'string', 'expr' => 'tt.priority', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'task_due_date' => ['label' => 'Task Due Date', 'type' => 'date', 'expr' => 'tt.due_date', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'task_assigned_to' => ['label' => 'Task Assigned To', 'type' => 'string', 'expr' => 'COALESCE(tu.full_name, tu.username)', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'task_created_by' => ['label' => 'Task Created By', 'type' => 'string', 'expr' => 'COALESCE(tcu.full_name, tcu.username)', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'task_estimated_hours' => ['label' => 'Task Estimated Hours', 'type' => 'number', 'expr' => 'tt.estimated_hours', 'groupable' => true, 'sortable' => true, 'filterable' => true, 'numeric' => true],
+                            'task_progress_percent' => ['label' => 'Task Progress %', 'type' => 'number', 'expr' => 'tt.progress_percent', 'groupable' => true, 'sortable' => true, 'filterable' => true, 'numeric' => true],
+                        ],
+                    ],
+                ],
             ],
             'tasks' => [
                 'label' => 'Tasks',
@@ -81,6 +125,25 @@ class DynamicReportService {
                     'created_at' => ['label' => 'Created At', 'type' => 'datetime', 'expr' => 't.created_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                     'updated_at' => ['label' => 'Updated At', 'type' => 'datetime', 'expr' => 't.updated_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                 ],
+                'links' => [
+                    'projects' => [
+                        'label' => 'Projects',
+                        'description' => 'Include additional project details linked on Tasks.project_id',
+                        'join' => "
+                            LEFT JOIN departments pd ON pd.id = p.department_id
+                            LEFT JOIN users pu ON pu.id = p.user_id
+                        ",
+                        'fields' => [
+                            'project_id' => ['label' => 'Project ID', 'type' => 'number', 'expr' => 'p.id', 'groupable' => true, 'sortable' => true, 'filterable' => true, 'numeric' => true],
+                            'project_status' => ['label' => 'Project Status', 'type' => 'string', 'expr' => 'p.status', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_budget' => ['label' => 'Project Budget', 'type' => 'number', 'expr' => 'p.budget', 'groupable' => true, 'sortable' => true, 'filterable' => true, 'numeric' => true],
+                            'project_start_date' => ['label' => 'Project Start Date', 'type' => 'date', 'expr' => 'p.start_date', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_end_date' => ['label' => 'Project End Date', 'type' => 'date', 'expr' => 'p.end_date', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_department' => ['label' => 'Project Department', 'type' => 'string', 'expr' => 'pd.name', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'project_owner' => ['label' => 'Project Owner', 'type' => 'string', 'expr' => 'COALESCE(pu.full_name, pu.username)', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                        ],
+                    ],
+                ],
             ],
             'projects' => [
                 'label' => 'Projects',
@@ -105,6 +168,7 @@ class DynamicReportService {
                     'created_at' => ['label' => 'Created At', 'type' => 'datetime', 'expr' => 'p.created_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                     'updated_at' => ['label' => 'Updated At', 'type' => 'datetime', 'expr' => 'p.updated_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                 ],
+                'links' => [],
             ],
             'time_entries' => [
                 'label' => 'TimeEntries',
@@ -135,6 +199,17 @@ class DynamicReportService {
                     'created_at' => ['label' => 'Created At', 'type' => 'datetime', 'expr' => 'te.created_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                     'updated_at' => ['label' => 'Updated At', 'type' => 'datetime', 'expr' => 'te.updated_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                 ],
+                'links' => [
+                    'clients' => [
+                        'label' => 'Clients',
+                        'description' => 'Include additional client details via site->client mapping',
+                        'join' => "LEFT JOIN Clients c2 ON c2.id = ca.client_id",
+                        'fields' => [
+                            'client_status' => ['label' => 'Client Status', 'type' => 'string', 'expr' => 'c2.status', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'client_industry' => ['label' => 'Client Industry', 'type' => 'string', 'expr' => 'c2.industry', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                        ],
+                    ],
+                ],
             ],
             'clients' => [
                 'label' => 'Clients',
@@ -152,6 +227,7 @@ class DynamicReportService {
                     'created_at' => ['label' => 'Created At', 'type' => 'datetime', 'expr' => 'c.created_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                     'updated_at' => ['label' => 'Updated At', 'type' => 'datetime', 'expr' => 'c.updated_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                 ],
+                'links' => [],
             ],
             'site_visits' => [
                 'label' => 'SiteVisits',
@@ -180,6 +256,17 @@ class DynamicReportService {
                     'created_at' => ['label' => 'Created At', 'type' => 'datetime', 'expr' => 'v.created_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                     'updated_at' => ['label' => 'Updated At', 'type' => 'datetime', 'expr' => 'v.updated_at', 'groupable' => true, 'sortable' => true, 'filterable' => true],
                 ],
+                'links' => [
+                    'clients' => [
+                        'label' => 'Clients',
+                        'description' => 'Include additional client details via site->client mapping',
+                        'join' => "LEFT JOIN Clients c2 ON c2.id = ca.client_id",
+                        'fields' => [
+                            'client_status' => ['label' => 'Client Status', 'type' => 'string', 'expr' => 'c2.status', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                            'client_industry' => ['label' => 'Client Industry', 'type' => 'string', 'expr' => 'c2.industry', 'groupable' => true, 'sortable' => true, 'filterable' => true],
+                        ],
+                    ],
+                ],
             ],
         ];
     }
@@ -197,15 +284,57 @@ class DynamicReportService {
     }
 
     /**
+     * Link presets for a dataset (additional data sources that can be joined safely).
+     */
+    public function getLinksForDataset(string $datasetKey): array {
+        $datasetKey = strtolower(trim($datasetKey));
+        $datasets = $this->datasets();
+        if (!isset($datasets[$datasetKey])) {
+            return [];
+        }
+        $cfg = $datasets[$datasetKey];
+        $links = is_array($cfg['links'] ?? null) ? $cfg['links'] : [];
+        $out = [];
+        foreach ($links as $k => $l) {
+            $out[] = [
+                'key' => (string)$k,
+                'label' => (string)($l['label'] ?? $k),
+                'description' => (string)($l['description'] ?? ''),
+            ];
+        }
+        return $out;
+    }
+
+    /**
      * Returns field metadata for a dataset, including select options where configured.
      */
-    public function getFieldsForDataset(string $datasetKey): array {
+    public function getFieldsForDataset(string $datasetKey, array $includeLinks = []): array {
         $datasets = $this->datasets();
         if (!isset($datasets[$datasetKey])) {
             return [];
         }
         $cfg = $datasets[$datasetKey];
         $fields = $cfg['fields'] ?? [];
+
+        // Merge link fields (if requested)
+        $linksCfg = is_array($cfg['links'] ?? null) ? $cfg['links'] : [];
+        $wantedLinks = array_values(array_unique(array_filter(array_map(function($x) {
+            return strtolower(trim((string)$x));
+        }, $includeLinks))));
+        foreach ($wantedLinks as $lk) {
+            if ($lk === '' || !isset($linksCfg[$lk])) {
+                continue;
+            }
+            $lf = $linksCfg[$lk]['fields'] ?? [];
+            if (!is_array($lf)) {
+                continue;
+            }
+            foreach ($lf as $fkey => $meta) {
+                if (!array_key_exists($fkey, $fields)) {
+                    $fields[$fkey] = $meta;
+                }
+            }
+        }
 
         $out = [];
         foreach ($fields as $key => $meta) {
@@ -416,6 +545,31 @@ class DynamicReportService {
         }
         $cfg = $datasets[$datasetKey];
         $fields = $cfg['fields'] ?? [];
+        $fromClause = trim((string)($cfg['from'] ?? ''));
+
+        // Apply optional linked datasets (safe joins + additional fields)
+        $linksCfg = is_array($cfg['links'] ?? null) ? $cfg['links'] : [];
+        $links = is_array($definition['links'] ?? null) ? $definition['links'] : [];
+        $wantedLinks = array_values(array_unique(array_filter(array_map(function($x) {
+            return strtolower(trim((string)$x));
+        }, $links))));
+        foreach ($wantedLinks as $lk) {
+            if ($lk === '' || !isset($linksCfg[$lk])) {
+                continue;
+            }
+            $join = (string)($linksCfg[$lk]['join'] ?? '');
+            if (trim($join) !== '') {
+                $fromClause .= "\n" . $join;
+            }
+            $lf = $linksCfg[$lk]['fields'] ?? [];
+            if (is_array($lf)) {
+                foreach ($lf as $fkey => $meta) {
+                    if (!array_key_exists($fkey, $fields)) {
+                        $fields[$fkey] = $meta;
+                    }
+                }
+            }
+        }
 
         $page = max(1, (int)($options['page'] ?? ($definition['page'] ?? 1)));
         $perPage = (int)($options['per_page'] ?? ($definition['per_page'] ?? 25));
@@ -575,7 +729,7 @@ class DynamicReportService {
         }
         $orderByClause = 'ORDER BY ' . implode(', ', $orderParts);
 
-        $fromClause = trim((string)$cfg['from']);
+        // $fromClause already built (base + optional link joins)
 
         // Total rows
         $total = 0;

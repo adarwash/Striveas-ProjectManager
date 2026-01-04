@@ -638,6 +638,93 @@
             <!-- Outbound Email Delivery (Troubleshooting) -->
             <?php require VIEWSPATH . '/tickets/partials/outbound_email_delivery_card.php'; ?>
 
+            <!-- Linked Work (Project / Task) -->
+            <?php
+                if (!isset($_SESSION['csrf_token'])) {
+                    try {
+                        $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+                    } catch (Exception $e) {
+                        $_SESSION['csrf_token'] = bin2hex(random_bytes(8));
+                    }
+                }
+                $linkedProject = $data['linked_project'] ?? null;
+                $linkedTask = $data['linked_task'] ?? null;
+                $linkedProjectId = (int)($data['ticket']['project_id'] ?? 0);
+                $linkedTaskId = (int)($data['ticket']['task_id'] ?? 0);
+            ?>
+            <div class="card border-0 shadow-sm mb-4" id="linkedWorkCard">
+                <div class="card-header bg-white">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-link-45deg me-2"></i>Linked Work
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <?php if ($linkedProjectId > 0 || $linkedTaskId > 0): ?>
+                        <div class="small mb-3">
+                            <?php if ($linkedProjectId > 0): ?>
+                                <div class="mb-1">
+                                    <span class="text-muted">Project:</span>
+                                    <a class="text-decoration-none fw-semibold" href="<?= URLROOT ?>/projects/viewProject/<?= $linkedProjectId ?>">
+                                        <?= htmlspecialchars(is_object($linkedProject) ? ((string)($linkedProject->title ?? 'Project #' . $linkedProjectId)) : ('Project #' . $linkedProjectId)) ?>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($linkedTaskId > 0): ?>
+                                <div class="mb-1">
+                                    <span class="text-muted">Task:</span>
+                                    <a class="text-decoration-none fw-semibold" href="<?= URLROOT ?>/tasks/show/<?= $linkedTaskId ?>">
+                                        <?= htmlspecialchars(is_object($linkedTask) ? ((string)($linkedTask->title ?? 'Task #' . $linkedTaskId)) : ('Task #' . $linkedTaskId)) ?>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-muted small mb-3">No project/task linked yet.</div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($data['can_edit'])): ?>
+                        <form method="POST" action="<?= URLROOT ?>/tickets/linkWork/<?= (int)$data['ticket']['id'] ?>" id="linkWorkForm">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+
+                            <div class="mb-2">
+                                <label class="form-label small mb-1" for="linked_project_id">Project</label>
+                                <select class="form-select form-select-sm" id="linked_project_id" name="project_id">
+                                    <option value="">No Project</option>
+                                    <?php foreach (($data['projects'] ?? []) as $p): ?>
+                                        <option value="<?= (int)$p['id'] ?>" <?= (string)$linkedProjectId === (string)$p['id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($p['title'] ?? ('Project #' . (int)$p['id'])) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small mb-1" for="linked_task_id">Task</label>
+                                <select class="form-select form-select-sm" id="linked_task_id" name="task_id"
+                                        data-selected-task="<?= htmlspecialchars($linkedTaskId ?: '') ?>"
+                                        <?= empty($linkedProjectId) ? 'disabled' : '' ?>>
+                                    <option value="">No Task</option>
+                                    <?php foreach (($data['tasks_for_project'] ?? []) as $t): ?>
+                                        <option value="<?= (int)$t['id'] ?>" <?= (string)$linkedTaskId === (string)$t['id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars(($t['title'] ?? ('Task #' . (int)$t['id'])) . (!empty($t['status']) ? (' (' . $t['status'] . ')') : '')) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text">Changing the project reloads the task list.</div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-save me-1"></i>Save Link
+                                </button>
+                            </div>
+                        </form>
+                    <?php else: ?>
+                        <div class="text-muted small">You don’t have permission to link this ticket.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <!-- Quick Actions -->
             <?php if ($data['can_edit']): ?>
             <div class="card border-0 shadow-sm mb-4">
@@ -1189,6 +1276,72 @@ document.getElementById('message').addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = this.scrollHeight + 'px';
 });
+</script>
+
+<script>
+// Linked Work: reload task options when project changes
+(() => {
+    const projectSel = document.getElementById('linked_project_id');
+    const taskSel = document.getElementById('linked_task_id');
+    if (!projectSel || !taskSel) return;
+
+    const setTasksDisabled = (disabled) => {
+        taskSel.disabled = !!disabled;
+        if (disabled) {
+            taskSel.innerHTML = '<option value="">No Task</option>';
+        }
+    };
+
+    const loadTasks = async (projectId, selectedTaskId) => {
+        if (!projectId) {
+            setTasksDisabled(true);
+            return;
+        }
+        setTasksDisabled(false);
+        taskSel.innerHTML = '<option value="">Loading…</option>';
+        try {
+            const res = await fetch('<?= URLROOT ?>/tickets/projectTasks/' + encodeURIComponent(projectId), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const j = await res.json().catch(() => null);
+            if (!j || !j.success) {
+                throw new Error((j && j.message) ? j.message : 'Failed to load tasks');
+            }
+            const tasks = Array.isArray(j.tasks) ? j.tasks : [];
+            let html = '<option value="">No Task</option>';
+            tasks.forEach(t => {
+                const id = String(t.id ?? '');
+                const title = String(t.title ?? ('Task #' + id));
+                const status = String(t.status ?? '');
+                const label = status ? (title + ' (' + status + ')') : title;
+                const selected = (selectedTaskId && String(selectedTaskId) === id) ? ' selected' : '';
+                html += '<option value="' + id.replace(/"/g,'&quot;') + '"' + selected + '>' + label.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</option>';
+            });
+            taskSel.innerHTML = html;
+        } catch (e) {
+            taskSel.innerHTML = '<option value="">No Task</option>';
+        }
+    };
+
+    projectSel.addEventListener('change', () => {
+        taskSel.setAttribute('data-selected-task', '');
+        loadTasks(projectSel.value, '');
+    });
+
+    // Initial enable/disable
+    if (!projectSel.value) {
+        setTasksDisabled(true);
+        return;
+    }
+
+    // If server didn't pre-populate tasks, fetch them once
+    const initialSelectedTask = taskSel.getAttribute('data-selected-task') || '';
+    if (taskSel.options.length <= 1) {
+        loadTasks(projectSel.value, initialSelectedTask);
+    } else {
+        taskSel.disabled = false;
+    }
+})();
 </script>
 
 <script>

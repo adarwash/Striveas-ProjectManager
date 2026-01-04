@@ -107,6 +107,26 @@ class User {
     }
 
     /**
+     * Ensure the UserSettings table has a saved_custom_theme column (JSON string).
+     * Stores the user's custom gradient for later reuse without applying immediately.
+     */
+    private function ensureUserSettingsSavedCustomThemeColumn(): void {
+        try {
+            if ($this->userSettingsHasColumn('saved_custom_theme')) {
+                return;
+            }
+            $this->db->query("
+                IF COL_LENGTH('dbo.UserSettings','saved_custom_theme') IS NULL
+                BEGIN
+                    ALTER TABLE [dbo].[UserSettings] ADD [saved_custom_theme] NVARCHAR(MAX) NULL;
+                END
+            ");
+        } catch (Exception $e) {
+            error_log('ensureUserSettingsSavedCustomThemeColumn Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Ensure the UserSettings table has a dashboard_layout column (JSON string).
      * Stores the per-user dashboard widget order/layout.
      */
@@ -1056,6 +1076,7 @@ class User {
                     'theme_header_text_color' => '',
                     'theme_project_card_headers' => 1,
                     'dashboard_layout' => '',
+                    'saved_custom_theme' => '',
                     'email_new_tickets' => true,
                     'email_ticket_updates' => true,
                     'email_comments' => true,
@@ -1138,6 +1159,10 @@ class User {
             // Legacy schema: ensure dashboard_layout column exists (user dashboard layout)
             if (array_key_exists('dashboard_layout', $settings)) {
                 $this->ensureUserSettingsDashboardLayoutColumn();
+            }
+            // Legacy schema: ensure saved_custom_theme column exists (saved custom gradient)
+            if (array_key_exists('saved_custom_theme', $settings)) {
+                $this->ensureUserSettingsSavedCustomThemeColumn();
             }
             
             // Ensure a row exists for this user

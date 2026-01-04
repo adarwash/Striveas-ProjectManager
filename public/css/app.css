@@ -1636,6 +1636,7 @@ body {
 .dropdown-item {
     padding: 0.5rem 1rem;
     font-weight: 500;
+    color: var(--text-dark);
     transition: all 0.2s ease;
 }
 
@@ -4500,7 +4501,7 @@ body {
     border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
-.theme-card-headers-enabled .card-header a:not(.btn) {
+.theme-card-headers-enabled .card-header a:not(.btn):not(.dropdown-item) {
     color: var(--user-theme-header-text-color, rgba(255, 255, 255, 0.95));
 }
 

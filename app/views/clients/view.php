@@ -1034,6 +1034,51 @@ if (!isset($_SESSION['csrf_token'])) {
         
         <!-- Quick Actions -->
         <div class="col-lg-4">
+            <!-- Ticket Overview -->
+            <div class="card border-0 shadow-sm mb-4" id="clientTicketOverviewCard" data-client-id="<?= (int)$client['id'] ?>">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-ticket text-warning me-2"></i>
+                        Ticket Overview
+                    </h6>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Ticket overview range">
+                        <button type="button" class="btn btn-outline-secondary" data-ticket-range="today">Today</button>
+                        <button type="button" class="btn btn-outline-secondary" data-ticket-range="week">Week</button>
+                        <button type="button" class="btn btn-outline-secondary active" data-ticket-range="month">Month</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="text-center flex-fill">
+                            <div class="h4 mb-0" id="clientTicketOpenCount">—</div>
+                            <div class="small text-muted">Open</div>
+                        </div>
+                        <div class="text-center flex-fill border-start border-end">
+                            <div class="h4 mb-0" id="clientTicketPendingCount">—</div>
+                            <div class="small text-muted">Pending</div>
+                        </div>
+                        <div class="text-center flex-fill">
+                            <div class="h4 mb-0" id="clientTicketClosedCount">—</div>
+                            <div class="small text-muted">Closed</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <h6 class="small text-muted mb-2">By Status</h6>
+                            <div id="clientTicketStatusList" class="small"></div>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="small text-muted mb-2">By Priority</h6>
+                            <div id="clientTicketPriorityList" class="small"></div>
+                        </div>
+                    </div>
+
+                    <div id="clientTicketOverviewMeta" class="small text-muted mt-3"></div>
+                    <div id="clientTicketOverviewError" class="alert alert-warning py-2 px-3 mt-3 d-none"></div>
+                </div>
+            </div>
+
             <!-- Contacts -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -1702,6 +1747,130 @@ if (!isset($_SESSION['csrf_token'])) {
         var sel = document.getElementById('logVisitSiteSelect');
         if (!sel || !sel.value) return;
         window.location.href = '/sitevisits/create/' + sel.value;
+    }
+
+    // Client Ticket Overview card (AJAX)
+    var ticketCard = document.getElementById('clientTicketOverviewCard');
+    if (ticketCard) {
+        var clientId = ticketCard.getAttribute('data-client-id');
+        var openEl = document.getElementById('clientTicketOpenCount');
+        var pendingEl = document.getElementById('clientTicketPendingCount');
+        var closedEl = document.getElementById('clientTicketClosedCount');
+        var statusList = document.getElementById('clientTicketStatusList');
+        var priorityList = document.getElementById('clientTicketPriorityList');
+        var metaEl = document.getElementById('clientTicketOverviewMeta');
+        var errEl = document.getElementById('clientTicketOverviewError');
+
+        var rangeLabels = { today: 'Today', week: 'Last 7 days', month: 'Last 30 days' };
+
+        function badgeClassForStatus(label) {
+            var l = (label || '').toLowerCase();
+            if (l.includes('resolved') || l.includes('closed')) return 'bg-success';
+            if (l.includes('pending')) return 'bg-secondary';
+            if (l.includes('in progress')) return 'bg-primary';
+            if (l.includes('new')) return 'bg-info';
+            if (l.includes('open')) return 'bg-warning text-dark';
+            return 'bg-light text-dark';
+        }
+
+        function badgeClassForPriority(label) {
+            var l = (label || '').toLowerCase();
+            if (l.includes('critical')) return 'bg-danger';
+            if (l.includes('high')) return 'bg-warning text-dark';
+            if (l.includes('medium')) return 'bg-info';
+            if (l.includes('normal')) return 'bg-primary';
+            if (l.includes('low')) return 'bg-success';
+            return 'bg-secondary';
+        }
+
+        function setError(msg) {
+            if (!errEl) return;
+            if (!msg) {
+                errEl.classList.add('d-none');
+                errEl.textContent = '';
+                return;
+            }
+            errEl.textContent = msg;
+            errEl.classList.remove('d-none');
+        }
+
+        function renderList(container, rows, badgeClassFn) {
+            if (!container) return;
+            if (!Array.isArray(rows) || rows.length === 0) {
+                container.innerHTML = '<div class="text-muted">No data</div>';
+                return;
+            }
+            var html = '';
+            rows.forEach(function(r) {
+                var label = (r && (r.label || r.name)) ? String(r.label || r.name) : 'Unknown';
+                var count = r && typeof r.count !== 'undefined' ? Number(r.count) : 0;
+                var cls = badgeClassFn(label);
+                html += '<div class="d-flex justify-content-between align-items-center mb-1">'
+                    + '<span>' + label.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>'
+                    + '<span class="badge ' + cls + '">' + count + '</span>'
+                    + '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function setLoading(loading) {
+            if (loading) {
+                if (openEl) openEl.textContent = '…';
+                if (pendingEl) pendingEl.textContent = '…';
+                if (closedEl) closedEl.textContent = '…';
+                if (statusList) statusList.innerHTML = '<div class="text-muted">Loading…</div>';
+                if (priorityList) priorityList.innerHTML = '<div class="text-muted">Loading…</div>';
+                if (metaEl) metaEl.textContent = '';
+            }
+        }
+
+        async function loadTicketOverview(range) {
+            range = range || 'month';
+            setError('');
+            setLoading(true);
+
+            try {
+                var url = '/clients/ticketStats/' + encodeURIComponent(clientId) + '?range=' + encodeURIComponent(range);
+                var res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                var j = await res.json().catch(function(){ return null; });
+                if (!j || !j.success) {
+                    throw new Error((j && j.message) ? j.message : 'Failed to load ticket overview.');
+                }
+
+                var sum = j.summary || {};
+                if (openEl) openEl.textContent = String(sum.open ?? 0);
+                if (pendingEl) pendingEl.textContent = String(sum.pending ?? 0);
+                if (closedEl) closedEl.textContent = String(sum.closed ?? 0);
+
+                renderList(statusList, j.statuses || [], badgeClassForStatus);
+                renderList(priorityList, j.priorities || [], badgeClassForPriority);
+
+                if (metaEl) {
+                    var lbl = rangeLabels[j.range] || rangeLabels[range] || range;
+                    var total = (sum.total ?? 0);
+                    metaEl.textContent = lbl + ' • Created since ' + (j.since || '—') + ' • Total ' + total;
+                }
+            } catch (e) {
+                setError(e && e.message ? e.message : 'Failed to load ticket overview.');
+                if (openEl) openEl.textContent = '—';
+                if (pendingEl) pendingEl.textContent = '—';
+                if (closedEl) closedEl.textContent = '—';
+            }
+        }
+
+        // Range buttons
+        var btns = ticketCard.querySelectorAll('[data-ticket-range]');
+        btns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                btns.forEach(function(b){ b.classList.remove('active'); });
+                btn.classList.add('active');
+                var r = btn.getAttribute('data-ticket-range') || 'month';
+                loadTicketOverview(r);
+            });
+        });
+
+        // Initial load (month)
+        loadTicketOverview('month');
     }
 
 	// Hook up Rename Document modal

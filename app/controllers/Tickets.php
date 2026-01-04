@@ -348,6 +348,63 @@ class Tickets extends Controller {
         // Get users for assignment
         $userModel = $this->model('User');
         $users = $userModel->getAllUsers();
+
+        // Projects/tasks for linking (sidebar)
+        $projects = [];
+        $tasksForProject = [];
+        $linkedProject = null;
+        $linkedTask = null;
+        try {
+            $projectModel = $this->model('Project');
+
+            // Load linked project if set
+            if (!empty($ticket['project_id']) && method_exists($projectModel, 'getProjectById')) {
+                $linkedProject = $projectModel->getProjectById((int)$ticket['project_id']);
+            }
+
+            // Projects list: filter by client where possible
+            if (!empty($ticket['client_id']) && method_exists($projectModel, 'getProjectsByClient')) {
+                $pobjs = $projectModel->getProjectsByClient((int)$ticket['client_id']);
+                foreach ($pobjs as $p) {
+                    if (is_object($p) && isset($p->id)) {
+                        $projects[] = ['id' => (int)$p->id, 'title' => (string)($p->title ?? 'Project #' . (int)$p->id)];
+                    }
+                }
+            } elseif (method_exists($projectModel, 'getActiveProjects')) {
+                $projects = $projectModel->getActiveProjects() ?: [];
+            }
+        } catch (Exception $e) {
+            $projects = [];
+            $linkedProject = null;
+        }
+
+        try {
+            $taskModel = $this->model('Task');
+            if (!empty($ticket['task_id']) && method_exists($taskModel, 'getTaskById')) {
+                $linkedTask = $taskModel->getTaskById((int)$ticket['task_id']);
+            }
+
+            // If task exists but ticket.project_id missing, infer it for UI (do not persist)
+            if (empty($ticket['project_id']) && $linkedTask && !empty($linkedTask->project_id)) {
+                $ticket['project_id'] = (int)$linkedTask->project_id;
+            }
+
+            if (!empty($ticket['project_id']) && method_exists($taskModel, 'getTasksByProject')) {
+                $tobjs = $taskModel->getTasksByProject((int)$ticket['project_id']);
+                foreach ($tobjs as $t) {
+                    if (is_object($t) && isset($t->id)) {
+                        $tasksForProject[] = [
+                            'id' => (int)$t->id,
+                            'title' => (string)($t->title ?? 'Task #' . (int)$t->id),
+                            'status' => (string)($t->status ?? '')
+                        ];
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            $linkedTask = null;
+            $tasksForProject = [];
+        }
         
         // Calculate SLA deadlines if not already set
         if (empty($ticket['sla_response_deadline']) || empty($ticket['sla_resolution_deadline'])) {
@@ -402,7 +459,11 @@ class Tickets extends Controller {
             'sla_status' => $slaStatus,
             'client' => $client,
             'display_timezone' => $displayTz,
-            'db_timezone' => $dbTz
+            'db_timezone' => $dbTz,
+            'projects' => $projects,
+            'tasks_for_project' => $tasksForProject,
+            'linked_project' => $linkedProject,
+            'linked_task' => $linkedTask
         ];
         
         $this->view('tickets/view', $viewData);
@@ -614,12 +675,26 @@ class Tickets extends Controller {
                 'assigned_to' => $_POST['assigned_to'] ?: null,
                 'due_date' => $_POST['due_date'] ?: null,
                 'tags' => trim($_POST['tags']),
-                'project_id' => $_POST['project_id'] ?: null,
+                'project_id' => ($_POST['project_id'] ?? '') ?: null,
+                'task_id' => ($_POST['task_id'] ?? '') ?: null,
                 'client_id' => $_POST['client_id'] ?: null,
                 'inbound_email_address' => trim($_POST['contact_email'] ?? ''),
                 'created_by' => $_SESSION['user_id'],
                 'source' => 'web'
             ];
+
+            // If a task was selected, ensure project_id matches that task
+            if (!empty($data['task_id'])) {
+                try {
+                    $taskModel = $this->model('Task');
+                    $t = $taskModel->getTaskById((int)$data['task_id']);
+                    if ($t && !empty($t->project_id)) {
+                        $data['project_id'] = (int)$t->project_id;
+                    }
+                } catch (Exception $e) {
+                    // ignore
+                }
+            }
             
             // Validation
             $errors = [];
@@ -723,8 +798,23 @@ class Tickets extends Controller {
                 'category_id' => $_POST['category_id'] ?: null,
                 'assigned_to' => $_POST['assigned_to'] ?: null,
                 'due_date' => $_POST['due_date'] ?: null,
-                'tags' => trim($_POST['tags'])
+                'tags' => trim($_POST['tags']),
+                'project_id' => ($_POST['project_id'] ?? '') ?: null,
+                'task_id' => ($_POST['task_id'] ?? '') ?: null
             ];
+
+            // If a task was selected, ensure project_id matches that task
+            if (!empty($data['task_id'])) {
+                try {
+                    $taskModel = $this->model('Task');
+                    $t = $taskModel->getTaskById((int)$data['task_id']);
+                    if ($t && !empty($t->project_id)) {
+                        $data['project_id'] = (int)$t->project_id;
+                    }
+                } catch (Exception $e) {
+                    // ignore
+                }
+            }
             
             // Check if status changed to resolved/closed
             if ($data['status_id'] != $ticket['status_id']) {
@@ -760,16 +850,237 @@ class Tickets extends Controller {
         $lookupData = $this->ticketModel->getLookupData();
         $userModel = $this->model('User');
         $users = $userModel->getAllUsers();
+
+        // Projects/tasks for linking
+        $projects = [];
+        $tasksForProject = [];
+        try {
+            $projectModel = $this->model('Project');
+            if (!empty($ticket['client_id']) && method_exists($projectModel, 'getProjectsByClient')) {
+                $pobjs = $projectModel->getProjectsByClient((int)$ticket['client_id']);
+                foreach ($pobjs as $p) {
+                    if (is_object($p) && isset($p->id)) {
+                        $projects[] = ['id' => (int)$p->id, 'title' => (string)($p->title ?? 'Project #' . (int)$p->id)];
+                    }
+                }
+            } elseif (method_exists($projectModel, 'getActiveProjects')) {
+                $projects = $projectModel->getActiveProjects() ?: [];
+            }
+        } catch (Exception $e) {
+            $projects = [];
+        }
+
+        if (!empty($ticket['project_id'])) {
+            try {
+                $taskModel = $this->model('Task');
+                $tobjs = $taskModel->getTasksByProject((int)$ticket['project_id']);
+                foreach ($tobjs as $t) {
+                    if (is_object($t) && isset($t->id)) {
+                        $tasksForProject[] = [
+                            'id' => (int)$t->id,
+                            'title' => (string)($t->title ?? 'Task #' . (int)$t->id),
+                            'status' => (string)($t->status ?? '')
+                        ];
+                    }
+                }
+            } catch (Exception $e) {
+                $tasksForProject = [];
+            }
+        }
         
         $viewData = [
             'ticket' => $ticket,
             'statuses' => $lookupData['statuses'],
             'priorities' => $lookupData['priorities'],
             'categories' => $lookupData['categories'],
-            'users' => $users
+            'users' => $users,
+            'projects' => $projects,
+            'tasks_for_project' => $tasksForProject
         ];
         
         $this->view('tickets/edit', $viewData);
+    }
+
+    /**
+     * AJAX: Return tasks for a project (for linking tickets)
+     * URL: /tickets/projectTasks/{projectId}
+     */
+    public function projectTasks($projectId = null) {
+        header('Content-Type: application/json');
+
+        if (
+            !hasPermission('tickets.read')
+            && !hasPermission('tickets.create')
+            && !hasPermission('tickets.update')
+        ) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden']);
+            return;
+        }
+
+        $pid = (int)($projectId ?? 0);
+        if ($pid <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing project id']);
+            return;
+        }
+
+        try {
+            $projectModel = $this->model('Project');
+            $project = method_exists($projectModel, 'getProjectById') ? $projectModel->getProjectById($pid) : null;
+            if (!$project) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Project not found']);
+                return;
+            }
+
+            // Enforce client visibility restrictions (if project has a client)
+            $clientId = is_object($project) ? ($project->client_id ?? null) : null;
+            $roleId = isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+            $isAdminRole = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+            $clientModel = $this->model('Client');
+            if (!$clientModel->canAccessClientId($clientId, $roleId, $isAdminRole)) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Forbidden']);
+                return;
+            }
+
+            $taskModel = $this->model('Task');
+            $tasks = method_exists($taskModel, 'getTasksByProject') ? $taskModel->getTasksByProject($pid) : [];
+            $out = [];
+            if (is_array($tasks)) {
+                foreach ($tasks as $t) {
+                    if (is_object($t) && isset($t->id)) {
+                        $out[] = [
+                            'id' => (int)$t->id,
+                            'title' => (string)($t->title ?? 'Task #' . (int)$t->id),
+                            'status' => (string)($t->status ?? '')
+                        ];
+                    } elseif (is_array($t) && isset($t['id'])) {
+                        $out[] = [
+                            'id' => (int)$t['id'],
+                            'title' => (string)($t['title'] ?? ('Task #' . (int)$t['id'])),
+                            'status' => (string)($t['status'] ?? '')
+                        ];
+                    }
+                }
+            }
+
+            echo json_encode(['success' => true, 'project_id' => $pid, 'tasks' => $out]);
+            return;
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to load tasks']);
+            return;
+        }
+    }
+
+    /**
+     * Link/unlink a ticket to a project and/or task.
+     * URL: /tickets/linkWork/{ticketId}
+     */
+    public function linkWork($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('tickets/show/' . (int)$id);
+        }
+
+        $ticketId = (int)$id;
+        $ticket = $this->ticketModel->getById($ticketId);
+        if (!$ticket) {
+            flash('error', 'Ticket not found.');
+            redirect('tickets');
+        }
+
+        $canEdit = hasPermission('tickets.update') || $this->canEditTicket($ticket, $_SESSION['user_id']);
+        if (!$canEdit) {
+            flash('error', 'You do not have permission to update this ticket.');
+            redirect('tickets/show/' . $ticketId);
+        }
+
+        // CSRF validation
+        $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
+        $postToken = (string)($_POST['csrf_token'] ?? '');
+        if ($sessionToken !== '' && ($postToken === '' || !hash_equals($sessionToken, $postToken))) {
+            flash('error', 'Invalid request token. Please refresh and try again.');
+            redirect('tickets/show/' . $ticketId);
+        }
+
+        $projectId = (int)($_POST['project_id'] ?? 0);
+        $taskId = (int)($_POST['task_id'] ?? 0);
+        $projectId = $projectId > 0 ? $projectId : null;
+        $taskId = $taskId > 0 ? $taskId : null;
+
+        $project = null;
+        $task = null;
+
+        // If task is selected, force project_id to that task's project
+        if (!empty($taskId)) {
+            try {
+                $taskModel = $this->model('Task');
+                $task = $taskModel->getTaskById((int)$taskId);
+            } catch (Exception $e) {
+                $task = null;
+            }
+            if (!$task) {
+                flash('error', 'Selected task was not found.');
+                redirect('tickets/show/' . $ticketId);
+            }
+            if (!empty($task->project_id)) {
+                $projectId = (int)$task->project_id;
+            }
+        }
+
+        // Validate project (if any)
+        $projectClientId = null;
+        if (!empty($projectId)) {
+            try {
+                $projectModel = $this->model('Project');
+                $project = $projectModel->getProjectById((int)$projectId);
+            } catch (Exception $e) {
+                $project = null;
+            }
+            if (!$project) {
+                flash('error', 'Selected project was not found.');
+                redirect('tickets/show/' . $ticketId);
+            }
+            $projectClientId = $project->client_id ?? null;
+
+            // Enforce client visibility restrictions
+            try {
+                $roleId = isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null;
+                $isAdminRole = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+                $clientModel = $this->model('Client');
+                if (!empty($projectClientId) && !$clientModel->canAccessClientId($projectClientId, $roleId, $isAdminRole)) {
+                    flash('error', 'You do not have access to that project.');
+                    redirect('tickets/show/' . $ticketId);
+                }
+            } catch (Exception $e) {
+                // permissive fallback
+            }
+
+            // If ticket already linked to a client, enforce the project belongs to that client
+            if (!empty($ticket['client_id']) && !empty($projectClientId) && (int)$ticket['client_id'] !== (int)$projectClientId) {
+                flash('error', 'That project belongs to a different client. Link the correct project or update the ticket client first.');
+                redirect('tickets/show/' . $ticketId);
+            }
+        }
+
+        // If ticket has no client yet, and project has a client, auto-link client_id
+        $update = [
+            'project_id' => $projectId ?: null,
+            'task_id' => $taskId ?: null
+        ];
+        if (empty($ticket['client_id']) && !empty($projectClientId)) {
+            $update['client_id'] = (int)$projectClientId;
+        }
+
+        $ok = $this->ticketModel->update($ticketId, $update);
+        if ($ok) {
+            flash('success', 'Linked work updated.');
+        } else {
+            flash('error', 'Failed to update linked work.');
+        }
+        redirect('tickets/show/' . $ticketId);
     }
     
     /**

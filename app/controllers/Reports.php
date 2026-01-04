@@ -154,7 +154,14 @@ class Reports extends Controller {
             
             $count = 0;
             foreach ($tasks as $task) {
-                if (isset($task['status']) && strtolower($task['status']) === strtolower($status)) {
+                $taskStatus = null;
+                if (is_array($task)) {
+                    $taskStatus = $task['status'] ?? null;
+                } elseif (is_object($task)) {
+                    // Task model returns stdClass rows in several methods
+                    $taskStatus = $task->status ?? null;
+                }
+                if ($taskStatus !== null && strtolower((string)$taskStatus) === strtolower($status)) {
                     $count++;
                 }
             }
@@ -232,7 +239,12 @@ class Reports extends Controller {
             
             if (is_array($projects)) {
                 foreach ($projects as $project) {
-                    $status = $project['status'] ?? 'Unknown';
+                    $status = 'Unknown';
+                    if (is_array($project)) {
+                        $status = $project['status'] ?? 'Unknown';
+                    } elseif (is_object($project)) {
+                        $status = $project->status ?? 'Unknown';
+                    }
                     $byStatus[$status] = ($byStatus[$status] ?? 0) + 1;
                 }
             }
@@ -538,14 +550,40 @@ class Reports extends Controller {
         $projects = $projectModel->getAllProjects();
         
         foreach ($projects as $project) {
+            $id = '';
+            $title = '';
+            $status = '';
+            $progress = 0;
+            $startDate = '';
+            $endDate = '';
+            $clientName = '';
+
+            if (is_array($project)) {
+                $id = $project['id'] ?? '';
+                $title = $project['title'] ?? $project['name'] ?? '';
+                $status = $project['status'] ?? '';
+                $progress = $project['progress'] ?? 0;
+                $startDate = $project['start_date'] ?? '';
+                $endDate = $project['end_date'] ?? '';
+                $clientName = $project['client_name'] ?? '';
+            } elseif (is_object($project)) {
+                $id = $project->id ?? '';
+                $title = $project->title ?? ($project->name ?? '');
+                $status = $project->status ?? '';
+                $progress = $project->progress ?? 0;
+                $startDate = $project->start_date ?? '';
+                $endDate = $project->end_date ?? '';
+                $clientName = $project->client_name ?? '';
+            }
+
             fputcsv($output, [
-                $project['id'] ?? '',
-                $project['title'] ?? $project['name'] ?? '',
-                $project['status'] ?? '',
-                ($project['progress'] ?? 0) . '%',
-                $project['start_date'] ?? '',
-                $project['end_date'] ?? '',
-                $project['client_name'] ?? ''
+                $id,
+                $title,
+                $status,
+                ((int)$progress) . '%',
+                $startDate,
+                $endDate,
+                $clientName
             ]);
         }
     }
@@ -741,12 +779,27 @@ class Reports extends Controller {
 
         require_once APPROOT . '/app/services/DynamicReportService.php';
         $svc = new DynamicReportService();
-        $fields = $svc->getFieldsForDataset($dataset);
+        $linksRaw = (string)($_GET['links'] ?? '');
+        $links = [];
+        if ($linksRaw !== '') {
+            $links = array_values(array_filter(array_map(function($v) {
+                return trim((string)$v);
+            }, explode(',', $linksRaw)), function($v) {
+                return $v !== '';
+            }));
+        }
+        $fields = $svc->getFieldsForDataset($dataset, $links);
+        $availableLinks = $svc->getLinksForDataset($dataset);
         if (empty($fields)) {
             echo json_encode(['success' => false, 'message' => 'Unknown dataset']);
             exit;
         }
-        echo json_encode(['success' => true, 'dataset' => $dataset, 'fields' => $fields]);
+        echo json_encode([
+            'success' => true,
+            'dataset' => $dataset,
+            'fields' => $fields,
+            'available_links' => $availableLinks
+        ]);
         exit;
     }
 

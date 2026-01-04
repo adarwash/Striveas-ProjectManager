@@ -302,14 +302,61 @@ class Ticket {
      * @return bool Success
      */
     public function delete($id) {
+        $id = (int)$id;
+        if ($id <= 0) {
+            return false;
+        }
+
+        // Helper: check if a table exists (SQL Server)
+        $tableExists = function(string $tableName): bool {
+            try {
+                $rows = $this->db->select(
+                    "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = :t",
+                    ['t' => $tableName]
+                );
+                return !empty($rows) && (int)($rows[0]['c'] ?? 0) > 0;
+            } catch (Exception $e) {
+                return false;
+            }
+        };
+
+        $startedTx = false;
         try {
-            // Remove queued outbound emails tied to this ticket (no cascade)
-            $this->db->remove("DELETE FROM EmailQueue WHERE ticket_id = :id", ['id' => $id]);
-            // TicketMessages, TicketAttachments, TicketAssignments are set with ON DELETE CASCADE
+            $startedTx = (bool)$this->db->beginTransaction();
+
+            // Some installs have FK constraints without cascade (e.g., SLABreachLog),
+            // so delete child rows explicitly before deleting the ticket.
+            if ($tableExists('SLABreachLog')) {
+                $this->db->remove("DELETE FROM SLABreachLog WHERE ticket_id = :id", ['id' => $id]);
+            }
+
+            if ($tableExists('EmailQueue')) {
+                $this->db->remove("DELETE FROM EmailQueue WHERE ticket_id = :id", ['id' => $id]);
+            }
+
+            // Ticket children (safe even if cascade exists)
+            if ($tableExists('TicketAttachments')) {
+                $this->db->remove("DELETE FROM TicketAttachments WHERE ticket_id = :id", ['id' => $id]);
+            }
+            if ($tableExists('TicketMessages')) {
+                $this->db->remove("DELETE FROM TicketMessages WHERE ticket_id = :id", ['id' => $id]);
+            }
+            if ($tableExists('TicketAssignments')) {
+                $this->db->remove("DELETE FROM TicketAssignments WHERE ticket_id = :id", ['id' => $id]);
+            }
+
+            // Finally delete the ticket
             $this->db->remove("DELETE FROM Tickets WHERE id = :id", ['id' => $id]);
+
+            if ($startedTx) {
+                $this->db->commitTransaction();
+            }
             return true;
         } catch (Exception $e) {
-            error_log('Ticket Delete Error: ' . $e->getMessage());
+            if ($startedTx) {
+                try { $this->db->rollbackTransaction(); } catch (Exception $e2) { /* ignore */ }
+            }
+            error_log('Ticket Delete Error for ticket ' . $id . ': ' . $e->getMessage());
             return false;
         }
     }
@@ -322,7 +369,10 @@ class Ticket {
      */
     public function getById($id) {
         try {
-            $query = "SELECT td.*, t.inbound_email_address, t.source FROM TicketDashboard td 
+            $query = "SELECT td.*, 
+                            t.inbound_email_address, t.source,
+                            t.project_id, t.task_id
+                      FROM TicketDashboard td 
                      LEFT JOIN Tickets t ON td.id = t.id 
                      WHERE td.id = :id";
             $result = $this->db->select($query, ['id' => $id]);
@@ -500,6 +550,7 @@ class Ticket {
             $allowedFields = [
                 'subject', 'description', 'status_id', 'priority_id', 'category_id',
                 'assigned_to', 'client_id', 'due_date', 'tags', 'resolved_at', 'closed_at',
+                'project_id', 'task_id',
                 'is_archived', 'archived_at'
             ];
             
@@ -713,6 +764,339 @@ class Ticket {
         } catch (Exception $e) {
             error_log('Ticket GetStatistics Error: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Get all tickets (for reporting/export).
+     *
+     * Reports controller expects flat keys: status, priority, assigned_to, resolved_at.
+     * We source from TicketDashboard and join Tickets for resolved/closed timestamps.
+     *
+     * @return array<int, array>
+     */
+    public function getAllTickets(): array {
+        try {
+            $rows = $this->db->select(
+                "SELECT
+                    td.id,
+                    td.ticket_number,
+                    td.subject,
+                    td.created_at,
+                    td.updated_at,
+                    td.status_display,
+                    td.priority_display,
+                    td.assigned_to_name,
+                    td.assigned_to_username,
+                    t.resolved_at,
+                    t.closed_at
+                 FROM TicketDashboard td
+                 LEFT JOIN Tickets t ON t.id = td.id
+                 ORDER BY td.created_at DESC, td.id DESC"
+            ) ?: [];
+
+            $out = [];
+            foreach ($rows as $r) {
+                $status = (string)($r['status_display'] ?? $r['status'] ?? 'Open');
+                $priorityDisplay = (string)($r['priority_display'] ?? $r['priority'] ?? 'Medium');
+                // Normalize "High Priority" -> "High" for report UI
+                $priority = preg_replace('/\s+priority\s*$/i', '', $priorityDisplay);
+                $priority = trim((string)$priority);
+                if ($priority === '') {
+                    $priority = $priorityDisplay !== '' ? $priorityDisplay : 'Medium';
+                }
+
+                $assignedTo = (string)($r['assigned_to_name'] ?? '');
+                if ($assignedTo === '') {
+                    $assignedTo = (string)($r['assigned_to_username'] ?? '');
+                }
+
+                $resolvedAt = $r['resolved_at'] ?? null;
+                if (empty($resolvedAt)) {
+                    $resolvedAt = $r['closed_at'] ?? null;
+                }
+
+                $r['status'] = $status;
+                $r['priority'] = $priority;
+                $r['assigned_to'] = $assignedTo;
+                $r['resolved_at'] = $resolvedAt;
+
+                $out[] = $r;
+            }
+
+            return $out;
+        } catch (Exception $e) {
+            error_log('Ticket getAllTickets Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Tickets resolved/closed since a given date/time.
+     *
+     * @param string $since Date string (Y-m-d or Y-m-d H:i:s)
+     * @return array<int, array>
+     */
+    public function getTicketsResolvedSince($since): array {
+        try {
+            $since = trim((string)$since);
+            if ($since !== '' && strlen($since) <= 10) {
+                $since .= ' 00:00:00';
+            }
+            if ($since === '') {
+                return [];
+            }
+
+            $rows = $this->db->select(
+                "SELECT
+                    t.id,
+                    t.ticket_number,
+                    t.created_at,
+                    t.updated_at,
+                    t.resolved_at,
+                    t.closed_at,
+                    ts.display_name AS status_display
+                 FROM Tickets t
+                 LEFT JOIN TicketStatuses ts ON ts.id = t.status_id
+                 WHERE
+                    (
+                        (t.resolved_at IS NOT NULL AND t.resolved_at >= :since)
+                        OR (t.closed_at IS NOT NULL AND t.closed_at >= :since)
+                        OR (
+                            t.resolved_at IS NULL AND t.closed_at IS NULL
+                            AND ts.is_closed = 1
+                            AND t.updated_at IS NOT NULL AND t.updated_at >= :since
+                        )
+                    )
+                 ORDER BY COALESCE(t.resolved_at, t.closed_at, t.updated_at) DESC, t.id DESC",
+                ['since' => $since]
+            );
+
+            return $rows ?: [];
+        } catch (Exception $e) {
+            error_log('Ticket getTicketsResolvedSince Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Average resolution time as a formatted string (e.g. "12.4 hours").
+     */
+    public function getAverageResolutionTime(): string {
+        try {
+            $rows = $this->db->select(
+                "SELECT
+                    AVG(CAST(DATEDIFF(MINUTE, t.created_at,
+                        COALESCE(
+                            t.resolved_at,
+                            t.closed_at,
+                            CASE WHEN ts.is_closed = 1 THEN t.updated_at ELSE NULL END
+                        )
+                    ) AS FLOAT)) AS avg_minutes
+                 FROM Tickets t
+                 LEFT JOIN TicketStatuses ts ON ts.id = t.status_id
+                 WHERE
+                    t.created_at IS NOT NULL
+                    AND COALESCE(
+                        t.resolved_at,
+                        t.closed_at,
+                        CASE WHEN ts.is_closed = 1 THEN t.updated_at ELSE NULL END
+                    ) IS NOT NULL"
+            );
+
+            $avgMinutes = isset($rows[0]['avg_minutes']) ? (float)$rows[0]['avg_minutes'] : 0.0;
+            if ($avgMinutes <= 0) {
+                return '0 hours';
+            }
+            $hours = $avgMinutes / 60.0;
+            // Keep it readable
+            if ($hours < 10) {
+                return number_format($hours, 1) . ' hours';
+            }
+            return number_format($hours, 0) . ' hours';
+        } catch (Exception $e) {
+            error_log('Ticket getAverageResolutionTime Error: ' . $e->getMessage());
+            return '0 hours';
+        }
+    }
+
+    /**
+     * Ticket resolution rate as a percent string (e.g. "68%").
+     */
+    public function getResolutionRate(): string {
+        try {
+            $rows = $this->db->select(
+                "SELECT
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN ts.is_closed = 1 THEN 1 ELSE 0 END) AS closed_count
+                 FROM Tickets t
+                 LEFT JOIN TicketStatuses ts ON ts.id = t.status_id"
+            );
+            $total = isset($rows[0]['total']) ? (int)$rows[0]['total'] : 0;
+            $closed = isset($rows[0]['closed_count']) ? (int)$rows[0]['closed_count'] : 0;
+            if ($total <= 0) {
+                return '0%';
+            }
+            $pct = ($closed / $total) * 100.0;
+            return (string)round($pct) . '%';
+        } catch (Exception $e) {
+            error_log('Ticket getResolutionRate Error: ' . $e->getMessage());
+            return '0%';
+        }
+    }
+
+    /**
+     * Per-client ticket overview counts (status + priority) for a selected range.
+     *
+     * Range filter is applied to TicketDashboard.created_at (tickets created since).
+     *
+     * @param int $clientId
+     * @param string $range One of: today, week, month
+     * @return array<string,mixed>
+     */
+    public function getClientTicketOverview(int $clientId, string $range = 'month'): array {
+        $clientId = (int)$clientId;
+        if ($clientId <= 0) {
+            return [
+                'range' => 'month',
+                'since' => null,
+                'summary' => ['open' => 0, 'pending' => 0, 'closed' => 0, 'total' => 0],
+                'statuses' => [],
+                'priorities' => [],
+            ];
+        }
+
+        $range = strtolower(trim($range));
+        if (!in_array($range, ['today', 'week', 'month'], true)) {
+            $range = 'month';
+        }
+
+        try {
+            $now = new DateTimeImmutable('now');
+        } catch (Exception $e) {
+            $now = new DateTimeImmutable();
+        }
+
+        switch ($range) {
+            case 'today':
+                $sinceDt = $now->setTime(0, 0, 0);
+                break;
+            case 'week':
+                $sinceDt = $now->modify('-7 days')->setTime(0, 0, 0);
+                break;
+            case 'month':
+            default:
+                $sinceDt = $now->modify('-30 days')->setTime(0, 0, 0);
+                break;
+        }
+        $since = $sinceDt->format('Y-m-d H:i:s');
+
+        try {
+            $this->ensureDefaultTicketLookups();
+        } catch (Exception $e) {
+            // non-fatal
+        }
+
+        try {
+            // Status breakdown (include zeros for consistent display)
+            $statusRows = $this->db->select(
+                "SELECT
+                    ts.name,
+                    ts.display_name,
+                    ts.is_closed,
+                    ts.sort_order,
+                    COUNT(td.id) AS count
+                 FROM TicketStatuses ts
+                 LEFT JOIN TicketDashboard td
+                    ON td.status_id = ts.id
+                   AND td.client_id = :cid
+                   AND td.created_at >= :since
+                 WHERE ts.is_active = 1
+                 GROUP BY ts.name, ts.display_name, ts.is_closed, ts.sort_order
+                 ORDER BY ts.sort_order ASC, ts.id ASC",
+                ['cid' => $clientId, 'since' => $since]
+            ) ?: [];
+
+            // Priority breakdown (include zeros for consistent display)
+            $priorityRows = $this->db->select(
+                "SELECT
+                    tp.name,
+                    tp.display_name,
+                    tp.level,
+                    tp.sort_order,
+                    COUNT(td.id) AS count
+                 FROM TicketPriorities tp
+                 LEFT JOIN TicketDashboard td
+                    ON td.priority_id = tp.id
+                   AND td.client_id = :cid
+                   AND td.created_at >= :since
+                 WHERE tp.is_active = 1
+                 GROUP BY tp.name, tp.display_name, tp.level, tp.sort_order
+                 ORDER BY tp.sort_order ASC, tp.id ASC",
+                ['cid' => $clientId, 'since' => $since]
+            ) ?: [];
+
+            $total = 0;
+            $closed = 0;
+            $pending = 0;
+            foreach ($statusRows as $r) {
+                $c = isset($r['count']) ? (int)$r['count'] : 0;
+                $total += $c;
+                $isClosed = !empty($r['is_closed']) && (int)$r['is_closed'] === 1;
+                if ($isClosed) {
+                    $closed += $c;
+                } else {
+                    $name = strtolower((string)($r['name'] ?? ''));
+                    $disp = strtolower((string)($r['display_name'] ?? ''));
+                    if ($name === 'pending' || $disp === 'pending') {
+                        $pending += $c;
+                    }
+                }
+            }
+            $open = max(0, $total - $closed - $pending);
+
+            $statuses = [];
+            foreach ($statusRows as $r) {
+                $statuses[] = [
+                    'name' => (string)($r['name'] ?? ''),
+                    'label' => (string)($r['display_name'] ?? $r['name'] ?? 'Unknown'),
+                    'is_closed' => !empty($r['is_closed']) ? (int)$r['is_closed'] : 0,
+                    'count' => isset($r['count']) ? (int)$r['count'] : 0,
+                ];
+            }
+
+            $priorities = [];
+            foreach ($priorityRows as $r) {
+                $full = (string)($r['display_name'] ?? $r['name'] ?? '');
+                $short = trim((string)preg_replace('/\s+priority\s*$/i', '', $full));
+                if ($short === '') {
+                    $short = $full;
+                }
+                $priorities[] = [
+                    'name' => (string)($r['name'] ?? ''),
+                    'label' => $short,
+                    'label_full' => $full,
+                    'level' => isset($r['level']) ? (int)$r['level'] : null,
+                    'count' => isset($r['count']) ? (int)$r['count'] : 0,
+                ];
+            }
+
+            return [
+                'range' => $range,
+                'since' => $since,
+                'summary' => ['open' => $open, 'pending' => $pending, 'closed' => $closed, 'total' => $total],
+                'statuses' => $statuses,
+                'priorities' => $priorities,
+            ];
+        } catch (Exception $e) {
+            error_log('Ticket getClientTicketOverview Error: ' . $e->getMessage());
+            return [
+                'range' => $range,
+                'since' => $since,
+                'summary' => ['open' => 0, 'pending' => 0, 'closed' => 0, 'total' => 0],
+                'statuses' => [],
+                'priorities' => [],
+            ];
         }
     }
 

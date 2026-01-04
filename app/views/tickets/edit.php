@@ -92,6 +92,35 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
+                                <label for="project_id" class="form-label">Related Project</label>
+                                <select class="form-select" id="project_id" name="project_id">
+                                    <option value="">No Project</option>
+                                    <?php foreach (($data['projects'] ?? []) as $p): ?>
+                                        <option value="<?= (int)$p['id'] ?>" <?= (string)($data['ticket']['project_id'] ?? '') === (string)$p['id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($p['title'] ?? ('Project #' . (int)$p['id'])) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text">Optional: link this ticket to a project</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="task_id" class="form-label">Related Task</label>
+                                <select class="form-select" id="task_id" name="task_id"
+                                        data-selected-task="<?= htmlspecialchars($data['ticket']['task_id'] ?? '') ?>"
+                                        <?= empty($data['ticket']['project_id']) ? 'disabled' : '' ?>>
+                                    <option value="">No Task</option>
+                                    <?php foreach (($data['tasks_for_project'] ?? []) as $t): ?>
+                                        <option value="<?= (int)$t['id'] ?>" <?= (string)($data['ticket']['task_id'] ?? '') === (string)$t['id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars(($t['title'] ?? ('Task #' . (int)$t['id'])) . (!empty($t['status']) ? (' (' . $t['status'] . ')') : '')) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text">Optional: selecting a task will also set its project</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 <label for="due_date" class="form-label">Due Date</label>
                                 <input type="date" class="form-control" id="due_date" name="due_date" value="<?= $data['ticket']['due_date'] ? date('Y-m-d', strtotime($data['ticket']['due_date'])) : '' ?>">
                             </div>
@@ -122,6 +151,64 @@ document.getElementById('description').addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = this.scrollHeight + 'px';
 });
+
+// Load tasks when project changes
+(function(){
+    const projectSel = document.getElementById('project_id');
+    const taskSel = document.getElementById('task_id');
+    if (!projectSel || !taskSel) return;
+
+    const setTasksDisabled = (disabled) => {
+        taskSel.disabled = !!disabled;
+        if (disabled) {
+            taskSel.innerHTML = '<option value="">No Task</option>';
+        }
+    };
+
+    const loadTasks = async (projectId, selectedTaskId) => {
+        if (!projectId) {
+            setTasksDisabled(true);
+            return;
+        }
+        setTasksDisabled(false);
+        taskSel.innerHTML = '<option value="">Loading…</option>';
+        try {
+            const res = await fetch('<?= URLROOT ?>/tickets/projectTasks/' + encodeURIComponent(projectId), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const j = await res.json().catch(() => null);
+            if (!j || !j.success) {
+                throw new Error((j && j.message) ? j.message : 'Failed to load tasks');
+            }
+            const tasks = Array.isArray(j.tasks) ? j.tasks : [];
+            let html = '<option value="">No Task</option>';
+            tasks.forEach(t => {
+                const id = String(t.id ?? '');
+                const title = String(t.title ?? ('Task #' + id));
+                const status = String(t.status ?? '');
+                const label = status ? (title + ' (' + status + ')') : title;
+                const selected = (selectedTaskId && String(selectedTaskId) === id) ? ' selected' : '';
+                html += '<option value="' + id.replace(/"/g,'&quot;') + '"' + selected + '>' + label.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</option>';
+            });
+            taskSel.innerHTML = html;
+        } catch (e) {
+            taskSel.innerHTML = '<option value="">No Task</option>';
+        }
+    };
+
+    projectSel.addEventListener('change', () => {
+        taskSel.setAttribute('data-selected-task', '');
+        loadTasks(projectSel.value, '');
+    });
+
+    // Initial load (ensure task list matches selected project)
+    if (projectSel.value) {
+        const selectedTask = taskSel.getAttribute('data-selected-task') || '';
+        loadTasks(projectSel.value, selectedTask);
+    } else {
+        setTasksDisabled(true);
+    }
+})();
 </script>
 
 

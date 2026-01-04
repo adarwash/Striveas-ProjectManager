@@ -144,6 +144,15 @@
                                 </select>
                                 <div class="form-text">Link this ticket to a specific project if applicable</div>
                             </div>
+
+                            <div class="col-md-6">
+                                <label for="task_id" class="form-label">Related Task</label>
+                                <select class="form-select" id="task_id" name="task_id"
+                                        data-selected-task="<?= htmlspecialchars($data['formData']['task_id'] ?? '') ?>" disabled>
+                                    <option value="">No Task</option>
+                                </select>
+                                <div class="form-text">Optional: select a task (loads after choosing a project)</div>
+                            </div>
                         </div>
 
                         <!-- Due Date and Tags Row -->
@@ -353,6 +362,65 @@ document.getElementById('client_id').addEventListener('change', function() {
         emailInput.value = '';
     }
 });
+
+// Load tasks when project changes
+(function(){
+    const projectSel = document.getElementById('project_id');
+    const taskSel = document.getElementById('task_id');
+    if (!projectSel || !taskSel) return;
+
+    const getSelectedTask = () => taskSel.getAttribute('data-selected-task') || '';
+
+    const setTasksDisabled = (disabled) => {
+        taskSel.disabled = !!disabled;
+        if (disabled) {
+            taskSel.innerHTML = '<option value="">No Task</option>';
+        }
+    };
+
+    const loadTasks = async (projectId, selectedTaskId) => {
+        if (!projectId) {
+            setTasksDisabled(true);
+            return;
+        }
+        setTasksDisabled(false);
+        taskSel.innerHTML = '<option value="">Loading…</option>';
+        try {
+            const res = await fetch('<?= URLROOT ?>/tickets/projectTasks/' + encodeURIComponent(projectId), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const j = await res.json().catch(() => null);
+            if (!j || !j.success) {
+                throw new Error((j && j.message) ? j.message : 'Failed to load tasks');
+            }
+            const tasks = Array.isArray(j.tasks) ? j.tasks : [];
+            let html = '<option value="">No Task</option>';
+            tasks.forEach(t => {
+                const id = String(t.id ?? '');
+                const title = String(t.title ?? ('Task #' + id));
+                const status = String(t.status ?? '');
+                const label = status ? (title + ' (' + status + ')') : title;
+                const selected = (selectedTaskId && String(selectedTaskId) === id) ? ' selected' : '';
+                html += '<option value="' + id.replace(/"/g,'&quot;') + '"' + selected + '>' + label.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</option>';
+            });
+            taskSel.innerHTML = html;
+        } catch (e) {
+            taskSel.innerHTML = '<option value="">No Task</option>';
+        }
+    };
+
+    projectSel.addEventListener('change', () => {
+        taskSel.setAttribute('data-selected-task', '');
+        loadTasks(projectSel.value, '');
+    });
+
+    // Initial load (if project preselected)
+    if (projectSel.value) {
+        loadTasks(projectSel.value, getSelectedTask());
+    } else {
+        setTasksDisabled(true);
+    }
+})();
 </script>
 
 <style>

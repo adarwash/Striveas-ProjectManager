@@ -331,6 +331,11 @@ class Profile extends Controller {
     public function updateTheme() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = $_SESSION['user_id'];
+
+            $action = strtolower(trim((string)($_POST['theme_action'] ?? 'apply')));
+            if ($action === '') {
+                $action = 'apply';
+            }
             
             // Tool picker: allow presets + safe custom gradient (built from color pickers)
             $selection = trim((string)($_POST['nav_background'] ?? ''));
@@ -364,8 +369,41 @@ class Profile extends Controller {
                 'linear-gradient(to top, #09203f 0%, #537895 100%)',
                 'linear-gradient(to right, #654ea3, #eaafc8)',
             ];
+
+            // Save custom theme (without applying)
+            if ($action === 'save_custom') {
+                $start = strtoupper(trim((string)($_POST['custom_color_start'] ?? '')));
+                $end = strtoupper(trim((string)($_POST['custom_color_end'] ?? '')));
+                $angle = (int)($_POST['custom_angle'] ?? 135);
+                if (!preg_match('/^#[0-9A-F]{6}$/', $start) || !preg_match('/^#[0-9A-F]{6}$/', $end) || $angle < 0 || $angle > 360) {
+                    $_SESSION['profile_error'] = 'Invalid custom gradient values.';
+                    redirect('profile');
+                    return;
+                }
+
+                $gradient = "linear-gradient({$angle}deg, {$start} 0%, {$end} 100%)";
+                $payload = [
+                    'start' => $start,
+                    'end' => $end,
+                    'angle' => $angle,
+                    'gradient' => $gradient,
+                    'saved_at' => date('Y-m-d H:i:s')
+                ];
+
+                $ok = $this->userModel->updateUserSettings((int)$userId, [
+                    'saved_custom_theme' => json_encode($payload)
+                ]);
+                if ($ok) {
+                    $_SESSION['profile_success'] = 'Custom theme saved. You can apply it later by selecting “Custom” and clicking Apply.';
+                } else {
+                    $_SESSION['profile_error'] = 'Failed to save custom theme.';
+                }
+                redirect('profile');
+                return;
+            }
             
             $navBackground = '';
+            $savedCustomThemeJson = null;
             if ($selection === 'custom') {
                 $start = strtoupper(trim((string)($_POST['custom_color_start'] ?? '')));
                 $end = strtoupper(trim((string)($_POST['custom_color_end'] ?? '')));
@@ -379,6 +417,15 @@ class Profile extends Controller {
                 
                 // Build a safe gradient string server-side (prevents CSS injection)
                 $navBackground = "linear-gradient({$angle}deg, {$start} 0%, {$end} 100%)";
+
+                // Also store this custom theme so it can be reused later
+                $savedCustomThemeJson = json_encode([
+                    'start' => $start,
+                    'end' => $end,
+                    'angle' => $angle,
+                    'gradient' => $navBackground,
+                    'saved_at' => date('Y-m-d H:i:s')
+                ]);
             } else {
                 $navBackground = $selection;
                 if (!in_array($navBackground, $allowedPresets, true)) {
@@ -389,12 +436,17 @@ class Profile extends Controller {
             }
             
             // Update settings
-            if ($this->userModel->updateUserSettings($userId, [
+            $update = [
                 'nav_background' => $navBackground,
                 'theme_card_headers' => $themeCardHeaders,
                 'theme_project_card_headers' => $themeProjectCardHeaders,
                 'theme_header_text_color' => $headerTextColor
-            ])) {
+            ];
+            if (!empty($savedCustomThemeJson)) {
+                $update['saved_custom_theme'] = $savedCustomThemeJson;
+            }
+
+            if ($this->userModel->updateUserSettings($userId, $update)) {
                  $_SESSION['profile_success'] = 'Theme updated successfully';
             } else {
                  $_SESSION['profile_error'] = 'Failed to update theme';

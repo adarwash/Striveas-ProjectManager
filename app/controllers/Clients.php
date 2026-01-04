@@ -383,6 +383,76 @@ class Clients extends Controller {
     }
 
     /**
+     * AJAX: Ticket overview stats for a client
+     * URL: /clients/ticketStats/{clientId}?range=today|week|month
+     */
+    public function ticketStats($id = null) {
+        header('Content-Type: application/json');
+
+        if (!hasPermission('clients.read')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'You do not have permission to view clients.']);
+            exit;
+        }
+
+        $clientId = (int)($id ?? 0);
+        if ($clientId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing client id.']);
+            exit;
+        }
+
+        $client = $this->clientModel->getClientById($clientId);
+        if (!$client) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Client not found.']);
+            exit;
+        }
+
+        if (!$this->clientModel->canAccessClientId(
+            (int)$client['id'],
+            $this->currentRoleId(),
+            $this->isAdminRole()
+        )) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'You do not have access to this client.']);
+            exit;
+        }
+
+        $range = strtolower(trim((string)($_GET['range'] ?? 'month')));
+        if (!in_array($range, ['today', 'week', 'month'], true)) {
+            $range = 'month';
+        }
+
+        $ticketModel = $this->model('Ticket');
+        $payload = [];
+        try {
+            if (method_exists($ticketModel, 'getClientTicketOverview')) {
+                $payload = $ticketModel->getClientTicketOverview($clientId, $range);
+            } else {
+                $payload = [
+                    'range' => $range,
+                    'since' => null,
+                    'summary' => ['open' => 0, 'pending' => 0, 'closed' => 0, 'total' => 0],
+                    'statuses' => [],
+                    'priorities' => [],
+                ];
+            }
+        } catch (Exception $e) {
+            $payload = [
+                'range' => $range,
+                'since' => null,
+                'summary' => ['open' => 0, 'pending' => 0, 'closed' => 0, 'total' => 0],
+                'statuses' => [],
+                'priorities' => [],
+            ];
+        }
+
+        echo json_encode(array_merge(['success' => true, 'client_id' => $clientId], $payload));
+        exit;
+    }
+
+    /**
      * Add a contact to a client
      */
     public function addContact($clientId = null) {
