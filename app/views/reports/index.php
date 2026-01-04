@@ -8,6 +8,12 @@
             <p class="text-muted mb-0">Comprehensive system reports and performance analytics.</p>
         </div>
         <div>
+            <a href="/reports/builder" class="btn btn-primary me-2">
+                <i class="bi bi-sliders me-2"></i>Report Builder
+            </a>
+            <a href="/reports/saved" class="btn btn-outline-primary me-2">
+                <i class="bi bi-folder2-open me-2"></i>Saved Reports
+            </a>
             <a href="/admin" class="btn btn-outline-secondary me-2">
                 <i class="bi bi-arrow-left me-2"></i>Back to Admin
             </a>

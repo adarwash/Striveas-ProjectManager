@@ -6,11 +6,13 @@
 class Reports extends Controller {
     
     public function __construct() {
-        // Check if user is logged in and has admin permissions
+        // Check if user is logged in
         if (!isLoggedIn()) {
             redirect('users/login');
         }
-        
+    }
+
+    private function requireAdminAccess(): void {
         if (!hasPermission('admin.access')) {
             flash('error', 'You do not have permission to access reports.');
             redirect('dashboard');
@@ -34,6 +36,7 @@ class Reports extends Controller {
      * Reports dashboard/index page
      */
     public function index() {
+        $this->requireAdminAccess();
         $reportData = $this->generateReportData();
         
         $viewData = [
@@ -446,6 +449,7 @@ class Reports extends Controller {
      * Generate specific report type
      */
     public function generate($type = null) {
+        $this->requireAdminAccess();
         if (!$type) {
             redirect('reports');
         }
@@ -473,6 +477,7 @@ class Reports extends Controller {
      * Export report as CSV
      */
     public function export($type = null) {
+        $this->requireAdminAccess();
         if (!$type) {
             redirect('reports');
         }
@@ -580,5 +585,507 @@ class Reports extends Controller {
             error_log("Report export error in $method: " . $e->getMessage());
             return [];
         }
+    }
+
+    private function ensureCsrfToken(): void {
+        if (!isset($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token']) || $_SESSION['csrf_token'] === '') {
+            try {
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+            } catch (Exception $e) {
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(8));
+            }
+        }
+    }
+
+    private function validateCsrf(array $payload): bool {
+        $session = (string)($_SESSION['csrf_token'] ?? '');
+        if ($session === '') {
+            return true; // permissive fallback
+        }
+        $csrf = (string)($payload['csrf_token'] ?? '');
+        return hash_equals($session, $csrf);
+    }
+
+    /**
+     * Dynamic Report Builder (admin-only)
+     * URL: /reports/builder or /reports/builder/{id}
+     */
+    public function builder($id = null) {
+        $this->requireAdminAccess();
+        $this->ensureCsrfToken();
+
+        require_once APPROOT . '/app/services/DynamicReportService.php';
+        $svc = new DynamicReportService();
+        $datasets = $svc->getDatasetPresets();
+
+        $roles = [];
+        try {
+            $roleModel = $this->model('Role');
+            $roles = $roleModel->getAllRoles();
+        } catch (Exception $e) {
+            $roles = [];
+        }
+
+        $report = null;
+        $reportDefinition = null;
+        if (!empty($id)) {
+            try {
+                $rid = (int)$id;
+                $repModel = $this->model('ReportDefinition');
+                $row = $repModel->getById($rid);
+                if (!empty($row)) {
+                    $report = $row;
+                    $decoded = json_decode((string)($row['definition_json'] ?? ''), true);
+                    if (is_array($decoded)) {
+                        $reportDefinition = $decoded;
+                    }
+                }
+            } catch (Exception $e) {
+                $report = null;
+                $reportDefinition = null;
+            }
+        }
+
+        $this->view('reports/builder', [
+            'title' => 'Report Builder',
+            'datasets' => $datasets,
+            'roles' => $roles,
+            'report' => $report,
+            'report_definition' => $reportDefinition,
+            'csrf_token' => (string)($_SESSION['csrf_token'] ?? ''),
+        ]);
+    }
+
+    /**
+     * Saved reports library (admin + permitted viewers).
+     * URL: /reports/saved
+     */
+    public function saved() {
+        $this->ensureCsrfToken();
+
+        $isAdmin = hasPermission('admin.access');
+        $roleId = $this->currentRoleId();
+
+        $reports = [];
+        try {
+            $repModel = $this->model('ReportDefinition');
+            $reports = $repModel->listForUser($roleId, $isAdmin);
+        } catch (Exception $e) {
+            $reports = [];
+        }
+
+        require_once APPROOT . '/app/services/DynamicReportService.php';
+        $svc = new DynamicReportService();
+        $datasets = $svc->getDatasetPresets();
+        $datasetLabels = [];
+        foreach ($datasets as $d) {
+            $datasetLabels[(string)($d['key'] ?? '')] = (string)($d['label'] ?? '');
+        }
+
+        $this->view('reports/saved', [
+            'title' => 'Saved Reports',
+            'reports' => $reports,
+            'dataset_labels' => $datasetLabels,
+            'is_admin' => $isAdmin,
+            'csrf_token' => (string)($_SESSION['csrf_token'] ?? ''),
+        ]);
+    }
+
+    /**
+     * Run a saved report (admin + permitted viewers).
+     * URL: /reports/run/{id}
+     */
+    public function run($id = null) {
+        $this->ensureCsrfToken();
+
+        $rid = (int)($id ?? 0);
+        if ($rid <= 0) {
+            redirect('reports/saved');
+        }
+
+        $isAdmin = hasPermission('admin.access');
+        $roleId = $this->currentRoleId();
+
+        $repModel = $this->model('ReportDefinition');
+        $report = $repModel->getById($rid);
+        if (empty($report) || empty($report['is_active'])) {
+            flash('error', 'Report not found.');
+            redirect('reports/saved');
+        }
+        if (!$repModel->userCanView($report, $roleId, $isAdmin)) {
+            flash('error', 'You do not have access to this report.');
+            redirect('dashboard');
+        }
+
+        $this->view('reports/run', [
+            'title' => 'Run Report',
+            'report' => $report,
+            'csrf_token' => (string)($_SESSION['csrf_token'] ?? ''),
+        ]);
+    }
+
+    /**
+     * AJAX: get available fields for a dataset.
+     * GET /reports/ajaxFields?dataset=tickets
+     */
+    public function ajaxFields() {
+        header('Content-Type: application/json');
+        $dataset = strtolower(trim((string)($_GET['dataset'] ?? '')));
+        if ($dataset === '') {
+            echo json_encode(['success' => false, 'message' => 'Missing dataset']);
+            exit;
+        }
+
+        // Admin-only: field discovery is part of the builder
+        $this->requireAdminAccess();
+
+        require_once APPROOT . '/app/services/DynamicReportService.php';
+        $svc = new DynamicReportService();
+        $fields = $svc->getFieldsForDataset($dataset);
+        if (empty($fields)) {
+            echo json_encode(['success' => false, 'message' => 'Unknown dataset']);
+            exit;
+        }
+        echo json_encode(['success' => true, 'dataset' => $dataset, 'fields' => $fields]);
+        exit;
+    }
+
+    /**
+     * AJAX: preview run.
+     * POST JSON to /reports/ajaxPreview
+     * Either provide report_id (saved) OR a full definition (builder/admin).
+     */
+    public function ajaxPreview() {
+        header('Content-Type: application/json');
+
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true);
+        if (!is_array($payload)) {
+            $payload = $_POST ?? [];
+        }
+
+        $this->ensureCsrfToken();
+        if (!$this->validateCsrf($payload)) {
+            echo json_encode(['success' => false, 'message' => 'CSRF validation failed']);
+            exit;
+        }
+
+        $isAdmin = hasPermission('admin.access');
+        $roleId = $this->currentRoleId();
+
+        $definition = null;
+        $reportId = isset($payload['report_id']) ? (int)$payload['report_id'] : 0;
+        if ($reportId > 0) {
+            try {
+                $repModel = $this->model('ReportDefinition');
+                $report = $repModel->getById($reportId);
+                if (empty($report) || empty($report['is_active'])) {
+                    echo json_encode(['success' => false, 'message' => 'Report not found']);
+                    exit;
+                }
+                if (!$repModel->userCanView($report, $roleId, $isAdmin)) {
+                    echo json_encode(['success' => false, 'message' => 'Not permitted']);
+                    exit;
+                }
+                $decoded = json_decode((string)($report['definition_json'] ?? ''), true);
+                if (!is_array($decoded)) {
+                    echo json_encode(['success' => false, 'message' => 'Invalid report definition']);
+                    exit;
+                }
+                $definition = $decoded;
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Failed to load report']);
+                exit;
+            }
+        } else {
+            // Builder preview requires admin access
+            $this->requireAdminAccess();
+            $definition = is_array($payload['definition'] ?? null) ? $payload['definition'] : $payload;
+        }
+
+        $page = max(1, (int)($payload['page'] ?? 1));
+        $perPage = (int)($payload['per_page'] ?? 25);
+
+        // Apply current paging to definition (non-destructive)
+        if (is_array($definition)) {
+            $definition['page'] = $page;
+            $definition['per_page'] = $perPage;
+        }
+
+        require_once APPROOT . '/app/services/DynamicReportService.php';
+        $svc = new DynamicReportService();
+        $blocked = $this->blockedClientIds();
+        $res = $svc->run(
+            is_array($definition) ? $definition : [],
+            [
+                'role_id' => $roleId,
+                'is_admin' => $isAdmin,
+                'blocked_client_ids' => $blocked,
+            ],
+            [
+                'page' => $page,
+                'per_page' => $perPage,
+            ]
+        );
+
+        echo json_encode($res);
+        exit;
+    }
+
+    /**
+     * AJAX: save report definition (admin-only).
+     * POST JSON to /reports/ajaxSaveReport
+     */
+    public function ajaxSaveReport() {
+        header('Content-Type: application/json');
+        $this->requireAdminAccess();
+
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true);
+        if (!is_array($payload)) {
+            $payload = $_POST ?? [];
+        }
+
+        $this->ensureCsrfToken();
+        if (!$this->validateCsrf($payload)) {
+            echo json_encode(['success' => false, 'message' => 'CSRF validation failed']);
+            exit;
+        }
+
+        $name = trim((string)($payload['name'] ?? ''));
+        $description = (string)($payload['description'] ?? '');
+        $visibility = strtolower(trim((string)($payload['visibility'] ?? 'admin')));
+        $allowedRoleIds = $payload['allowed_role_ids'] ?? null;
+        $definition = is_array($payload['definition'] ?? null) ? $payload['definition'] : null;
+
+        if ($name === '' || !is_array($definition)) {
+            echo json_encode(['success' => false, 'message' => 'Missing name or definition']);
+            exit;
+        }
+
+        $dataset = strtolower(trim((string)($definition['dataset'] ?? '')));
+        if ($dataset === '') {
+            echo json_encode(['success' => false, 'message' => 'Missing dataset']);
+            exit;
+        }
+        if ($visibility === 'roles') {
+            $ids = is_array($allowedRoleIds) ? $allowedRoleIds : [];
+            $ids = array_values(array_filter(array_map('intval', $ids), function($v){ return $v > 0; }));
+            if (empty($ids)) {
+                echo json_encode(['success' => false, 'message' => 'Select at least one allowed role']);
+                exit;
+            }
+        }
+
+        // Validate dataset is supported
+        try {
+            require_once APPROOT . '/app/services/DynamicReportService.php';
+            $svc = new DynamicReportService();
+            $supported = array_map(function($d){ return (string)($d['key'] ?? ''); }, $svc->getDatasetPresets());
+            if (!in_array($dataset, $supported, true)) {
+                echo json_encode(['success' => false, 'message' => 'Unsupported dataset']);
+                exit;
+            }
+        } catch (Exception $e) {
+            // ignore
+        }
+
+        // Store a normalized JSON definition
+        $definitionJson = json_encode($definition);
+        if (!is_string($definitionJson) || $definitionJson === '' || $definitionJson === 'null') {
+            echo json_encode(['success' => false, 'message' => 'Invalid definition']);
+            exit;
+        }
+
+        $repModel = $this->model('ReportDefinition');
+        $reportId = isset($payload['report_id']) ? (int)$payload['report_id'] : 0;
+
+        if ($reportId > 0) {
+            $existing = $repModel->getById($reportId);
+            if (empty($existing)) {
+                echo json_encode(['success' => false, 'message' => 'Report not found']);
+                exit;
+            }
+            if (!$repModel->userCanEdit($existing, (int)($_SESSION['user_id'] ?? 0), true)) {
+                echo json_encode(['success' => false, 'message' => 'Not permitted']);
+                exit;
+            }
+            $ok = $repModel->update($reportId, [
+                'name' => $name,
+                'description' => $description,
+                'dataset' => $dataset,
+                'definition_json' => $definitionJson,
+                'visibility' => $visibility,
+                'allowed_role_ids' => $allowedRoleIds,
+            ]);
+            echo json_encode(['success' => (bool)$ok, 'report_id' => $reportId]);
+            exit;
+        }
+
+        $newId = $repModel->create([
+            'name' => $name,
+            'description' => $description,
+            'dataset' => $dataset,
+            'definition_json' => $definitionJson,
+            'visibility' => $visibility,
+            'allowed_role_ids' => $allowedRoleIds,
+            'created_by' => (int)($_SESSION['user_id'] ?? 0),
+        ]);
+
+        echo json_encode(['success' => !empty($newId), 'report_id' => (int)$newId]);
+        exit;
+    }
+
+    /**
+     * Export CSV for a saved report (permitted) or builder definition (admin-only).
+     * POST JSON to /reports/exportDynamicCsv
+     */
+    public function exportDynamicCsv() {
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true);
+        if (!is_array($payload)) {
+            $payload = $_POST ?? [];
+        }
+
+        $this->ensureCsrfToken();
+        if (!$this->validateCsrf($payload)) {
+            header('Content-Type: text/plain');
+            http_response_code(403);
+            echo 'CSRF validation failed';
+            exit;
+        }
+
+        $isAdmin = hasPermission('admin.access');
+        $roleId = $this->currentRoleId();
+
+        $definition = null;
+        $reportId = isset($payload['report_id']) ? (int)$payload['report_id'] : 0;
+        $reportName = 'dynamic_report';
+        if ($reportId > 0) {
+            $repModel = $this->model('ReportDefinition');
+            $report = $repModel->getById($reportId);
+            if (empty($report) || empty($report['is_active'])) {
+                header('Content-Type: text/plain');
+                http_response_code(404);
+                echo 'Report not found';
+                exit;
+            }
+            if (!$repModel->userCanView($report, $roleId, $isAdmin)) {
+                header('Content-Type: text/plain');
+                http_response_code(403);
+                echo 'Not permitted';
+                exit;
+            }
+            $reportName = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string)($report['name'] ?? 'report')) ?: 'report';
+            $decoded = json_decode((string)($report['definition_json'] ?? ''), true);
+            if (!is_array($decoded)) {
+                header('Content-Type: text/plain');
+                http_response_code(400);
+                echo 'Invalid report definition';
+                exit;
+            }
+            $definition = $decoded;
+        } else {
+            // Builder export requires admin
+            $this->requireAdminAccess();
+            $definition = is_array($payload['definition'] ?? null) ? $payload['definition'] : $payload;
+        }
+
+        require_once APPROOT . '/app/services/DynamicReportService.php';
+        $svc = new DynamicReportService();
+        $blocked = $this->blockedClientIds();
+
+        $maxExport = 5000;
+        $defLimit = isset($definition['limit']) ? (int)$definition['limit'] : 0;
+        $exportLimit = $defLimit > 0 ? min($maxExport, $defLimit) : $maxExport;
+
+        $filename = $reportName . '_' . date('Y-m-d') . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('X-Content-Type-Options: nosniff');
+
+        // UTF-8 BOM for Excel
+        echo "\xEF\xBB\xBF";
+
+        $out = fopen('php://output', 'w');
+        if (!$out) {
+            exit;
+        }
+
+        $page = 1;
+        $perPage = 500;
+        $writtenHeader = false;
+        $written = 0;
+
+        while (true) {
+            $definition['page'] = $page;
+            $definition['per_page'] = $perPage;
+            $definition['limit'] = $exportLimit;
+
+            $res = $svc->run(
+                $definition,
+                [
+                    'role_id' => $roleId,
+                    'is_admin' => $isAdmin,
+                    'blocked_client_ids' => $blocked,
+                ],
+                [
+                    'page' => $page,
+                    'per_page' => $perPage,
+                ]
+            );
+
+            if (empty($res['success'])) {
+                // output error row
+                if (!$writtenHeader) {
+                    fputcsv($out, ['Error']);
+                }
+                fputcsv($out, [(string)($res['message'] ?? 'Failed to export')]);
+                break;
+            }
+
+            $cols = $res['columns'] ?? [];
+            $rows = $res['rows'] ?? [];
+
+            if (!$writtenHeader) {
+                $headers = [];
+                foreach ($cols as $c) {
+                    $headers[] = (string)($c['label'] ?? $c['key'] ?? '');
+                }
+                fputcsv($out, $headers);
+                $writtenHeader = true;
+            }
+
+            if (empty($rows)) {
+                break;
+            }
+
+            foreach ($rows as $r) {
+                $line = [];
+                foreach ($cols as $c) {
+                    $k = (string)($c['key'] ?? '');
+                    $v = $k !== '' ? ($r[$k] ?? '') : '';
+                    if (is_bool($v)) {
+                        $v = $v ? '1' : '0';
+                    } else if (is_array($v)) {
+                        $v = json_encode($v);
+                    }
+                    $line[] = (string)$v;
+                }
+                fputcsv($out, $line);
+                $written++;
+                if ($written >= $exportLimit) {
+                    break 2;
+                }
+            }
+
+            $page++;
+            if ($written >= $exportLimit) {
+                break;
+            }
+        }
+
+        fclose($out);
+        exit;
     }
 }
